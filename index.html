@@ -174,9 +174,11 @@ const insured=n=>{let x=String(n||"").replace(/^\s*\d+\s*:\s*/,"").trim();const 
 let CTX=[];
 const pick=sel=>(!$("#sheet").hidden&&$("#sheetBody "+sel))||$("main "+sel);
 function cbtn(ctx,kind,text,cls){const i=CTX.push(ctx)-1;
+  if(kind==="text") return `<a class="btn ${cls||""}" href="sms:+1${d10(ctx.phone)}?&body=${encodeURIComponent(ctx.text||"")}" data-ci="${i}" data-kind="text">${esc(text)}</a>`;
   if(kind==="call") return `<a class="btn ${cls||""}" href="${telHref(ctx.phone)}" data-ci="${i}" data-kind="call">${esc(text)}</a>`;
   return `<button class="btn ${cls||""}" data-ci="${i}" data-kind="email">${esc(text)}</button>`;}
 function bindContacts(root){root.querySelectorAll("[data-ci]").forEach(b=>b.addEventListener("click",e=>{const ctx=CTX[+b.dataset.ci];
+  if(b.dataset.kind==="text"){ api("contact_log",{job_id:ctx.job_id,kind:ctx.kind,label:ctx.label,to:fmtPh(ctx.phone),body:ctx.text,op_id:opId()}).then(()=>toast("Logged to Lynx")).catch(err=>toast(err.message==="sms_opt_out"?"This number opted out of texts. Use email.":"Couldn't log it to Lynx")); return; }
   if(b.dataset.kind==="call"){ if(ctx.job_id){ api("contact_log",{job_id:ctx.job_id,kind:"call",label:ctx.label,to:fmtPh(ctx.phone),op_id:opId()}).then(()=>toast("Call logged to Lynx")).catch(()=>toast("Couldn't log the call to Lynx")); showCallResult(ctx); } }
   else { e.preventDefault(); openComposer(ctx); }
 }))}
@@ -188,8 +190,8 @@ function showCallResult(ctx){const box=pick("#callBox");if(!box)return;
   box.scrollIntoView({behavior:"smooth",block:"nearest"});}
 function openComposer(ctx){
   const host=pick("#composeBox")||$("#main"); const first=String(ctx.adjName||"").split(/\s+/)[0];
-  const su=[ctx.claim?"Claim #"+ctx.claim:"",ctx.insured,ctx.address].filter(Boolean).join(" — ");
-  const body=`Hi ${first?first.charAt(0)+first.slice(1).toLowerCase():"there"},\n\nThis is ${ME.name} with DFW Roofing Pro about claim #${ctx.claim||"[claim #]"} for ${ctx.insured||"[insured]"} at ${ctx.address||"[address]"}${ctx.dol?` (date of loss ${ctx.dol})`:""}.\n\n\n\nThank you,\n${ME.name}\nDFW Roofing Pro\n972-979-1070`;
+  const su=ctx.su!=null?ctx.su:[ctx.claim?"Claim #"+ctx.claim:"",ctx.insured,ctx.address].filter(Boolean).join(" — ");
+  const body=ctx.body!=null?ctx.body:`Hi ${first?first.charAt(0)+first.slice(1).toLowerCase():"there"},\n\nThis is ${ME.name} with DFW Roofing Pro about claim #${ctx.claim||"[claim #]"} for ${ctx.insured||"[insured]"} at ${ctx.address||"[address]"}${ctx.dol?` (date of loss ${ctx.dol})`:""}.\n\n\n\nThank you,\n${ME.name}\nDFW Roofing Pro\n972-979-1070`;
   host.innerHTML=`<div class="panel" style="padding:12px;margin-top:12px"><b>Email ${esc(ctx.label)}</b>
     <label for="ceTo">To</label><input id="ceTo" value="${esc(ctx.email)}"><label for="ceSu">Subject</label><input id="ceSu" value="${esc(su)}">
     <label for="ceBo">Message</label><textarea id="ceBo" style="min-height:180px">${esc(body)}</textarea>
@@ -200,7 +202,7 @@ function openComposer(ctx){
     window.open(gmail(to,s2,b2),"_blank","noopener");
     if(!ctx.job_id){host.innerHTML="";return}
     if(!op)op=opId();
-    try{await api("contact_log",{job_id:ctx.job_id,kind:"email",label:ctx.label,to,subject:s2,body:b2,op_id:op});host.innerHTML=`<div class="ok">Email saved to Lynx. Hit send in Gmail.</div>`}
+    try{await api("contact_log",{job_id:ctx.job_id,kind:ctx.kind||"email",label:ctx.label,to,subject:s2,body:b2,op_id:op});host.innerHTML=`<div class="ok">Email saved to Lynx. Hit send in Gmail.</div>`}
     catch(e){toast("Gmail opened, but the Lynx log didn't save. Tap again to retry.")}};
   host.scrollIntoView({behavior:"smooth",block:"nearest"});}
 /* ---------- Carriers ---------- */
@@ -234,6 +236,33 @@ function renderColors(){
   document.querySelectorAll("[data-c]").forEach(b=>b.onclick=async()=>{const t="IKO Cambridge – "+COLORS[+b.dataset.c].name;try{await navigator.clipboard.writeText(t);toast("Copied: "+t)}catch(e){toast(t)}});
 }
 /* ---------- job sheet ---------- */
+function custBlock(d,j,a){const cu=d.customer;if(!cu)return "";const lk=d.links||{};
+  const nm=insured(j.name)||cu.name||"the homeowner";const f0=nm.split(/\s+/)[0]||"";const first=f0?f0.charAt(0).toUpperCase()+f0.slice(1).toLowerCase():"there";
+  const me1=(ME.name||"").split(" ")[0];
+  const phones=(cu.phones||[]).slice(0,2);const mob=phones.find(p=>/mobile|cell/i.test(p.type))||phones.find(p=>p.primary)||phones[0];
+  const em=((cu.emails||[]).find(e=>e.primary)||(cu.emails||[])[0]||{}).address||"";
+  const base={job_id:j.id,insured:nm,address:a,label:nm};
+  const canText=mob&&!mob.smsOptOut&&d10(mob.number).length===10;
+  const sig=`\n\nThank you,\n${ME.name}\nDFW Roofing Pro\n972-979-1070`;
+  const btns=[];
+  phones.forEach(p=>{if(d10(p.number).length===10)btns.push(cbtn({...base,label:"homeowner "+nm,phone:p.number},"call","Call "+fmtPh(p.number),"ghost"))});
+  const rv=[],fn=[];
+  if(lk.review){const t=`Hi ${first}, it's ${me1} with DFW Roofing Pro. Thank you for trusting us with your roof! If you have a minute, would you share your experience on Google? It helps your neighbors find a roofer they can trust: ${lk.review}`;
+    if(canText)rv.push(cbtn({...base,kind:"review_text",phone:mob.number,text:t},"text","Text review link"));
+    if(em)rv.push(cbtn({...base,kind:"review_email",email:em,su:"Thank you from DFW Roofing Pro",body:`Hi ${first},\n\nThank you for trusting DFW Roofing Pro with your roof. If you have a minute, would you share your experience on Google? Your review helps your neighbors find a roofer they can trust.\n\n${lk.review}`+sig},"email","Email review link","ghost"));}
+  if(lk.financing){const t=`Hi ${first}, it's ${me1} with DFW Roofing Pro. Here's your secure Sunlight Financial application for your new roof: ${lk.financing} Text me here with any questions while you fill it out.`;
+    if(canText)fn.push(cbtn({...base,kind:"fin_text",phone:mob.number,text:t},"text","Text financing link"));
+    if(em)fn.push(cbtn({...base,kind:"fin_email",email:em,su:"Your Sunlight Financial application",body:`Hi ${first},\n\nHere's your secure Sunlight Financial application for your new roof:\n\n${lk.financing}\n\nReply here with any questions while you fill it out.`+sig},"email","Email financing link","ghost"));}
+  const last=k=>(d.posted||[]).find(p=>String(p.kind||"").startsWith(k)&&p.state==="done");
+  const lr=last("review"),lf=last("fin");
+  return `<h4>Customer</h4><div class="panel facts"><div><span>Name</span>${esc(nm)}</div>
+    ${phones.map(p=>`<div><span>${esc(p.type||"Phone")}</span>${esc(fmtPh(p.number))}${p.smsOptOut?' <span class="tag st-Completed">No texts</span>':""}</div>`).join("")}
+    ${em?`<div><span>Email</span>${esc(em)}</div>`:""}</div>
+    ${btns.length?`<div class="btns">${btns.join("")}</div>`:""}
+    ${rv.length?`<div class="btns">${rv.join("")}</div><p class="fresh" style="margin:6px 2px 0">${lr?"Review link last sent "+when(lr.created_at)+". ":""}Asks for an honest Google review.</p>`:""}
+    ${fn.length?`<div class="btns">${fn.join("")}</div>${lf?`<p class="fresh" style="margin:6px 2px 0">Financing link last sent ${when(lf.created_at)}.</p>`:""}`:""}
+    ${mob&&mob.smsOptOut?`<p class="fresh" style="margin:6px 2px 0">This customer opted out of texts, so links go by email.</p>`:""}
+    <p class="fresh" style="margin:6px 2px 0">Calls, texts and emails from these buttons are logged to this job in Lynx.</p>`;}
 function insBlock(d,j,a){const ins=d.insurance;if(!ins)return "";const cc=d.carrier_contacts||{};const carrier=ins.carrier||"Carrier";
   const dol=ins.date_of_loss?new Date(ins.date_of_loss).toLocaleDateString("en-US",{timeZone:"UTC",month:"numeric",day:"numeric",year:"numeric"}):"";
   const base={job_id:j.id,claim:ins.claim_number,insured:insured(j.name),address:a,dol};
@@ -256,6 +285,7 @@ async function openJob(id){
         <div><span>Rep</span>${esc((d.reps||[]).filter(r=>r.type!=="Additional"&&r.name).map(r=>r.name).join(", ")||"—")}</div>
         ${j.leadSource?`<div><span>Lead source</span>${esc(j.leadSource)}</div>`:""}<div><span>Created</span>${when(j.created)}</div><div><span>Updated</span>${when(j.updated)}</div></div>
       <div class="btns">${a?`<a class="btn ghost" href="${maps(a)}" target="_blank" rel="noopener">Directions</a>`:""}<a class="btn" href="${esc(j.lynx)}" target="_blank" rel="noopener">Open in Lynx</a></div>
+      ${custBlock(d,j,a)}
       ${insBlock(d,j,a)}
       ${(d.appts||[]).length?`<h4>Appointments</h4><div class="panel"><ul class="list">${d.appts.map(x=>`<li class="row" style="cursor:default"><div><div class="t">${esc(x.title||"Appointment")}</div><div class="m">${esc(x.calendar_name||"")}${x.is_adjuster?" · Adjuster":""}</div></div><div class="r">${when(x.starts_at)}</div></li>`).join("")}</ul></div>`:""}
       <h4>Post a note to Lynx</h4><div class="panel" style="padding:12px"><textarea id="nt" placeholder="What happened, what's next, and @who needs to act"></textarea><div class="btns"><button class="btn" id="ns">Post to Lynx</button></div><div id="nr"></div></div>
