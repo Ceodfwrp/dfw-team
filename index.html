@@ -107,10 +107,10 @@ async function boot(){
   }catch(e){if(e.message!=="signed_out")$("#main").innerHTML=`<div class="empty">Couldn't load. Pull to refresh or try again.</div>`}
 }
 function tabs(){const t=$("#tabs");t.hidden=false;
-  t.innerHTML=[["jobs","My Jobs"],["day","My Day"],["lead","New Lead"],["colors","Colors"]].map(([k,l])=>`<button data-t="${k}" aria-selected="${TAB===k}">${l}</button>`).join("");
+  t.innerHTML=[["jobs","My Jobs"],["day","My Day"],["lead","New Lead"],["carriers","Carriers"],["colors","Colors"]].map(([k,l])=>`<button data-t="${k}" aria-selected="${TAB===k}">${l}</button>`).join("");
   t.querySelectorAll("button").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;tabs();render()});}
 async function load(){ $("#main").innerHTML=`<div class="empty">Loading…</div>`; HOME=await api("home",{scope:SCOPE}); render(); }
-function render(){({jobs:renderJobs,day:renderDay,lead:renderLead,colors:renderColors})[TAB]();}
+function render(){({jobs:renderJobs,day:renderDay,lead:renderLead,carriers:renderCarriers,colors:renderColors})[TAB]();}
 function scopeChips(){return ME.team?`<div class="tools"><button class="chip" data-sc="mine" aria-pressed="${SCOPE==="mine"}">Mine</button><button class="chip" data-sc="team" aria-pressed="${SCOPE==="team"}">Whole team</button></div>`:""}
 function bindScope(){document.querySelectorAll("[data-sc]").forEach(b=>b.onclick=async()=>{SCOPE=b.dataset.sc;await load()})}
 function freshLine(){const f=HOME&&HOME.fresh||{};return `<p class="fresh">Lynx jobs as of ${when(f.jobs_at)} · appointments as of ${when(f.appts_at)}</p>`}
@@ -165,6 +165,61 @@ async function createLead(force){
       if(!(e.data&&e.data.job_id)) LEAD_OP=null;}
   }finally{b.disabled=false;b.textContent="Create lead in Lynx"}
 }
+/* ---------- calls & emails that log to Lynx ---------- */
+const d10=p=>String(p||"").replace(/\D/g,"").replace(/^1(?=\d{10}$)/,"");
+const fmtPh=p=>{const d=d10(p);return d.length===10?`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`:String(p||"")};
+const telHref=p=>"tel:+1"+d10(p);
+const gmail=(to,su,body)=>"https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(to)+"&su="+encodeURIComponent(su||"")+"&body="+encodeURIComponent(body||"")+(ME&&ME.email?"&authuser="+encodeURIComponent(ME.email):"");
+const insured=n=>{let x=String(n||"").replace(/^\s*\d+\s*:\s*/,"").trim();const cut=x.split(/\s+-\s+|\s+\(/)[0];if(cut!==cut.toUpperCase()){const m=cut.split(/\s+(?=[A-Z0-9][A-Z0-9/!&.]{1,}(\s|$))/)[0];return (m||cut).trim()}return cut.trim()};
+let CTX=[];
+const pick=sel=>(!$("#sheet").hidden&&$("#sheetBody "+sel))||$("main "+sel);
+function cbtn(ctx,kind,text,cls){const i=CTX.push(ctx)-1;
+  if(kind==="call") return `<a class="btn ${cls||""}" href="${telHref(ctx.phone)}" data-ci="${i}" data-kind="call">${esc(text)}</a>`;
+  return `<button class="btn ${cls||""}" data-ci="${i}" data-kind="email">${esc(text)}</button>`;}
+function bindContacts(root){root.querySelectorAll("[data-ci]").forEach(b=>b.addEventListener("click",e=>{const ctx=CTX[+b.dataset.ci];
+  if(b.dataset.kind==="call"){ if(ctx.job_id){ api("contact_log",{job_id:ctx.job_id,kind:"call",label:ctx.label,to:fmtPh(ctx.phone),op_id:opId()}).then(()=>toast("Call logged to Lynx")).catch(()=>toast("Couldn't log the call to Lynx")); showCallResult(ctx); } }
+  else { e.preventDefault(); openComposer(ctx); }
+}))}
+function showCallResult(ctx){const box=pick("#callBox");if(!box)return;
+  box.innerHTML=`<div class="panel" style="padding:12px;margin-top:12px"><b>How did the call with ${esc(ctx.label)} go?</b><textarea id="crt" placeholder="Left voicemail / spoke to adjuster, reinspection set for Tue 2 PM / waiting on revised scope" style="margin-top:8px"></textarea><div class="btns"><button class="btn" id="crs">Save to Lynx</button><button class="btn ghost" id="crx">Skip</button></div></div>`;
+  let op=null;$("#crx").onclick=()=>box.innerHTML="";
+  $("#crs").onclick=async()=>{const t=$("#crt").value.trim();if(t.length<2){toast("Add a quick note first");return}if(!op)op=opId();const b=$("#crs");b.disabled=true;
+    try{await api("contact_log",{job_id:ctx.job_id,kind:"call_result",label:ctx.label,body:t,op_id:op});box.innerHTML=`<div class="ok">Call result saved to Lynx.</div>`}catch(e){b.disabled=false;toast("Couldn't save. Try again.")}};
+  box.scrollIntoView({behavior:"smooth",block:"nearest"});}
+function openComposer(ctx){
+  const host=pick("#composeBox")||$("#main"); const first=String(ctx.adjName||"").split(/\s+/)[0];
+  const su=[ctx.claim?"Claim #"+ctx.claim:"",ctx.insured,ctx.address].filter(Boolean).join(" — ");
+  const body=`Hi ${first?first.charAt(0)+first.slice(1).toLowerCase():"there"},\n\nThis is ${ME.name} with DFW Roofing Pro about claim #${ctx.claim||"[claim #]"} for ${ctx.insured||"[insured]"} at ${ctx.address||"[address]"}${ctx.dol?` (date of loss ${ctx.dol})`:""}.\n\n\n\nThank you,\n${ME.name}\nDFW Roofing Pro\n972-979-1070`;
+  host.innerHTML=`<div class="panel" style="padding:12px;margin-top:12px"><b>Email ${esc(ctx.label)}</b>
+    <label for="ceTo">To</label><input id="ceTo" value="${esc(ctx.email)}"><label for="ceSu">Subject</label><input id="ceSu" value="${esc(su)}">
+    <label for="ceBo">Message</label><textarea id="ceBo" style="min-height:180px">${esc(body)}</textarea>
+    <div class="btns"><button class="btn" id="ceGo">Open in Gmail &amp; log to Lynx</button><button class="btn ghost" id="ceX">Cancel</button></div>
+    <p class="fresh">${ctx.job_id?"The full email is saved to this job in Lynx. Gmail opens with it ready to send.":"Not tied to a job, so this one won't log to Lynx. Email from the job to log it."}</p></div>`;
+  $("#ceX").onclick=()=>host.innerHTML=""; let op=null;
+  $("#ceGo").onclick=async()=>{const to=$("#ceTo").value.trim(),s2=$("#ceSu").value.trim(),b2=$("#ceBo").value;if(!/@/.test(to)){toast("Add an email address");return}
+    window.open(gmail(to,s2,b2),"_blank","noopener");
+    if(!ctx.job_id){host.innerHTML="";return}
+    if(!op)op=opId();
+    try{await api("contact_log",{job_id:ctx.job_id,kind:"email",label:ctx.label,to,subject:s2,body:b2,op_id:op});host.innerHTML=`<div class="ok">Email saved to Lynx. Hit send in Gmail.</div>`}
+    catch(e){toast("Gmail opened, but the Lynx log didn't save. Tap again to retry.")}};
+  host.scrollIntoView({behavior:"smooth",block:"nearest"});}
+/* ---------- Carriers ---------- */
+let CARR=null, CQ="";
+async function renderCarriers(){
+  if(!CARR){$("#main").innerHTML=`<div class="empty">Loading carriers…</div>`;try{CARR=await api("carriers")}catch(e){$("#main").innerHTML=`<div class="empty">Couldn't load carriers.</div>`;return}}
+  const q=CQ.toLowerCase();
+  const list=(CARR.carriers||[]).filter(c=>!q||c.carrier.toLowerCase().includes(q)||c.adjusters.some(a=>[a.name,a.job_number,a.claim_number,a.customer].join(" ").toLowerCase().includes(q)));
+  $("#main").innerHTML=`<h2>Carriers</h2><p class="sub">Claims lines and mailboxes your team has actually used, plus the adjuster on each of ${ME.team?"the team's":"your"} open claims. Rebuilt from Lynx every hour.</p>
+    <div class="tools"><input id="cq" type="search" placeholder="Search carrier, adjuster, job # or claim #" value="${esc(CQ)}"></div>
+    ${list.length?list.map(c=>{const name=c.carrier;return `<div class="panel" style="padding:12px 14px;margin-bottom:12px"><div class="shh"><div><h3 style="font:800 22px/1.1 var(--display);margin:0">${esc(name)}</h3><div class="m">${c.files} open claim${c.files===1?"":"s"}</div></div></div>
+      ${c.shared_phones.length||c.shared_emails.length?`<div class="m" style="margin-top:8px"><b>Claims lines your team has used</b></div><div class="btns" style="margin-top:6px">${c.shared_phones.map(p=>cbtn({label:name+" claims",phone:p.v},"call",fmtPh(p.v)+" · "+p.n+" claims","ghost")).join("")}${c.shared_emails.map(m=>cbtn({label:name+" claims",email:m.v},"email",m.v+" · "+m.n+" claims","ghost")).join("")}</div><p class="fresh" style="margin:6px 0 0">To log a call or email to Lynx, use the buttons on the adjuster below or on the job.</p>`:""}
+      ${c.adjusters.length?`<div class="m" style="margin-top:10px"><b>Adjusters on ${ME.team?"open":"your"} claims</b></div><ul class="list">${c.adjusters.map(a=>{const ctx={job_id:a.job_id,label:(a.name?titleCase(a.name)+" ("+name+")":name+" adjuster"),phone:a.phone,email:a.email,claim:a.claim_number,insured:insured(a.customer),adjName:a.name};return `<li style="padding:10px 0;border-top:1px solid var(--line)"><div class="t">${esc(a.name?titleCase(a.name):"Adjuster")} <span class="m">· ${a.job_number?"#"+esc(a.job_number)+" ":""}${esc(insured(a.customer)||"")}${a.claim_number?" · claim "+esc(a.claim_number):""}</span></div><div class="btns" style="margin-top:6px">${a.phone&&d10(a.phone).length===10?cbtn(ctx,"call","Call "+fmtPh(a.phone)):""}${a.email?cbtn(ctx,"email","Email","ghost"):""}<button class="btn ghost" data-open="${esc(a.job_id)}">Open job</button></div></li>`}).join("")}</ul>`:""}</div>`}).join(""):`<div class="panel"><div class="empty">No carriers match.</div></div>`}
+    <div id="callBox"></div><div id="composeBox"></div><p class="fresh">Claim files scanned ${when(CARR.scanned_at)}.</p>`;
+  bindContacts($("#main"));
+  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openJob(b.dataset.open));
+  const cq=$("#cq");cq.oninput=e=>{CQ=e.target.value;const pos=cq.selectionStart;renderCarriers();const n=$("#cq");n.focus();n.setSelectionRange(pos,pos)};
+}
+const titleCase=s=>String(s||"").toLowerCase().replace(/\b[a-z]/g,c=>c.toUpperCase());
 /* ---------- Colors ---------- */
 const COLORS=[
  {name:"Weatherwood",tag:"Most popular",look:"A warm blend of tans, browns and soft grays. Looks natural on most DFW brick and hides dirt well.",pairs:"Tan, beige or cream brick and stone; earth-tone or white siding; brown, bronze or white trim.",note:"IKO calls it Weatherwood. \"Weathered Wood\" is the GAF and TAMKO name, so write Weatherwood on the contract and the order."},
@@ -179,6 +234,19 @@ function renderColors(){
   document.querySelectorAll("[data-c]").forEach(b=>b.onclick=async()=>{const t="IKO Cambridge – "+COLORS[+b.dataset.c].name;try{await navigator.clipboard.writeText(t);toast("Copied: "+t)}catch(e){toast(t)}});
 }
 /* ---------- job sheet ---------- */
+function insBlock(d,j,a){const ins=d.insurance;if(!ins)return "";const cc=d.carrier_contacts||{};const carrier=ins.carrier||"Carrier";
+  const dol=ins.date_of_loss?new Date(ins.date_of_loss).toLocaleDateString("en-US",{timeZone:"UTC",month:"numeric",day:"numeric",year:"numeric"}):"";
+  const base={job_id:j.id,claim:ins.claim_number,insured:insured(j.name),address:a,dol};
+  const adj={...base,label:(ins.adjuster_name?titleCase(ins.adjuster_name)+" ("+carrier+" adjuster)":carrier+" adjuster"),phone:ins.adjuster_phone,email:ins.adjuster_email,adjName:ins.adjuster_name};
+  const btns=[];
+  if(ins.adjuster_phone&&d10(ins.adjuster_phone).length===10) btns.push(cbtn(adj,"call","Call adjuster "+fmtPh(ins.adjuster_phone)));
+  if(ins.adjuster_email) btns.push(cbtn(adj,"email","Email adjuster","ghost"));
+  (cc.phones||[]).slice(0,2).forEach(p=>{if(d10(p.v)!==d10(ins.adjuster_phone))btns.push(cbtn({...base,label:carrier+" claims",phone:p.v},"call","Call "+carrier+" claims "+fmtPh(p.v),"ghost"))});
+  (cc.emails||[]).slice(0,1).forEach(m=>{if(m.v!==String(ins.adjuster_email||"").toLowerCase())btns.push(cbtn({...base,label:carrier+" claims",email:m.v},"email","Email "+m.v,"ghost"))});
+  return `<h4>Insurance</h4><div class="panel facts"><div><span>Carrier</span>${esc(carrier)}</div>${ins.claim_number?`<div><span>Claim #</span>${esc(ins.claim_number)}</div>`:""}${dol?`<div><span>Date of loss</span>${esc(dol)}</div>`:""}
+    <div><span>Adjuster</span>${esc(ins.adjuster_name?titleCase(ins.adjuster_name):"Not in Lynx yet")}${ins.met_with_adjuster?" · met":""}${ins.claim_approved?" · approved":""}</div></div>
+    ${btns.length?`<div class="btns">${btns.join("")}</div><p class="fresh" style="margin:6px 2px 0">Calls and emails from these buttons are logged to this job in Lynx.</p>`:`<p class="fresh">No adjuster phone or email in Lynx yet. Add it in Lynx and it shows here within the hour.</p>`}
+    <div id="callBox"></div><div id="composeBox"></div>`;}
 async function openJob(id){
   const sh=$("#sheet"),bd=$("#sheetBody");bd.innerHTML=`<div class="empty">Loading…</div>`;sh.hidden=false;document.documentElement.style.overflow="hidden";
   try{const d=await api("job",{job_id:id});const j=d.job;const a=addr(j.addr);
@@ -188,10 +256,11 @@ async function openJob(id){
         <div><span>Rep</span>${esc((d.reps||[]).filter(r=>r.type!=="Additional"&&r.name).map(r=>r.name).join(", ")||"—")}</div>
         ${j.leadSource?`<div><span>Lead source</span>${esc(j.leadSource)}</div>`:""}<div><span>Created</span>${when(j.created)}</div><div><span>Updated</span>${when(j.updated)}</div></div>
       <div class="btns">${a?`<a class="btn ghost" href="${maps(a)}" target="_blank" rel="noopener">Directions</a>`:""}<a class="btn" href="${esc(j.lynx)}" target="_blank" rel="noopener">Open in Lynx</a></div>
+      ${insBlock(d,j,a)}
       ${(d.appts||[]).length?`<h4>Appointments</h4><div class="panel"><ul class="list">${d.appts.map(x=>`<li class="row" style="cursor:default"><div><div class="t">${esc(x.title||"Appointment")}</div><div class="m">${esc(x.calendar_name||"")}${x.is_adjuster?" · Adjuster":""}</div></div><div class="r">${when(x.starts_at)}</div></li>`).join("")}</ul></div>`:""}
       <h4>Post a note to Lynx</h4><div class="panel" style="padding:12px"><textarea id="nt" placeholder="What happened, what's next, and @who needs to act"></textarea><div class="btns"><button class="btn" id="ns">Post to Lynx</button></div><div id="nr"></div></div>
       <h4>Notes</h4><div class="panel">${notes.length?notes.map(n=>`<div class="nt"><b>${esc(n.by||"")} · ${when(n.at)}</b>${esc(n.body)}</div>`).join(""):`<div class="empty">No notes captured yet. Lynx has the full history.</div>`}</div>`;
-    $("#cx").onclick=closeJob; let op=null;
+    $("#cx").onclick=closeJob; bindContacts(bd); let op=null;
     $("#ns").onclick=async()=>{const t=$("#nt").value.trim();if(t.length<3){toast("Write a note first");return}
       if(!op)op=opId();const b=$("#ns");b.disabled=true;b.textContent="Posting…";
       try{await api("job_note",{job_id:id,text:t,op_id:op});op=null;$("#nt").value="";$("#nr").innerHTML=`<div class="ok">Posted to Lynx.</div>`;}
