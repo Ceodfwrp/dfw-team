@@ -1,0 +1,960 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><title>DFW Roofing Pro Hard Cost</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* One committed look: black instrument panel. Every color is explicit so it holds on any host ground. */
+:root{
+  --bg:#000000; --panel:#0A0A0B; --panel-2:#111113; --panel-3:#18181B;
+  --ink:#F5F5F7; --ink-2:#C9CBD1; --muted:#8A8F98; --faint:#5B6068;
+  --line:rgba(255,255,255,.12); --line-2:rgba(255,255,255,.22); --line-3:rgba(255,255,255,.4);
+  --accent:#E31937; --accent-ink:#FFFFFF;
+  --good:#3DDC84; --warn:#F5B02C; --bad:#FF4D3D;
+  --good-dim:rgba(61,220,132,.16); --warn-dim:rgba(245,176,44,.16); --bad-dim:rgba(255,77,61,.16);
+  --display:"Barlow Semi Condensed","Barlow","Arial Narrow",sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;padding-inline:16px;padding-block:0 110px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto}
+h1,h2,h3{margin:0;text-wrap:balance}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+input,select,textarea{font:inherit;color:var(--ink)}
+::selection{background:var(--accent);color:#fff}
+.lbl{font-family:var(--body);font-weight:500;letter-spacing:.14em;text-transform:uppercase;font-size:11px;color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:var(--ink)}
+
+/* top */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding-block:22px 14px;border-bottom:1px solid var(--line)}
+.top h1{font-family:var(--display);font-weight:600;font-size:30px;line-height:1;letter-spacing:.06em;text-transform:uppercase}
+.top h1 b{font-weight:700;color:var(--ink)}
+.top .co{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.top .co::before{content:"";display:inline-block;width:18px;height:2px;background:var(--accent)}
+.status{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.status .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);box-shadow:0 0 0 3px rgba(255,255,255,.05)}
+.status.shared .dot{background:var(--good);box-shadow:0 0 10px var(--good)}
+.status.local .dot{background:var(--warn)}
+.status.readonly .dot{background:var(--bad)}
+
+/* tabs */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:0;margin-inline:-16px;padding-inline:16px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:0 0 auto;padding:14px 16px 12px;font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.tabs button:focus-visible{outline:1px solid var(--line-3);outline-offset:-4px}
+
+/* HUD */
+.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--line)}
+.hud .cell{padding:16px 14px 14px;border-right:1px solid var(--line);min-width:0}
+.hud .cell:last-child{border-right:0}
+.hud .v{font-family:var(--display);font-weight:600;font-size:40px;line-height:1;letter-spacing:.01em;margin-top:6px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud .s{font-size:12px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
+.hud .v.good{color:var(--good)} .hud .v.warn{color:var(--warn)} .hud .v.bad{color:var(--bad)}
+@media (max-width:760px){.hud{grid-template-columns:repeat(2,1fr)} .hud .cell:nth-child(2){border-right:0} .hud .cell:nth-child(-n+2){border-bottom:1px solid var(--line)} .hud .v{font-size:32px}}
+
+/* layout */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:0;align-items:start}
+.grid > .inputs{border-right:1px solid var(--line);padding-right:18px}
+.grid > .summary{position:sticky;top:52px;padding-left:18px}
+@media (max-width:960px){.grid{grid-template-columns:1fr} .grid > .inputs{border-right:0;padding-right:0} .grid > .summary{position:static;padding-left:0;border-top:1px solid var(--line);margin-top:8px}}
+
+/* sections */
+.sec{padding:18px 0 6px;border-bottom:1px solid var(--line)}
+.sec h2{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-2);display:flex;align-items:baseline;gap:12px}
+.sec h2 small{font-family:var(--body);font-weight:400;letter-spacing:0;text-transform:none;font-size:12px;color:var(--muted)}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px 18px;margin-top:12px}
+.f{display:flex;flex-direction:column;gap:2px;min-width:0}
+.f.span2{grid-column:span 2}
+@media (max-width:440px){.f.span2{grid-column:span 1}}
+.f label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;gap:6px;padding-bottom:4px}
+.f label .u{font-family:var(--mono);letter-spacing:0;text-transform:none;color:var(--faint)}
+.f .hint{font-size:11px;color:var(--faint);margin-top:3px}
+.in{width:100%;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--line-2);padding:7px 0;font-size:17px;border-radius:0;transition:border-color .15s}
+.in.num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:16px}
+.in:focus{outline:none;border-bottom-color:var(--ink)}
+.in::placeholder{color:var(--faint)}
+select.in{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 12px) 55%,calc(100% - 7px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:24px;background-color:transparent}
+select.in option{background:var(--panel-2);color:var(--ink)}
+.money{position:relative}
+.money .in{padding-left:14px}
+.money::before{content:"$";position:absolute;left:0;top:9px;color:var(--faint);font-family:var(--mono);font-size:14px}
+.seg{display:flex;border:1px solid var(--line-2);border-radius:2px;overflow:hidden}
+.seg button{flex:1;padding:9px 6px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;font-size:12px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#000}
+.chk{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:14px;color:var(--ink-2);cursor:pointer}
+.chk input{width:16px;height:16px;accent-color:var(--ink);margin:0}
+.hint-row{font-size:12px;color:var(--muted);margin-top:10px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line-3);border-radius:2px;padding:10px 16px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:12px;color:var(--ink);background:transparent;transition:background .15s,color .15s}
+.btn:hover{background:rgba(255,255,255,.06)}
+.btn.primary{background:var(--ink);color:#000;border-color:var(--ink)}
+.btn.primary:hover{background:#fff}
+.btn.danger{border-color:rgba(255,77,61,.5);color:var(--bad)}
+.btn.sm{padding:6px 10px;font-size:11px}
+.btn[disabled]{opacity:.35;cursor:not-allowed}
+.btn:focus-visible{outline:1px solid var(--ink);outline-offset:2px}
+.icon-btn{width:34px;height:34px;display:grid;place-items:center;color:var(--muted);border:1px solid var(--line);border-radius:2px}
+
+/* extras */
+.extras{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.extra{display:grid;grid-template-columns:1fr 130px 34px;gap:12px;align-items:end}
+
+/* summary */
+.readout{padding:14px 0 10px;border-bottom:1px solid var(--line)}
+.readout .lbl{color:var(--muted)}
+.readout .big{font-family:var(--display);font-weight:700;font-size:64px;line-height:.95;letter-spacing:.005em;margin-top:6px;font-variant-numeric:tabular-nums}
+.readout .sub{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:8px}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;font-size:14px}
+.kv .k{color:var(--ink-2)}
+.kv .v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.kv.tot{border-top:1px solid var(--line-2);margin-top:6px;padding-top:10px;font-weight:600}
+.kv.tot .v{font-size:20px;font-family:var(--display);font-weight:600}
+.kv.dim .k,.kv.dim .v{color:var(--muted);font-size:12px}
+.block{padding:10px 0;border-bottom:1px solid var(--line)}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:2px;padding:3px 8px;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.pill.good{background:var(--good-dim);color:var(--good)} .pill.warn{background:var(--warn-dim);color:var(--warn)} .pill.bad{background:var(--bad-dim);color:var(--bad)} .pill.neutral{background:rgba(255,255,255,.08);color:var(--muted)}
+details.bd{border-bottom:1px solid var(--line)}
+details.bd summary{cursor:pointer;padding:12px 0;font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-2);list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.bd summary::-webkit-details-marker{display:none}
+details.bd summary::after{content:"+";font-family:var(--mono);color:var(--muted);font-size:16px}
+details.bd[open] summary::after{content:"–"}
+.grp{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0 4px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.grp .v{font-family:var(--mono);letter-spacing:0;color:var(--ink-2);font-size:13px}
+.line{display:grid;grid-template-columns:1fr auto;gap:12px;padding:5px 0;border-top:1px solid var(--line);font-size:13px}
+.line .n{color:var(--faint);font-size:11px;font-family:var(--mono);margin-top:1px}
+.line .v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.actions{display:flex;gap:10px;padding:14px 0;flex-wrap:wrap}
+.actions .btn{flex:1}
+.note{font-size:12px;color:var(--muted);padding-bottom:12px}
+
+/* bench bars */
+.bench{padding:6px 0 12px}
+.bench .row{display:grid;grid-template-columns:120px 1fr 70px;gap:10px;align-items:center;padding:6px 0;font-size:12px}
+.bench .row .k{color:var(--ink-2);letter-spacing:.06em;text-transform:uppercase;font-size:11px}
+.bench .row .v{font-family:var(--mono);text-align:right}
+.bar{position:relative;height:6px;background:rgba(255,255,255,.08)}
+.bar .rng{position:absolute;top:0;bottom:0;background:rgba(255,255,255,.22)}
+.bar .med{position:absolute;top:-3px;width:1px;height:12px;background:var(--ink)}
+.bar .you{position:absolute;top:-5px;width:10px;height:16px;background:var(--ink);transform:translateX(-5px)}
+.bar .you.good{background:var(--good)} .bar .you.warn{background:var(--warn)} .bar .you.bad{background:var(--bad)}
+.legend{display:flex;gap:16px;font-size:11px;color:var(--muted);padding-top:8px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;vertical-align:-1px;margin-right:5px}
+
+/* tables */
+.thead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;padding-block:16px 8px}
+.thead h2{font-family:var(--display);font-weight:600;font-size:20px;letter-spacing:.14em;text-transform:uppercase}
+.thead .sub{font-size:12px;color:var(--muted);max-width:70ch}
+.thead .btns{display:flex;gap:8px;flex-wrap:wrap}
+.search{background:transparent;border:1px solid var(--line-2);border-radius:2px;padding:9px 12px;font-size:14px;width:100%;max-width:380px}
+.search:focus{outline:none;border-color:var(--ink)}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{text-align:left;font-family:var(--body);font-weight:500;letter-spacing:.14em;text-transform:uppercase;font-size:10px;color:var(--muted);padding:8px 8px;border-bottom:1px solid var(--line-2);white-space:nowrap;position:sticky;top:52px;background:var(--bg)}
+table.t td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.t td.n{font-family:var(--mono);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.t td.n.dim{color:var(--faint)}
+table.t td .sku{font-family:var(--mono);font-size:11px;color:var(--faint)}
+table.t td .src{font-size:11px;color:var(--faint)}
+table.t tr.hi td{background:rgba(255,255,255,.03)}
+table.t .edit{width:96px;background:transparent;border:0;border-bottom:1px solid var(--line-2);font-family:var(--mono);font-size:13px;text-align:right;padding:4px 2px;color:var(--ink)}
+table.t .edit:focus{outline:none;border-bottom-color:var(--ink)}
+table.t .edit.changed{color:var(--warn);border-bottom-color:var(--warn)}
+.tag{display:inline-block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:2px 6px;border:1px solid var(--line-2);border-radius:2px;color:var(--muted);white-space:nowrap}
+.tag.live{border-color:rgba(61,220,132,.5);color:var(--good)}
+.tag.list{border-color:rgba(245,176,44,.5);color:var(--warn)}
+.group-h{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-2);padding:18px 0 6px;border-bottom:1px solid var(--line-2);margin-top:6px}
+
+/* rate cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;padding-block:8px 16px}
+.rc{border:1px solid var(--line);border-radius:2px;padding:14px 14px 10px;background:var(--panel)}
+.rc h3{font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:.06em;text-transform:uppercase}
+.rc .who{font-size:12px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.rc .kv{padding:5px 0;border-top:1px solid var(--line);font-size:13px}
+.rc .kv:first-of-type{border-top:0;margin-top:8px}
+.rc .kv .k{color:var(--ink-2)}
+.rc .kv .v input{width:84px}
+.rc .src{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.4}
+
+/* saved jobs */
+.jrow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding:12px 0;cursor:pointer}
+.jrow:hover .t{color:#fff}
+.jrow .t{font-weight:600;font-size:15px}
+.jrow .m{font-size:12px;color:var(--muted);margin-top:2px}
+.jrow .r{text-align:right;font-family:var(--mono);font-size:13px}
+.jrow .r > div{margin-top:3px}
+.empty{color:var(--muted);padding:32px 0;text-align:center;letter-spacing:.06em}
+
+/* history */
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0;border:1px solid var(--line);border-radius:2px;margin-top:14px;overflow:hidden}
+.stat{padding:14px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel)}
+.stat .v{font-family:var(--display);font-weight:600;font-size:34px;line-height:1;margin-top:6px;font-variant-numeric:tabular-nums}
+.stat .s{font-size:12px;color:var(--muted);margin-top:6px}
+.stat .r{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:6px}
+.prose{max-width:70ch;color:var(--ink-2);font-size:14px}
+.prose p{margin:8px 0}
+.callout{border-left:2px solid var(--accent);padding:8px 12px;margin:14px 0;color:var(--ink-2);font-size:13px}
+
+/* dock */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:rgba(0,0,0,.92);backdrop-filter:blur(10px);border-top:1px solid var(--line-2);padding:10px 16px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));display:none;align-items:center;justify-content:space-between;gap:12px}
+.dock .big{font-family:var(--display);font-weight:700;font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.dock .s{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.dock .m{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+@media (max-width:960px){.dock.show{display:flex}}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#000;padding:10px 16px;border-radius:2px;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion: reduce){.toast,.in,.btn{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="co">DFW Roofing Pro</div>
+      <h1>Hard Cost <b>Command</b></h1>
+    </div>
+    <div id="syncChip" class="status connecting"><span class="dot"></span><span id="syncText">Connecting</span></div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-job" aria-selected="true" data-tab="job">Cost a job</button>
+    <button role="tab" id="tab-abc" aria-selected="false" data-tab="abc">ABC catalog</button>
+    <button role="tab" id="tab-subs" aria-selected="false" data-tab="subs">Sub rate cards</button>
+    <button role="tab" id="tab-jobs" aria-selected="false" data-tab="jobs">Saved jobs</button>
+    <button role="tab" id="tab-bench" aria-selected="false" data-tab="bench">History</button>
+  </nav>
+
+  <main>
+    <section id="panel-job" role="tabpanel">
+      <div class="lookup" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)"><label for="lkNum" style="font-weight:700;letter-spacing:.02em">Job #</label><input class="in" id="lkNum" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 8424" style="max-width:150px"><button class="btn" id="lkGo" type="button">Pull from Lynx</button><span id="lkMsg" style="font-size:14px;color:var(--muted);flex:1 1 260px">Type a job number. It fills the customer, rep and claim numbers from Lynx.</span></div>
+      <div class="hud" id="hud"></div>
+      <div class="grid">
+        <div class="inputs" id="jobForm"></div>
+        <aside class="summary" id="summary"></aside>
+      </div>
+    </section>
+
+    <section id="panel-abc" role="tabpanel" hidden>
+      <div class="thead">
+        <div>
+          <h2>ABC Supply catalog</h2>
+          <div class="sub">Every product with the price you actually paid, by date. <b>Current</b> is what the next order will cost — edit it if Ethan sends a new number. Green = confirmed on an invoice or order ack; amber = from the April 13 price list only (contract usually runs 5–8% under it).</div>
+        </div>
+        <div class="btns">
+          <input class="search" id="abcSearch" type="search" placeholder="Search SKU or product…" aria-label="Search catalog">
+          <button class="btn" id="pbReset">Reset to invoices</button>
+          <button class="btn primary" id="pbSave" disabled>Save price book</button>
+        </div>
+      </div>
+      <div id="abcBody"></div>
+    </section>
+
+    <section id="panel-subs" role="tabpanel" hidden>
+      <div class="thead">
+        <div>
+          <h2>Sub rate cards</h2>
+          <div class="sub">Rates exactly as invoiced, per vendor. Edit any number; the job calculator uses whichever crew you pick.</div>
+        </div>
+        <div class="btns"><button class="btn primary" id="pbSave2" disabled>Save price book</button></div>
+      </div>
+      <div id="subsBody"></div>
+    </section>
+
+    <section id="panel-jobs" role="tabpanel" hidden>
+      <div class="thead">
+        <div><h2>Saved jobs</h2><div class="sub" id="jobsCount"></div></div>
+        <input class="search" id="jobSearch" type="search" placeholder="Customer, address, rep…" aria-label="Search saved jobs">
+      </div>
+      <div id="jobsList"></div>
+    </section>
+
+    <section id="panel-bench" role="tabpanel" hidden>
+      <div id="benchBody"></div>
+    </section>
+  </main>
+</div>
+
+<div class="dock" id="dock">
+  <div><div class="s">Hard cost</div><div class="big" id="dockTotal">$0</div></div>
+  <div style="text-align:right"><div class="m" id="dockSub">—</div><div id="dockPill"></div></div>
+  <button class="btn sm" id="dockJump">Summary</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ===================== ABC SUPPLY — what you actually paid, by SKU ===================== */
+/* hist keys: mar = March 2026 COD tickets · jul = July 28 2026 rebills (contract) · aug = order ack 2012829235 (PO 8296, 8/3/26) · sep = order ack 2013897631 (PO 8412, 9/1/26). sheet = customer price list 4/13/26 (Shop acct). cur = price used by the calculator. */
+const ABC_CORE = [
+  {k:'sh_cambridge', sku:'02IKCA3A', desc:'IKO Cambridge AR (architectural) — 3 bdl/sq', uom:'SQ', hist:{dec25:92, jul:99, aug:95, sep:95}, sheet:99, cur:95, cls:'arch'},
+  {k:'sh_3tab', sku:'01IKAM25', desc:'IKO Marathon 25-yr 3-tab (cut for caps) — 3 bdl/sq', uom:'SQ', hist:{mar:90, aug:97, sep:97}, sheet:97, cur:97, cls:'3tab'},
+  {k:'cap_hr', sku:'04IKHA12', desc:'IKO Hip & Ridge 12" — 33 LF/bdl', uom:'BD', hist:{mar:65, jul:74}, sheet:92, cur:74, cov:33},
+  {k:'starter', sku:'04GAPST', desc:'GAF Pro-Start starter — 120.33 LF/bdl', uom:'BD', hist:{jul:42, aug:40, sep:40}, sheet:42, cur:40, cov:120},
+  {k:'ul_syn', sku:'05ABCPG20', desc:'ABC Pro Guard 20 synthetic — 10 sq/roll', uom:'RL', hist:{mar:57, jul:65, aug:62.5, sep:62.5}, sheet:65, cur:62.5, cov:10},
+  {k:'iws', sku:'11IWRRGU2', desc:'Rhinoroof granulated self-adhered ice & water — 2 sq/roll', uom:'RL', hist:{jul:73.5, aug:67.5, sep:67.5}, sheet:73.5, cur:67.5, cov:60},
+  {k:'drip', sku:'GDEW3015', desc:'Galv drip edge 1-1/2" woodgrain — 10\' stick', uom:'PC', hist:{mar:3.64, jul:5.25, aug:4.5, sep:4.5}, sheet:5.25, cur:4.5},
+  {k:'nails', sku:'0150080011', desc:'Coil nails 1-1/4" EG — box', uom:'BX', hist:{mar:34, jul:45, aug:41.75, sep:40}, sheet:45, cur:40, cov:20},
+  {k:'capnails', sku:'0150080102', desc:'Plastic cap nails 1" — 2M box', uom:'BX', hist:{mar:15, jul:19.75, aug:16.75, sep:16.75}, sheet:19.75, cur:16.75, cov:20},
+  {k:'boot', sku:'141P81711', desc:'IPS 4N1 galv pipe flashing', uom:'PC', hist:{jul:9.25, aug:7.75, sep:7.75}, sheet:null, cur:7.75},
+  {k:'boxvent', sku:'17AVRVG55', desc:'Air Vent RVG-55 slant-back (750) galv', uom:'PC', hist:{jul:23, aug:23, sep:23}, sheet:null, cur:23},
+  {k:'versacap', sku:'17MIAVC35', desc:'Versa cap 3"–5" (gas B vent)', uom:'PC', hist:{mar:21, jul:27, aug:24.5}, sheet:27, cur:24.5},
+  {k:'turbine', sku:'17LOBE12', desc:'Lomanco BEB-12 12" whirlybird turbine', uom:'PC', hist:{mar:63, jul:73}, sheet:69, cur:73},
+  {k:'venturi', sku:'17AVVPN', desc:'Airvent Venturi Vent Plus w/nails', uom:'PC', hist:{sep:13}, sheet:13.5, cur:13},
+  {k:'caulk', sku:'30MINP196', desc:'MasterSeal NP1 sealant 300 ml', uom:'TB', hist:{mar:5.75, jul:6.75, aug:6.5, sep:6.5}, sheet:null, cur:6.5},
+  {k:'paint', sku:'200663243', desc:'Rust-Oleum accessory paint 12 oz', uom:'CN', hist:{mar:5.75, jul:6.75, aug:6.25, sep:6.25}, sheet:6.75, cur:6.25},
+  {k:'delivery', sku:'DELIVERYBR', desc:'Delivery — DFW jobs (Tyler-local ran $50 on 9/1)', uom:'EA', hist:{mar:75, aug:85, sep:50}, sheet:130, cur:85},
+  {k:'skylight', sku:'91BVC242BC', desc:'Birdview CM 24x24 curb-mount skylight', uom:'EA', hist:{sep:182.7}, sheet:null, cur:182.7},
+  {k:'vx25', sku:'17MIVIS', desc:'Ventamatic VX25 15" galv vent', uom:'PC', hist:{mar:41.6}, sheet:null, cur:41.6},
+  {k:'sla', sku:'17AVSBA', desc:'Air Vent SLA aluminum slant-back', uom:'PC', hist:{mar:13}, sheet:20, cur:13},
+  {k:'broan', sku:'72671500060', desc:'Broan #636 4" roof cap w/damper', uom:'PC', hist:{mar:32.95}, sheet:null, cur:32.95},
+  {k:'bdvent', sku:'17AVBDVENT', desc:'Airvent bath/dryer roof vent', uom:'PC', hist:{mar:18.86}, sheet:null, cur:18.86},
+  {k:'cap_tamko', sku:'04TKAHR', desc:'Tamko AR hip & ridge — 33.3 LF/bdl', uom:'BD', hist:{mar:85}, sheet:86.71, cur:85, cov:33},
+  {k:'sh_ctflex', sku:'03CTLCF3', desc:'CT Landmark ClimateFlex IR AR (Class 4)', uom:'SQ', hist:{jul:150}, sheet:157.38, cur:150, cls:'ir'},
+  {k:'cap_ctflex', sku:'04CTSHCF', desc:'CT Shadow Ridge ClimateFlex H&R 12" — 30 LF/bdl', uom:'BD', hist:{jul:85}, sheet:123.18, cur:85, cov:30},
+  {k:'lumber2x4', sku:'312NS', desc:'SYP #2 2x4x10 lumber', uom:'EA', hist:{mar:8.84}, sheet:null, cur:8.84},
+];
+/* Other shingles & accessories you might spec — April 13 2026 price list (Shop acct). Contract has run 5–8% under list. */
+const ABC_SHINGLE_LIST = [
+  ['sh_dynasty','02IKDYARDS','IKO Dynasty AR',110,'arch'],['sh_nordic','02IKNDCDS','IKO Nordic (Class 4)',145,'ir'],['sh_hdz','02GASTZ3WW','GAF Timberline HDZ',134.59,'arch'],['sh_armorshield','03GAAS2WW','GAF Armorshield II (Class 4)',145,'ir'],
+  ['sh_duration','02OCTDUDW','OC TruDef Duration',132.51,'arch'],['sh_durstorm','02OCTSTDW','OC TruDef Duration Storm (Class 4)',149,'ir'],['sh_heritage','02TKFH2WW','Tamko Heritage',103,'arch'],['sh_titan','02TKTXTWW','Tamko Titan XT',125.83,'arch'],
+  ['sh_stormfighter','02TKSFF4WW','Tamko StormFighter Flex (Class 4)',157.38,'ir'],['sh_landmark','02CTLA30WW','CertainTeed Landmark',131.95,'arch'],['sh_vista','02MLVIA3WW','Malarkey Vista AR (Class 4)',143.38,'ir'],['sh_royalestate','03IKRE3HV','IKO Royal Estate (designer)',238.44,'designer']
+];
+const SHEET = [["04IKLEP118","Leading Edge Starter 118LF",null,"BD"],["01MLDA25WW","Mal Duraseal",null,"SQ"],["01TKFRELWW","TAMKO AR Elite",102.0,"SQ"],["02MLHLXAWW","Mal Highlander",132.02,"SQ"],["02TKFH2WW","Tamko Heritage",103.0,"SQ"],["04MLEZXTWW","Mal EZ Ridge XT",138.51,"BD"],["04TK10SS","10\" Starter Shingle 100LF/BD",72.29,"BD"],["04TKAHRWW","TAMKO AR H&R (33.3LF)",86.71,"BD"],["01CTA25WW","CT AR XT25",113.4,"SQ"],["02CTLA30WW","CT Landmark",131.95,"SQ"],["01GAERYWY","GAF Royal Sovereign",123.72,"SQ"],["02CTPAAW","Cert Patriot",122.45,"SQ"],["02GASTNSWW","GAF Timb Natural Shadow",119.38,"SQ"],["03CTLP3WWM","CT Landmark Pro AR",152.73,"SQ"],["02GASTZ3WW","GAF Timberline HDZ",134.59,"SQ"],["03CTBMBG","CT Belmont AR",null,"SQ"],["02GASTZ3HC","GAF Timb HDZ Harvest",134.59,"SQ"],["03CLFPTLWW","Cert AR President TL",null,"SQ"],["03GATUHZWW","GAF Timb Ultra HDZ",146.51,"SQ"],["04CTSWST","Cert SwiftStart Starter 116'4\"",73.8,"BD"],["04GAZRWW","GAF Z-Ridge (33LF)",97.24,"BD"],["04CTCCWW","CT Cedar Crest H&R",106.66,"BD"],["04GASR2CH","GAF Seal-A-Ridge (25LF)",83.11,"BD"],["04GAPST","GAF Pro-Start Starter 120.33LF",42.0,"BD"],["04CTHRSWW","CT Shangle Ridge (10LF)",105.5,"BD"],["04CTPRSTWW","CERT Pres Starter 36LF",130.5,"BD"],["04GATXCH","Timbertex 20LF",95.91,"BD"],["04CT10SHP","CERT 10\" Starter High Perform 102LF",154.13,"BD"],["04GAWBL100","Weatherblocker (100LF)",119.38,"BD"],["04GASCSWW","GAF Startermatch (60LF)",141.95,"BD"],["01OCSUDW","OC Supreme",112.87,"SQ"],["02TKTXTWW","Tamko Titan XT",125.83,"SQ"],["02OCO25ADW","OC Oakridge",122.68,"SQ"],["02TKSFF4WW","Tamko StormFighter FLEX (Class 4)",157.38,"SQ"],["02OCTDOADW","OC TruDef Oakridge",127.65,"SQ"],["04TKHIHRWW","TAMKO Heritage IR H&R 33.3LF",null,"BD"],["02OCTDUDW","OC TruDef Duration",132.51,"SQ"],["03CTLCF3MB","CT Landmark ClimateFlex IR AR",157.38,"SQ"],["04OCSSS","OC Starter Strip Shingle (105LF)",69.46,"BD"],["03CTBMIRWW","CT Belmont IR AR",246.3,"SQ"],["04OCAPEDW","OC Proedge AR 33LF",103.7,"BD"],["03CTPRIRWW","CT President IR AR",287.09,"SQ"],["04OCARZDW","OC Rizeridge AR 33LF",115.35,"BD"],["04CTCIWW","CT Cedar Crest IR H&R",106.66,"BD"],["04OCADRDW","OC Duraridge (20LF)",null,"BD"],["04CTSHCFWW","CT Shadow Ridge ClimateFlex AR H&R 12\"",123.18,"BD"],["02OCTSTDW","OC TruDef Duration Storm (IR)",149.0,"SQ"],["02OCTDFADW","OC TruDef Dura Flex AR",null,"SQ"],["01ATGM25WW","Atlas Glassmaster",116.97,"SQ"],["04OCIRARDW","OC ImpactRidge AR",139.4,"BD"],["02ATP42PWW","Atlas Pinnacle Pristine w/SG HP42",124.33,"SQ"],["02ATPIWW","Atlas Pinnacle Impact SG",141.08,"SQ"],["02ATPL42WW","Atlas Prolam",116.39,"SQ"],["02MLVIA3WW","Malarkey Vista AR (Class 4)",143.38,"SQ"],["04ATSSHP42","Atlas Pro-Cut Starter 140LF",81.66,"BD"],["03MLLAWW","Malarkey Legacy",162.78,"SQ"],["04ATPCHPWW","Atlas Pro-Cut HI Profile H&R 20LF",119.12,"BD"],["03GAAS2WW","GAF Armorshield II (Class 4)",145.0,"SQ"],["03GASIGSWW","GAF SG Grand Sequoia ArmorShield",318.88,"SQ"],["04GASRAWW","GAF SG Seal-A-Ridge ArmorShield 25LF",109.0,"BD"],["01IKAM25WW","IKO Marathon 25YR (3-tab)",97.0,"SQ"],["02IKDYARDS","IKO Dynasty AR",110.0,"SQ"],["02IKCA3AWW","IKO Cambridge AR",99.0,"SQ"],["02IKNDCDS","IKO Nordic (Class 4)",145.0,"SQ"],["03IKRE3HV","IKO Royal Estate",238.44,"SQ"],["03IKASAWS","IKO AR Armourshake",null,"SQ"],["04IKHA26DW","IKO AR Hip & Ridge 12",92.0,"BD"],["04IKUHPWW","IKO Ultra HP 20LF",null,"BD"],["17MIAVC79","Versa Cap 7\" to 9\"",83.0,"PC"],["0150080102","Nail ABC Plastic Cap 1\" 2M/BX",19.75,"BX"],["17LO550ML","550/RVG 51 Low Profile Vent Mill & Painted",24.0,"PC"],["0150080122","Nail ABC Plastic Cap 1\" 3M/Pail",25.0,"PA"],["17AVSBAWW","750/SLA Slant Back Vent Mill & Painted",20.0,"PC"],["0150080011","Coil Nail ABC 1-1/4\" EG",45.0,"BX"],["17LO135BK","Lomanco 135 Static Vent",79.0,"PC"],["0150080022","Nail 1-1/4\" EG Roof 50#/BX",99.99,"BX"],["17AVB144BK","Airvent Galv Vent B144",62.72,"PC"],["50PSPLCL76","Deck Clips 250/BX",32.99,"BX"],["17LO2000BZ","Lomanco 2000 Power Vent",195.0,"EA"],["0150080071","8D Sinker 50#/Box",143.13,"BX"],["17SLBE12ML","Airvent 12\" Turbine Mill & Painted",69.0,"PC"],["17LOBE12BR","Lomanco 12\" Turbine (BEB-12) Mill & Painted",69.0,"PC"],["05MI486915","15# Felt ASTM 4869 4SQ/RL",null,"RL"],["17LOBE14BK","Lomanco 14\" Turbine Mill & Painted",72.0,"PC"],["11TRICECR2","Tarco Ice & Water MS300 2SQ",98.99,"RL"],["17GARC3","GAF Cobra Rigid Vent 3 12\" (4')",20.75,"PC"],["05MIMRMFNC","Max Roof MaxFelt 10SQ w/Nails",85.99,"RL"],["17OCVS4N","OC Ventsure 12\"x4' Strip",23.5,"PC"],["05ABCPG20","ABC Pro Guard 20 Synthetic 10SQ w/Nails",65.0,"RL"],["9106932363","Leakbarrier UDL15 10SQ",98.99,"RL"],["17ATTRWN4","Atlas TruRidge 4' w/Nail",20.75,"PC"],["11IWRRGU2","Rhinoroof Granulated Self-Adhered 2SQ/RL",73.5,"RL"],["17AVVPN","Airvent Venturi Vent Plus w/Nails",13.5,"PC"],["11ATSUM60","Atlas Summit 60 10SQ",123.99,"RL"],["17KESFR36Z","Kennedy Solar Attic Fan 36W",null,"PC"],["11ATSUM10","Atlas Summit 180 10SQ",null,"RL"],["11ATWMI200","Atlas Weathermaster 200",141.99,"RL"],["05CTSRR10","CertainTeed RoofRunner Syn 10SQ",140.99,"RL"],["GDEW3015BK","Galv Drip Edge 1-1/2\" x 1-1/2\" 10' (1x2)",5.25,"PC"],["05GAFBSR10","GAF FeltBuster 10SQ",147.99,"RL"],["11GASG2","GAF StormGuard 2SQ/RL",148.99,"RL"],["MGEV11232","1-1/2 x 1-1/2 Drip Edge Painted",null,"PC"],["11GATP10","GAF TigerPaw 10SQ",304.99,"RL"],["GDEW3022BR","2x2 \"True Size\" Drip Edge Painted",9.0,"PC"],["11IKSS","IKO StormShield Ice & Water",149.99,"RL"],["11OCPROA10","OC ProArmor Syn 10SQ",146.99,"RL"],["MGBF94428","4\"x4\"x10' Galv Base Flashing",25.25,"PC"],["11OCDDEF10","OC Deck Defense 10SQ",282.99,"RL"],["MGSS448","Step Shingle Flashing 4x4x8\" 100/BD",78.5,"BD"],["11OCWLM2","OC WeatherLock 2SQ",163.99,"RL"],["MGRV205032","Galv Roll Valley 20\"x50'",180.5,"RL"],["05MLSYUN10","Malarkey Secure Start Syn 10SQ",null,"RL"],["MGRV245030","Galv Roll Valley 24\"x50'",null,"RL"],["GWV2624BK","Galv W Valley 26GA 24\"",null,"PC"],["14MILF152","1-1/2\" Lead Flashing 2.5#",19.99,"PC"],["0170030005","Spray Paint",6.75,"CN"],["14MILF202T","2\" Lead Flashing 2.5# Tallcone",21.99,"PC"],["30MHJTS1CL","MH JTS1 Joint/Term Sealant 10oz Clear",8.64,"TB"],["14MILF302T","3\" Lead Flashing 2.5# Tallcone",28.94,"PC"],["30MHJTS1BK","MH JTS1 Joint/Term Sealant 10oz Black",6.57,"TB"],["17DMBB15BK","1-1/2\" Bullet Boot",28.69,"PC"],["04RR10WW","Rapid Ridge 10\" 20LN",110.0,"BD"],["17DMBB2BK","2\" Bullet Boot",40.99,"PC"],["06MHSASWW","MH SA-SBS Cap Sheet 1SQ/RL",131.07,"RL"],["17DMBB3BK","3\" Bullet Boot",35.99,"PC"],["DM6RJAPWW","6\" Roof Jack w/Adj Pitch",null,"PC"],["06MHSAB","MH SA Base Sheet 2SQ/RL",140.36,"RL"],["17DMRJ8GV","8\" Roof Jack w/Adj Pitch",51.99,"PC"],["06MHSANB","MH Nail Base 2SQ/RL",141.43,"RL"],["MGGGM630","6\" Gravel Guard",18.5,"PC"],["MGCFS626","6\" Counter Flashing Saw Joint 10'",27.0,"PC"],["17MIAVC35","Versa Cap 3\" to 5\"",27.0,"PC"],["17MIAVC57","Versa Cap 5\" to 7\"",35.0,"PC"]];
+const CITIES = {'Garland':60,'McKinney':200,'Dallas':181,'Arlington':325,'Wylie':50,'Anna':160,'Mesquite':65,'Rowlett':60,'Plano':75,'Princeton':90,'Frisco':153,'Allen':150,'Lancaster':100,'Waxahachie':75,'Seagoville':100,'Melissa':92};
+
+/* ===================== SUBS — rate cards exactly as invoiced ===================== */
+const CREWS = {
+  thr:{name:'Texas Home Repair', who:'Servando Luises · 469-401-6460 · luisesroofing@gmail.com', base:65, base_note:'tear-off to decking + install, measured squares (incl. starter & H&R conversion) · first layer of felt included', feltFirst:false, felt:5, steep1:5, steep2:5, story:0, deck:20, ridge:3, cancel:0, wood:2, trip:0, src:'INV0571 · INV0572 · INV0580 · INV0581 · INV0582 (Aug 12 – Sep 10, 2026); DFW Labor PO 8339 & 721 Poinsettia'},
+  omar:{name:'Omar Alvarez', who:'214-926-1271 · oalvarez263@gmail.com', base:65, base_note:'$65/sq DFW · $80/sq Tyler-area jobs · first layer of felt included', feltFirst:false, felt:5, steep1:0, steep2:25, story:0, deck:20, ridge:0, cancel:0, wood:0, trip:0, src:'303 Chicken St (46 sq × $65, 9/3/26) · 1903 Royal Oaks, Tyler (74.66 sq × $80, 12/12 +$25/sq, 3-layer felt $10/sq, 7/30/26)'},
+  will:{name:'Will Moore The Roofer', who:'903-985-9961 · Allen, TX', base:70, base_note:'squares installed · felt charged from the first layer ($5/sq)', feltFirst:true, felt:5, steep1:5, steep2:45, story:0, deck:20, ridge:1, cancel:25, wood:0, trip:25, src:'Inv 6, 8, 9, 11, 12 & change order (Aug 24 – Sep 9, 2026): ridge vent $1/lf, cancel turbines $25, trip $25, felt-only tarp job $250, decking $20 (once $60), crew-supplied materials at cost'},
+  rr3:{name:'R&R3 LLC', who:'Ricardo Licea · 972-863-1041 (Zelle)', base:90, base_note:'steep roofs 9/12–11/12, all-in incl. 3-layer felt removal', feltFirst:false, felt:0, steep1:0, steep2:0, story:0, deck:20, ridge:0, cancel:0, wood:0, trip:0, src:'Inv 183 (42 sq × $90, 11/12) · Inv 184 (48 sq × $90, 9/12, 3 layers) — 7/30/26'},
+};
+const SUBS = [
+  {g:'Solar', k:'solar_panel', label:'Solar panel detach & reset — Blue Construction (Abram Juarez)', unit:'$/panel', def:125, src:'Blake 7/29/26: "We pay $125 a panel." Abram bills $150 (inv 1085: 20 panels $3,000; inv 1090: $1,800 + $2,800 R&R). AccuLynx: 35 jobs, median $4,000'},
+  {g:'Solar', k:'solar_alt', label:'Solar detach & reset — JMW Solar Repair (backup)', unit:'$/panel', def:130, src:'JMW pricing sheet 4/30/26: $130/panel · 2-story +$10/panel · critter guard $16/ft · troubleshooting $125/hr'},
+  {g:'Gutters', k:'gut_lf', label:'5" seamless gutters + 2x3 downspouts — Flowers Gutters', unit:'$/lf', def:4.00, src:'Inv 3165 13919 Vida: 246 + 177 = 423 lf = $1,692 · Inv 3153 Wisterwood: 326 lf = $1,304 · Inv 3174 Vista Park: 367 lf = $1,468 (corners, offsets, valley shields count as lf)'},
+  {g:'Gutters', k:'gut_guard', label:'Leaf guard — Flowers', unit:'$/lf', def:3.00, src:'Inv 3181 Willowood: $847 − 145 lf × $4 = $267 ÷ 89 lf'},
+  {g:'Gutters', k:'gut_blaster', label:'Leaf Blaster micro-mesh — Flowers (derived)', unit:'$/lf', def:8.50, src:'Inv 3024 Shady Oaks: $4,830 − 478 lf × $4 − 51 lf 6" ≈ $8.50/lf'},
+  {g:'Gutters', k:'gut_min', label:'Small-job minimum — Flowers', unit:'$/job', def:150, src:'Inv 3157 Badger Run: 13 lf downspout = $150 · Inv 3025 Spurcross: 35 lf = $230'},
+  {g:'Screens & glass', k:'screen', label:'Window screen — Mesquite Glass & Window', unit:'$/ea', def:40, src:'AccuLynx paid-outs in $40 multiples (64 jobs, median $362)'},
+  {g:'Fence & paint', k:'stain_sqft', label:'Fence wash & stain — Silva Home Solutions (Cody)', unit:'$/sqft', def:0.55, src:'Alexandria: 2,576 sqft × $0.55 = $1,416.80 (9/4/26) · flat quotes $400 (720 sqft) and $1,008 (1,680 sqft)'},
+  {g:'Fence & paint', k:'stain_r3', label:'Fence clean & stain — R3 Fence Restoration (Jerry), per job', unit:'$/job', def:1409.80, src:'Inv 112: 1201 Pheasant Run $1,409.80 · 721 Poinsettia $600 (Sep 2026)'},
+  {g:'Fence & paint', k:'paint_small', label:'Interior water-damage repair, small — Garcia\'s Painting', unit:'$/job', def:200, src:'Inv 1129 4169 Coral Springs $200 (9/3/26)'},
+  {g:'Fence & paint', k:'paint_med', label:'Interior repair, bath + hallway — Garcia\'s', unit:'$/job', def:650, src:'Inv 1128 13629 Choctaw $650 (9/3/26) · siding repair $450 (Tanur Cascade) · AccuLynx median $750'},
+  {g:'Garage', k:'garage', label:'16x7 garage door installed — Gallardo\'s Garage Doors', unit:'$/ea', def:1200, src:'Inv 000961 Willowood · Inv 000953 Moonglade · Pugh estimate. 4% card fee if paid by card — pay by check'},
+  {g:'Garage', k:'garage_ins', label:'Insulation kit 16x7 — Gallardo\'s', unit:'$/ea', def:300, src:'Inv 000953 (9/10/26)'},
+  {g:'Inspections & claims', k:'inspection', label:'Inspection — Summit (Ashton Norrell) / CROB / Beraru', unit:'$/ea', def:100, src:'Summit INV-000031: 14 inspections × $100, reinspection $100, trip fee $50 (Jun–Jul 26)'},
+  {g:'Inspections & claims', k:'reinspect', label:'Re-inspection — Summit', unit:'$/ea', def:100, src:'INV-000031'},
+  {g:'Inspections & claims', k:'supp_fee', label:'Supplement write-up — CROB (Chad Roberts) / Mike Taylor / Invictus', unit:'$/supp', def:150, src:'CROB INV-000137: 24 supplements × $150 (8/10/26) · Mike Taylor $150 × 205 in AccuLynx'},
+  {g:'Inspections & claims', k:'appraisal', label:'Appraisal — Claim Experts / WM Contracting (Teresa Garza)', unit:'$/job', def:2000, src:'AccuLynx: Claim Experts $1,000–$3,000, median $2,000 (92 × $2,000)'},
+  {g:'Inspections & claims', k:'measure', label:'Roofr measurement report', unit:'$/job', def:14, src:'AccuLynx: 198 × $14 (EagleView $55–81)'},
+  {g:'Materials elsewhere', k:'deck_mat', label:'7/16 OSB sheet — Home Depot', unit:'$/sheet', def:14.05, src:'AccuLynx 9/4/26: 2 sheets $28.10'},
+  {g:'Permits', k:'permit_default', label:'Permit when city not listed', unit:'$/job', def:150, src:'AccuLynx city paid-outs (see History for each city)'},
+  {g:'Business', k:'tax', label:'Sales tax on ABC materials', unit:'%', def:8.25, src:'every ABC ack'},
+  {g:'Business', k:'rebate', label:'ABC 2026 rebate accrual (retro to $1)', unit:'%', def:4, src:'Dakota 12/12/25: 4% at $1M+, 6% at $3.5M+ (excludes low-slope & new-con siding)'},
+  {g:'Business', k:'waste_default', label:'Default shingle waste', unit:'%', def:10, src:'your PO standard'},
+  {g:'Business', k:'target_net', label:'Target net margin after commission', unit:'%', def:45, src:'your history: 46% median'},
+  {g:'Business', k:'fee_card', label:'Card processing fee (off commission basis)', unit:'%', def:4, src:'9/18/26 commission report: CC payments × 0.96'},
+  {g:'Business', k:'fee_ach', label:'ACH fee (off commission basis)', unit:'%', def:1, src:'9/18/26 commission report: ACH payments × 0.99'},
+  {g:'Business', k:'sales_base_wk', label:'Weekly sales base pay (managers + reps)', unit:'$/wk', def:18000, src:'Aly 9/15/26: Mike $10,000 + Richard $2,000 + Kaden $1,500 + 6 reps × $750'},
+  {g:'Business', k:'office_base_wk', label:'Weekly office & field W-2 pay', unit:'$/wk', def:8642, src:'Gusto 9/20/26: Alexandra Sinks $3,000 · Dean Madison $75,000/yr ($1,442) · Thomas Harris (Field Project Mgr) $1,600 · Miranda Garcia-Torres $1,300 · Raneyah Awadi $1,300'},
+  {g:'Business', k:'payroll_tax', label:'Employer payroll taxes on W-2 pay', unit:'%', def:7.4, src:'Gusto 2026 YTD: $139,962 employer taxes on $1,883,397 gross'},
+  {g:'Business', k:'jobs_per_wk', label:'Built jobs per week (for base-pay allocation)', unit:'jobs', def:9.2, src:'478 built jobs, trailing 12 months ÷ 52'},
+];
+/* PAY PLAN — effective week of Sep 18, 2026. Source: Aly Sinks "Pay" email 9/15/26 + correction 9/17/26 (Cook $750/wk + 13%, confirmed by Blake 9/20), and Blake's 9/18/26 commission report.
+   Commission is paid weekly on money RECEIVED (AccuLynx payment), on a basis net of processing fees: card −4%, ACH −1%, check 0%. No deal-claim pay for anyone.
+   Managers: weekly base + 2% override each. Mike 2% on every payment; Richard 2% + Kaden 2% on every rep's payments except Moe's (Blake 9/20/26). */
+const PAY_PLAN_EFFECTIVE = 'week of Sep 18, 2026';
+const REPS = {
+  'Moe Awadi':      {role:'rep', rate:15, base:0,   team:'none',    note:'no weekly base · 15% across the board'},
+  'Garrett Cook':   {role:'rep', rate:13, base:750, team:'both', note:'$750/wk + 13% (Aly 9/17, Blake 9/20)'},
+  'Daniel Gonzalez':{role:'rep', rate:10, base:0, team:'both', note:'$750/wk + 10% (Blake 9/20) — not in Gusto yet as of 9/20, base counted once he is'},
+  'Gersom Hernandez':{role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10% (Gusto, hired 9/14/26; confirmed by Blake 9/20)'},
+  'Isaiah Wetzel':  {role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10%'},
+  'Ivan Paz':       {role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10%'},
+  'Orion Keith':    {role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10%'},
+  'Shane Holcomb':  {role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10%'},
+  'Mike Mullens':   {role:'mgr', rate:0,  base:10000, team:'none', note:'$10,000/wk + 3% on every payment from Oct 8, 2026 (house job when selected as rep)'},
+  'Richard Mullens':{role:'mgr', rate:0,  base:2000, team:'none',  note:'$2,000/wk + 2% on his team'},
+  'Kaden Morel':    {role:'mgr', rate:0,  base:1500, team:'none',  note:'$1,500/wk + 2% on his team'},
+  'House / no rep': {role:'house', rate:0, base:0, team:'none', note:''}
+};
+const MGRS = {mike:{name:'Mike Mullens', rate:3, base:10000, scope:'every payment'}, richard:{name:'Richard Mullens', rate:2, base:2000, scope:'every rep except Moe'}, kaden:{name:'Kaden Morel', rate:2, base:1500, scope:'every rep except Moe'}, both:{name:'Richard Mullens + Kaden Morel', rate:4, base:0, scope:'every rep except Moe'}};
+const SALES_BASE_WK = Object.values(REPS).reduce((s,r)=>s+(r.base||0),0); /* $18,000 */
+const COMM = {none:{label:'No commission',rate:0},custom:{label:'Custom rep %',rate:null}};
+/* AccuLynx history, Jun 2025 – Sep 2026 · p10/p25/p50/p75/p90 */
+const BENCH = {
+  matched:{n:206, sq:[24.4,29.4,33.7,40.6,49.9], matSq:[112,115,120,133,146], labSq:[61,66,76,90,124], hardSq:[191,224,254,314,363], contractSq:[364,444,543,648,829], gp:[29.9,42.7,52.6,60.7,66.2], gpComm:[23.6,36.6,46.0,52.9,60.6]},
+  built:{n:476, contract:[11274,15903,20114,27952,36779], material:[3333,3872,4664,6004,7763], labor:[1947,2231,2728,3663,4910], matPct:[15.8,19.0,23.7,28.9,35.3], labPct:[9.1,11.4,13.7,17.3,22.6], hardPct:[34.6,39.5,48.0,57.0,68.3], commPct:[0,0,11.4,15.0,16.0], allPct:[41.2,48.8,57.0,66.3,77.0]},
+  trades:[['Gutters (Flowers)',162,1406],['Permit',298,100],['Claim / supplement / appraisal fees',341,1150],['Inspections',87,200],['Measurement reports',222,14],["Paint & interior (Garcia's)",88,750],['Fence stain (Silva / R3)',48,914],["Garage door (Gallardo's)",45,1560],['Screens & glass (Mesquite Glass)',64,362],['Solar detach/reset (Blue Construction)',35,4000]]
+};
+
+/* ===================== PRICE BOOK (flat, editable, shared) ===================== */
+const PB_DEF = {};
+ABC_CORE.forEach(i => PB_DEF[i.k] = i.cur);
+ABC_SHINGLE_LIST.forEach(s => PB_DEF[s[0]] = s[3]);
+SHEET.forEach(s => { if (s[2]!=null) PB_DEF['sheet:'+s[0]] = s[2]; });
+for (const c in CREWS){ for (const f of ['base','felt','steep1','steep2','story','deck','ridge','cancel','wood','trip']) PB_DEF[`crew:${c}:${f}`] = CREWS[c][f]; }
+SUBS.forEach(s => PB_DEF[s.k] = s.def);
+PB_DEF.cap_3tab_cov = 30; PB_DEF.wallflash = 3.90; PB_DEF.valleymetal = 3.61; PB_DEF.ridgevent = 20.75; PB_DEF.powervent = 195; PB_DEF.cap_ir = 139.40; PB_DEF.cap_ir_cov = 20;
+const SHINGLES = [...ABC_CORE.filter(i=>i.cls).map(i=>[i.k,i.desc.split(' — ')[0].replace(' (architectural)',''),i.cls,'live']), ...ABC_SHINGLE_LIST.map(s=>[s[0],s[2],s[4],'list'])];
+
+/* ===================== STATE ===================== */
+const LS = 'dfwrp_hardcost_v2';
+let state = {tab:'job', pb:{...PB_DEF}, pbDirty:false, pbMeta:null, job:null, jobs:[], db:null, user:null, canWrite:null, mode:'connecting', search:'', abcSearch:''};
+function newJob(){
+  return {id:null, example:false, jobNumber:'', lynxId:'', customer:'', address:'', city:'', rep:'', jobType:'insurance',
+    sq:'', waste:PB_DEF.waste_default, pitch:'low', stories:1, layers:1, shingle:'sh_cambridge', cap:'3tab', crew:'thr', tyler:false,
+    eaves:'', rakes:'', ridges:'', hips:'', valleys:'', wall:'', valleyMetal:false, ridgeVent:'', woodLf:'',
+    boots:'', boxvents:'', versacaps:'', turbines:'', powervents:'', ventCancel:'', chimneys:'', skylights:'', deckSheets:'', tripCharges:'',
+    panels:0, gutterLf:'', guardLf:'', blasterLf:'', screens:'', stainSqft:'', garageDoors:'', garageIns:false, paintAmt:'', otherTrade:'',
+    permit:'', inspections:1, reinspections:'', measure:true, supplements:'', appraisal:false, dumpster:'', extras:[],
+    rcv:'', deductible:'', suppAmt:'', upgrades:'', contract:'', commPreset:'rep', commRate:10, payMethod:'check', mikeOvr:true, teamMgr:'auto', notes:''};
+}
+function exampleJob(){
+  return {...newJob(), example:true, customer:'Example — typical DFW job', address:'median of your last 206 built roofs', city:'McKinney', rep:'Isaiah Wetzel', sq:34, eaves:160, rakes:90, ridges:70, hips:40, valleys:60, wall:20, boots:4, boxvents:6, versacaps:2, deckSheets:2, supplements:1, rcv:18500, deductible:3500, suppAmt:1700};
+}
+
+/* ===================== HELPERS ===================== */
+const $ = s => document.querySelector(s);
+const n = x => { const v = parseFloat(x); return isFinite(v) ? v : 0; };
+const money = (v, d=0) => (v<0?'−':'') + '$' + Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:d, maximumFractionDigits:d});
+const pct = v => (isFinite(v) ? v.toFixed(1) : '—') + '%';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let toastT; function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2400); }
+function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+const abcItem = k => ABC_CORE.find(i=>i.k===k);
+
+/* ===================== COSTING ENGINE ===================== */
+function compute(pb, j){
+  const sq = n(j.sq), wasteF = 1 + n(j.waste)/100, sqSh = sq*wasteF;
+  const L = {material:[], labor:[], trades:[], fees:[], extras:[]};
+  const add = (arr, label, qty, unit, unitCost, note, sku) => { const total = qty*unitCost; if (qty>0 && isFinite(total)) arr.push({label, qty, unit, unitCost, total, note, sku}); return qty>0?total:0; };
+  const sh = SHINGLES.find(s=>s[0]===j.shingle) || SHINGLES[0];
+  const shPrice = n(pb[j.shingle]);
+  if (sq>0) add(L.material, sh[1]+' shingles', Math.ceil(sqSh*3), 'bdl', shPrice/3, `${sq} sq + ${n(j.waste)}% = ${sqSh.toFixed(1)} sq · ${money(shPrice,2)}/sq${sh[3]==='list'?' · list price':''}`, (abcItem(j.shingle)||{}).sku);
+  const hrLf = n(j.ridges)+n(j.hips);
+  if (hrLf>0){
+    if (j.cap==='3tab') add(L.material, 'Hip & ridge — cut Marathon 3-tab', Math.ceil(hrLf/Math.max(1,n(pb.cap_3tab_cov))), 'bdl', n(pb.sh_3tab)/3, `${hrLf} lf ÷ ${n(pb.cap_3tab_cov)} lf/bdl`, '01IKAM25');
+    else if (j.cap==='hr') add(L.material, 'IKO Hip & Ridge 12"', Math.ceil(hrLf/33), 'bdl', n(pb.cap_hr), `${hrLf} lf ÷ 33 lf/bdl`, '04IKHA12');
+    else add(L.material, 'Class 4 hip & ridge (OC ImpactRidge)', Math.ceil(hrLf/Math.max(1,n(pb.cap_ir_cov))), 'bdl', n(pb.cap_ir), `${hrLf} lf ÷ ${n(pb.cap_ir_cov)} lf/bdl · list`, '04OCIRARDW');
+  }
+  const perim = n(j.eaves)+n(j.rakes);
+  if (perim>0){
+    add(L.material, 'GAF Pro-Start starter', Math.ceil(perim*1.1/120), 'bdl', n(pb.starter), `${perim} lf + 10% ÷ 120 lf/bdl`, '04GAPST');
+    add(L.material, 'Drip edge 1-1/2"', Math.ceil(perim*1.1/10), 'stick', n(pb.drip), `${perim} lf + 10% ÷ 10'`, 'GDEW3015');
+  }
+  if (sq>0) add(L.material, 'ABC Pro Guard 20 synthetic', Math.ceil(sq/10), 'roll', n(pb.ul_syn), `${sq} sq ÷ 10 sq/roll`, '05ABCPG20');
+  const iwsNeed = n(j.valleys)/60 + 0.5*(n(j.chimneys)+n(j.skylights));
+  if (iwsNeed>0) add(L.material, 'Rhinoroof ice & water', Math.ceil(iwsNeed), 'roll', n(pb.iws), `${n(j.valleys)} lf valleys ÷ 60 usable lf` + ((n(j.chimneys)+n(j.skylights))>0?' + ½ roll per chimney/skylight':''), '11IWRRGU2');
+  if (j.valleyMetal && n(j.valleys)>0) add(L.material, 'Galv roll valley', n(j.valleys), 'lf', n(pb.valleymetal), 'list $180.50 / 50\'', 'MGRV205032');
+  if (n(j.wall)>0) add(L.material, 'Step + counter flashing', n(j.wall), 'lf', n(pb.wallflash), 'list: step 100/bdl $78.50 + 6" counter $27/10\'', 'MGSS448');
+  add(L.material, 'IPS 4N1 pipe boots', n(j.boots), 'ea', n(pb.boot), '', '141P81711');
+  add(L.material, 'RVG-55 slant-back box vents', n(j.boxvents), 'ea', n(pb.boxvent), '', '17AVRVG55');
+  add(L.material, 'Versa caps 3"–5"', n(j.versacaps), 'ea', n(pb.versacap), '', '17MIAVC35');
+  add(L.material, 'Lomanco BEB-12 turbines', n(j.turbines), 'ea', n(pb.turbine), '', '17LOBE12');
+  add(L.material, 'Power vents', n(j.powervents), 'ea', n(pb.powervent), 'list', '17LO2000BZ');
+  if (n(j.ridgeVent)>0) add(L.material, 'Cobra rigid ridge vent', Math.ceil(n(j.ridgeVent)/4), '4\' pc', n(pb.ridgevent), `${n(j.ridgeVent)} lf ÷ 4' · list`, '17GARC3');
+  add(L.material, 'Birdview 24x24 skylight', n(j.skylights), 'ea', n(pb.skylight), '', '91BVC242BC');
+  if (n(j.deckSheets)>0) add(L.material, '7/16 OSB (Home Depot)', n(j.deckSheets), 'sheet', n(pb.deck_mat), '');
+  if (n(j.woodLf)>0) add(L.material, 'SYP 2x4x10 for wood repair', Math.ceil(n(j.woodLf)/10), 'ea', n(pb.lumber2x4), `${n(j.woodLf)} lf ÷ 10'`, '312NS');
+  if (sq>0){
+    add(L.material, 'Coil nails 1-1/4"', Math.ceil(sq/20), 'box', n(pb.nails), '1 box / 20 sq', '0150080011');
+    add(L.material, 'Plastic cap nails', Math.ceil(sq/20), 'box', n(pb.capnails), '1 box / 20 sq', '0150080102');
+    add(L.material, 'MasterSeal NP1', 3, 'tube', n(pb.caulk), '3 per job', '30MINP196');
+    add(L.material, 'Spray paint', 2, 'can', n(pb.paint), '2 per job', '200663243');
+  }
+  const matSub = L.material.reduce((s,l)=>s+l.total,0);
+  const hdTotal = L.material.filter(l=>!l.sku).reduce((s,l)=>s+l.total,0);   // Home Depot lines (no ABC sku) — taxed too
+  const tax = matSub * n(pb.tax)/100;
+  const delivery = sq>0 ? n(pb.delivery) : 0;
+  const materials = matSub + tax + delivery;
+  const rebate = (matSub - hdTotal) * n(pb.rebate)/100;
+
+  // Labor — selected crew's rate card
+  const c = j.crew==='custom' ? 'thr' : j.crew;
+  const R = f => n(pb[`crew:${c}:${f}`]);
+  const crewName = CREWS[c]?.name || 'Crew';
+  let base = R('base'); let baseNote = 'measured squares';
+  if (c==='omar' && j.tyler){ base = 80; baseNote = 'Tyler-area rate'; }
+  add(L.labor, `${crewName} — tear-off + install`, sq, 'sq', base, baseNote);
+  const feltLayers = CREWS[c]?.feltFirst ? n(j.layers) : n(j.layers)-1;   /* THR & Omar: first layer included · Will: $5/sq from the first layer (Blake 9/20/26) */
+  if (feltLayers>0 && R('felt')>0) add(L.labor, CREWS[c]?.feltFirst ? `Felt / shingle layers (${n(j.layers)}, charged from the first)` : `Extra felt / shingle layers (${n(j.layers)-1}, first included)`, sq*feltLayers, 'sq', R('felt'));
+  const steep = j.pitch==='steep1' ? R('steep1') : j.pitch==='steep2' ? R('steep2') : 0;
+  if (steep>0) add(L.labor, j.pitch==='steep1' ? 'Pitch adder 8/12–11/12' : 'Pitch adder 12/12+', sq, 'sq', steep);
+  if (n(j.stories)>1 && R('story')>0) add(L.labor, `Story adder (${n(j.stories)}-story)`, sq*(n(j.stories)-1), 'sq', R('story'));
+  add(L.labor, 'Decking install', n(j.deckSheets), 'sheet', R('deck'));
+  add(L.labor, 'Ridge vent install', n(j.ridgeVent), 'lf', R('ridge'));
+  add(L.labor, 'Vent cancellations', n(j.ventCancel), 'ea', R('cancel'));
+  add(L.labor, 'Wood repair labor', n(j.woodLf), 'lf', R('wood'));
+  add(L.labor, 'Trip charges', n(j.tripCharges), 'ea', R('trip'));
+  add(L.labor, 'Dumpster / haul-off', n(j.dumpster)>0?1:0, 'job', n(j.dumpster), 'crews include haul-off');
+  const labor = L.labor.reduce((s,l)=>s+l.total,0);
+
+  // Trades
+  add(L.trades, 'Solar detach & reset — Blue Construction', n(j.panels), 'panel', n(pb.solar_panel));
+  const gutLf = n(j.gutterLf);
+  if (gutLf>0){ const amt = gutLf*n(pb.gut_lf); if (amt < n(pb.gut_min)) add(L.trades, 'Gutters + downspouts — Flowers (minimum)', 1, 'job', n(pb.gut_min), `${gutLf} lf`); else add(L.trades, 'Gutters + downspouts — Flowers', gutLf, 'lf', n(pb.gut_lf)); }
+  add(L.trades, 'Leaf guard — Flowers', n(j.guardLf), 'lf', n(pb.gut_guard));
+  add(L.trades, 'Leaf Blaster — Flowers', n(j.blasterLf), 'lf', n(pb.gut_blaster), 'derived');
+  add(L.trades, 'Window screens — Mesquite Glass', n(j.screens), 'ea', n(pb.screen));
+  add(L.trades, 'Fence wash & stain — Silva', n(j.stainSqft), 'sqft', n(pb.stain_sqft));
+  add(L.trades, 'Garage door 16x7 — Gallardo\'s', n(j.garageDoors), 'ea', n(pb.garage) + (j.garageIns ? n(pb.garage_ins) : 0), j.garageIns ? 'insulated' : 'non-insulated');
+  add(L.trades, 'Paint / interior — Garcia\'s (quote)', n(j.paintAmt)>0?1:0, 'quote', n(j.paintAmt));
+  add(L.trades, 'Other trade (quote)', n(j.otherTrade)>0?1:0, 'quote', n(j.otherTrade));
+  const trades = L.trades.reduce((s,l)=>s+l.total,0);
+
+  // Fees
+  const permitAmt = j.permit!=='' ? n(j.permit) : (CITIES[j.city] ?? n(pb.permit_default));
+  add(L.fees, 'Permit' + (j.city?` — ${j.city}`:''), sq>0?1:0, 'job', permitAmt, j.permit!=='' ? 'entered' : (CITIES[j.city]!=null ? 'your median for this city' : 'default'));
+  add(L.fees, 'Inspections — Summit / CROB', n(j.inspections), 'ea', n(pb.inspection));
+  add(L.fees, 'Re-inspections', n(j.reinspections), 'ea', n(pb.reinspect));
+  add(L.fees, 'Roofr report', j.measure?1:0, 'job', n(pb.measure));
+  add(L.fees, 'Supplement write-ups', n(j.supplements), 'ea', n(pb.supp_fee));
+  add(L.fees, 'Appraisal — Claim Experts', j.appraisal?1:0, 'job', n(pb.appraisal));
+  const fees = L.fees.reduce((s,l)=>s+l.total,0);
+  (j.extras||[]).forEach(e => add(L.extras, e.label||'Extra', n(e.amt)>0?1:0, '', n(e.amt)));
+  const extras = L.extras.reduce((s,l)=>s+l.total,0);
+
+  const hard = materials + labor + trades + fees + extras;
+  const contract = j.jobType==='insurance' ? n(j.rcv)+n(j.suppAmt)+n(j.upgrades) : n(j.contract);
+  const gp = contract - hard;
+  /* Pay plan (week of Sep 18, 2026): rep % + Mike 2% + team manager 2%, on money received net of processing fee. */
+  const repInfo = REPS[j.rep];
+  const repRate = j.commPreset==='none' ? 0 : (j.commPreset==='custom' || !repInfo) ? n(j.commRate) : repInfo.rate;
+  const teamKey = j.commPreset==='none' ? 'none' : (j.teamMgr==='auto' || !j.teamMgr) ? (repInfo ? repInfo.team : 'none') : j.teamMgr;
+  const mikeRate = (j.commPreset!=='none' && j.mikeOvr!==false) ? MGRS.mike.rate : 0;
+  const teamRate = (teamKey && MGRS[teamKey]) ? MGRS[teamKey].rate : 0;
+  const ovrRate = mikeRate + teamRate;
+  const commRate = repRate + ovrRate;
+  const feePct = j.payMethod==='card' ? n(pb.fee_card) : j.payMethod==='ach' ? n(pb.fee_ach) : 0;
+  const basis = contract>0 ? contract*(1-feePct/100) : 0;
+  const repComm = basis*repRate/100, ovrComm = basis*ovrRate/100;
+  const commission = repComm + ovrComm;
+  const net = gp - commission;
+  const gpPct = contract>0 ? gp/contract*100 : NaN, netPct = contract>0 ? net/contract*100 : NaN;
+  const target = n(pb.target_net);
+  const effComm = commRate/100*(1-feePct/100);
+  const priceAtTarget = (1 - target/100 - effComm) > 0 ? hard / (1 - target/100 - effComm) : NaN;
+  const baseWk = (n(pb.sales_base_wk) + n(pb.office_base_wk)) * (1 + n(pb.payroll_tax)/100);
+  const baseAlloc = n(pb.jobs_per_wk)>0 ? baseWk/n(pb.jobs_per_wk) : 0;
+  const netLoaded = net - baseAlloc, netLoadedPct = contract>0 ? netLoaded/contract*100 : NaN;
+  let status = {cls:'neutral', text:'No contract yet'};
+  if (contract>0){ if (net<0) status={cls:'bad',text:'Loss'}; else if (netPct >= target) status={cls:'good',text:'On target'}; else if (netPct >= target-8) status={cls:'warn',text:'Thin'}; else status={cls:'bad',text:'Below target'}; }
+  return {sq, sqSh, L, matSub, tax, delivery, materials, rebate, labor, trades, fees, extras, hard, contract, gp, gpPct, commRate, repRate, ovrRate, mikeRate, teamRate, teamKey, feePct, basis, repComm, ovrComm, commission, net, netPct, baseAlloc, netLoaded, netLoadedPct, target, priceAtTarget, status, crewName,
+    perSq:{material: sq>0?materials/sq:NaN, labor: sq>0?labor/sq:NaN, hard: sq>0?hard/sq:NaN, contract: sq>0&&contract>0?contract/sq:NaN},
+    homeowner: j.jobType==='insurance' ? n(j.deductible)+n(j.upgrades) : contract, carrier: j.jobType==='insurance' ? n(j.rcv)-n(j.deductible)+n(j.suppAmt) : 0};
+}
+
+/* ===================== JOB FORM ===================== */
+const SECTIONS = [
+  {title:'Job', fields:[
+    {k:'customer',label:'Customer',type:'text',span:true},{k:'address',label:'Job address',type:'text',span:true},
+    {k:'city',label:'City (permit)',type:'sel',opts:[['','—'],...Object.keys(CITIES).sort().map(c=>[c,`${c} · $${CITIES[c]}`]),['Other','Other']]},
+    {k:'rep',label:'Sales rep',type:'sel',opts:[['','—'],...Object.keys(REPS).map(r=>[r, r + (REPS[r].role==='rep'?` · ${REPS[r].rate}%`:REPS[r].role==='mgr'?' · manager':'')])]},
+    {k:'jobType',label:'Job type',type:'seg',opts:[['insurance','Insurance'],['retail','Retail']]},
+  ]},
+  {title:'Roof', sub:'Roofr / measurement report', fields:[
+    {k:'sq',label:'Squares',type:'num',unit:'sq',step:'0.01',hint:'measured, before waste'},
+    {k:'waste',label:'Waste',type:'sel',unit:'%',opts:[[10,'10% standard'],[12,'12%'],[15,'15% hips & valleys'],[20,'20% cut-up']]},
+    {k:'pitch',label:'Pitch',type:'sel',opts:[['low','Up to 7/12'],['steep1','8/12 – 11/12'],['steep2','12/12 and up']]},
+    {k:'stories',label:'Stories',type:'sel',opts:[[1,'1'],[2,'2'],[3,'3']]},
+    {k:'layers',label:'Layers to remove',type:'sel',opts:[[1,'1 layer'],[2,'2 layers'],[3,'3 layers'],[4,'4 layers'],[5,'5 layers']]},
+    {k:'shingle',label:'Shingle',type:'sel',opts:SHINGLES.map(s=>[s[0],s[1]+(s[3]==='list'?' (list)':'')])},
+    {k:'cap',label:'Hip & ridge',type:'sel',opts:[['3tab','Cut Marathon 3-tab'],['hr','IKO Hip & Ridge 12"'],['ir','Class 4 hip & ridge']]},
+    {k:'crew',label:'Crew',type:'sel',opts:Object.entries(CREWS).map(([k,c])=>[k,`${c.name} · $${c.base}/sq`])},
+  ]},
+  {title:'Lengths', sub:'linear feet', fields:[
+    {k:'eaves',label:'Eaves',type:'num',unit:'lf'},{k:'rakes',label:'Rakes',type:'num',unit:'lf'},{k:'ridges',label:'Ridges',type:'num',unit:'lf'},{k:'hips',label:'Hips',type:'num',unit:'lf'},{k:'valleys',label:'Valleys',type:'num',unit:'lf'},{k:'wall',label:'Wall / step flashing',type:'num',unit:'lf'},
+    {k:'ridgeVent',label:'Ridge vent',type:'num',unit:'lf'},{k:'woodLf',label:'Wood repair',type:'num',unit:'lf'},{k:'valleyMetal',label:'Metal valleys',type:'chk'},{k:'tyler',label:'Tyler-area job (Omar $80/sq)',type:'chk'},
+  ]},
+  {title:'Vents, penetrations & decking', fields:[
+    {k:'boots',label:'Pipe boots',type:'num',unit:'ea'},{k:'boxvents',label:'RVG-55 box vents',type:'num',unit:'ea'},{k:'versacaps',label:'Versa caps',type:'num',unit:'ea'},{k:'turbines',label:'Turbines',type:'num',unit:'ea'},{k:'powervents',label:'Power vents',type:'num',unit:'ea'},{k:'ventCancel',label:'Vent cancellations',type:'num',unit:'ea'},{k:'chimneys',label:'Chimneys',type:'num',unit:'ea'},{k:'skylights',label:'Skylights (Birdview)',type:'num',unit:'ea'},{k:'deckSheets',label:'Decking sheets',type:'num',unit:'sheets'},{k:'tripCharges',label:'Trip charges',type:'num',unit:'ea'},
+  ]},
+  {title:'Solar, gutters, screens & trades', fields:[
+    {k:'panels',label:'Solar panels (detach & reset)',type:'num',unit:'ea'},{k:'gutterLf',label:'Gutters + downspouts',type:'num',unit:'lf'},{k:'guardLf',label:'Leaf guard',type:'num',unit:'lf'},{k:'blasterLf',label:'Leaf Blaster',type:'num',unit:'lf'},{k:'screens',label:'Window screens',type:'num',unit:'ea'},{k:'stainSqft',label:'Fence stain',type:'num',unit:'sqft'},{k:'garageDoors',label:'Garage doors 16x7',type:'num',unit:'ea'},{k:'garageIns',label:'Insulated door',type:'chk'},{k:'paintAmt',label:'Paint / interior (quote)',type:'money'},{k:'otherTrade',label:'Other trade (quote)',type:'money'},
+  ]},
+  {title:'Fees', fields:[
+    {k:'permit',label:'Permit (blank = city)',type:'money'},{k:'inspections',label:'Inspections',type:'num',unit:'ea'},{k:'reinspections',label:'Re-inspections',type:'num',unit:'ea'},{k:'supplements',label:'Supplement write-ups',type:'num',unit:'ea'},{k:'dumpster',label:'Dumpster (if any)',type:'money'},{k:'measure',label:'Roofr report',type:'chk'},{k:'appraisal',label:'Appraisal (Claim Experts)',type:'chk'},
+  ]},
+];
+function fieldHTML(f, j){
+  const v = j[f.k]; const id = 'f_'+f.k;
+  const lab = `<label for="${id}"><span>${esc(f.label)}</span>${f.unit?`<span class="u">${esc(f.unit)}</span>`:''}</label>`;
+  let ctl='';
+  if (f.type==='text') ctl = `<input class="in" id="${id}" data-k="${f.k}" type="text" value="${esc(v)}" autocomplete="off">`;
+  else if (f.type==='num') ctl = `<input class="in num" id="${id}" data-k="${f.k}" type="number" inputmode="decimal" step="${f.step||'1'}" min="0" value="${esc(v)}" placeholder="0">`;
+  else if (f.type==='money') ctl = `<div class="money"><input class="in num" id="${id}" data-k="${f.k}" type="number" inputmode="decimal" step="1" min="0" value="${esc(v)}" placeholder="0"></div>`;
+  else if (f.type==='sel') ctl = `<select class="in" id="${id}" data-k="${f.k}">${f.opts.map(o=>`<option value="${esc(o[0])}" ${String(o[0])===String(v)?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
+  else if (f.type==='chk') return `<div class="f"><label class="chk" for="${id}" style="text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink-2)"><input type="checkbox" id="${id}" data-k="${f.k}" ${v?'checked':''}> ${esc(f.label)}</label></div>`;
+  else if (f.type==='seg') ctl = `<div class="seg" id="${id}" data-k="${f.k}">${f.opts.map(o=>`<button type="button" data-v="${esc(o[0])}" aria-pressed="${String(o[0])===String(v)}">${esc(o[1])}</button>`).join('')}</div>`;
+  return `<div class="f ${f.span?'span2':''}">${lab}${ctl}${f.hint?`<div class="hint">${esc(f.hint)}</div>`:''}</div>`;
+}
+function renderForm(){
+  { const ln=document.getElementById('lkNum'); if (ln && document.activeElement!==ln) ln.value = state.job.jobNumber||''; }
+  const j = state.job; let html='';
+  if (j.example) html += `<div class="callout"><b>Example job</b> — median of your last 206 built roofs. Edit anything or <button class="btn sm" id="startNew" type="button" style="margin-left:8px">Start blank</button></div>`;
+  SECTIONS.forEach(s => { html += `<div class="sec"><h2>${esc(s.title)}${s.sub?`<small>${esc(s.sub)}</small>`:''}</h2><div class="fields">${s.fields.map(f=>fieldHTML(f,j)).join('')}</div></div>`; });
+  html += `<div class="sec"><h2>Extras <small>anything else on this job</small></h2><div class="extras" id="extras">${(j.extras||[]).map((e,i)=>`<div class="extra"><div class="f"><label>Description</label><input class="in" data-ex="label" data-i="${i}" type="text" value="${esc(e.label)}"></div><div class="f"><label>Amount</label><div class="money"><input class="in num" data-ex="amt" data-i="${i}" type="number" inputmode="decimal" placeholder="0" value="${esc(e.amt)}"></div></div><button class="icon-btn" data-exdel="${i}" type="button" aria-label="Remove">×</button></div>`).join('')}</div><div style="margin:12px 0 6px"><button class="btn sm" id="addExtra" type="button">+ Add line</button></div></div>`;
+  const ins = j.jobType==='insurance';
+  html += `<div class="sec"><h2>Contract <small>${ins?'insurance claim':'retail bid'}</small></h2><div class="fields">`;
+  if (ins) html += fieldHTML({k:'rcv',label:'RCV (approved)',type:'money'},j) + fieldHTML({k:'deductible',label:'Deductible',type:'money'},j) + fieldHTML({k:'suppAmt',label:'Approved supplements',type:'money'},j) + fieldHTML({k:'upgrades',label:'Upgrades / out of pocket',type:'money'},j);
+  else html += fieldHTML({k:'contract',label:'Contract price',type:'money',span:true},j);
+  const ri = REPS[j.rep];
+  html += fieldHTML({k:'commPreset',label:'Commission',type:'sel',opts:[['rep','Pay plan' + (ri ? (ri.role==='rep' ? ` · ${ri.rate}%` : ri.role==='mgr' ? ' · house job (override only)' : ' · none') : ' · pick a rep')],...Object.entries(COMM).map(([k,c])=>[k,c.label])]},j);
+  if (j.commPreset==='custom' || (j.commPreset==='rep' && !ri && j.rep)) html += fieldHTML({k:'commRate',label:'Rep rate',type:'num',unit:'%',step:'0.5'},j);
+  if (j.commPreset!=='none'){
+    html += fieldHTML({k:'payMethod',label:'Paid by',type:'seg',opts:[['check','Check'],['ach',`ACH −${n(state.pb.fee_ach)}%`],['card',`Card −${n(state.pb.fee_card)}%`]]},j);
+    html += fieldHTML({k:'mikeOvr',label:`Mike Mullens ${MGRS.mike.rate}% (every payment)`,type:'chk'},j);
+    const autoTeam = ri ? ri.team : 'none';
+    html += fieldHTML({k:'teamMgr',label:'Manager overrides',type:'sel',opts:[['auto',`Per plan · ${autoTeam==='none'?'none':autoTeam==='both'?'Richard 2% + Kaden 2%':MGRS[autoTeam].name+' 2%'}`],['both','Richard 2% + Kaden 2%'],['richard','Richard 2% only'],['kaden','Kaden 2% only'],['none','None']]},j);
+  }
+  html += `</div><div class="hint-row">Pay plan effective ${PAY_PLAN_EFFECTIVE}: commission is paid weekly on money received, net of card / ACH fees. No deal-claim pay. Weekly bases (${money(SALES_BASE_WK)}/wk) are shown as an allocation, not a job cost.</div><div class="f" style="margin-top:12px"><label for="f_notes"><span>Notes</span></label><textarea class="in" id="f_notes" data-k="notes" rows="2">${esc(j.notes)}</textarea></div></div>`;
+  $('#jobForm').innerHTML = html;
+}
+function onFormInput(e){
+  const t = e.target;
+  if (t.dataset.k){
+    const k = t.dataset.k;
+    state.job[k] = t.type==='checkbox' ? t.checked : t.value;
+    if (k==='shingle'){ const cls = (SHINGLES.find(s=>s[0]===t.value)||[])[2]; if (cls==='ir') state.job.cap='ir'; else if (state.job.cap==='ir') state.job.cap='3tab'; const cs=$('#f_cap'); if(cs) cs.value=state.job.cap; }
+    if (k==='rep'){ state.job.teamMgr = 'auto'; }
+    if (k==='commPreset' || k==='jobType' || k==='rep' || k==='teamMgr') renderForm();
+    recalc(); persistDraft();
+  } else if (t.dataset.ex){ state.job.extras[+t.dataset.i][t.dataset.ex] = t.value; recalc(); persistDraft(); }
+}
+function onFormClick(e){
+  const seg = e.target.closest('.seg button');
+  if (seg){ state.job[seg.parentElement.dataset.k] = seg.dataset.v; renderForm(); recalc(); persistDraft(); return; }
+  if (e.target.id==='addExtra'){ state.job.extras.push({label:'',amt:''}); renderForm(); return; }
+  if (e.target.dataset.exdel!=null){ state.job.extras.splice(+e.target.dataset.exdel,1); renderForm(); recalc(); persistDraft(); return; }
+  if (e.target.id==='startNew'){ startBlank(); }
+}
+function startBlank(){ state.job = newJob(); state.job.waste = state.pb.waste_default; renderForm(); recalc(); persistDraft(); toast('New job'); window.scrollTo({top:0}); }
+
+/* ===================== SUMMARY ===================== */
+function benchBar(val, arr, invert){
+  const lo = arr[0]*0.8, hi = arr[4]*1.15, span = hi-lo; const px = x => Math.max(0, Math.min(100, (x-lo)/span*100));
+  let cls='neutral'; if (isFinite(val)){ const better = invert ? val<=arr[2] : val>=arr[2]; const inR = val>=arr[1] && val<=arr[3]; cls = inR ? (better?'good':'warn') : (better?'good':'bad'); }
+  return `<div class="bar"><div class="rng" style="left:${px(arr[1])}%;width:${px(arr[3])-px(arr[1])}%"></div><div class="med" style="left:${px(arr[2])}%"></div>${isFinite(val)?`<div class="you ${cls}" style="left:${px(val)}%"></div>`:''}</div>`;
+}
+function renderSummary(){
+  const j = state.job, c = compute(state.pb, j), ins = j.jobType==='insurance';
+  $('#hud').innerHTML = `
+    <div class="cell"><div class="lbl">Hard cost</div><div class="v">${money(c.hard)}</div><div class="s">${c.sq>0?money(c.perSq.hard)+' / sq · '+c.sq+' sq':'enter squares'}</div></div>
+    <div class="cell"><div class="lbl">Materials · ABC</div><div class="v">${money(c.materials)}</div><div class="s">${c.sq>0?money(c.perSq.material)+' / sq · incl. tax + delivery':'—'}</div></div>
+    <div class="cell"><div class="lbl">Labor · ${esc(c.crewName)}</div><div class="v">${money(c.labor)}</div><div class="s">${c.sq>0?money(c.perSq.labor)+' / sq':'—'}</div></div>
+    <div class="cell"><div class="lbl">Net after commission</div><div class="v ${c.contract>0?c.status.cls:''}">${c.contract>0?pct(c.netPct):'—'}</div><div class="s">${c.contract>0?money(c.net)+' on '+money(c.contract):'add a contract price'}</div></div>`;
+  const grp = (title, arr, total) => arr.length ? `<div class="grp"><span>${title}</span><span class="v">${money(total,2)}</span></div>` + arr.map(l=>`<div class="line"><div><div>${esc(l.label)}</div><div class="n">${l.qty%1?l.qty.toFixed(2):l.qty} ${esc(l.unit)} × ${money(l.unitCost,2)}${l.note?' · '+esc(l.note):''}${l.sku?' · '+esc(l.sku):''}</div></div><div class="v">${money(l.total,2)}</div></div>`).join('') : '';
+  const d = c.sqSh>0 ? c.sqSh : NaN, o = {m:c.materials/d, l:c.labor/d, h:c.hard/d, k:c.contract>0?c.contract/d:NaN};
+  $('#summary').innerHTML = `
+    <div class="readout"><div class="lbl">Total hard cost</div><div class="big">${money(c.hard)}</div><div class="sub">${j.customer?esc(j.customer)+' · ':''}${c.sq>0?money(c.perSq.hard)+'/sq':'—'}${c.rebate>0?' · ABC rebate accrual '+money(c.rebate)+' not deducted':''}</div></div>
+    <div class="block">
+      <div class="kv"><span class="k">${ins?'Contract (RCV + supplements + upgrades)':'Contract price'}</span><span class="v">${c.contract>0?money(c.contract):'—'}</span></div>
+      <div class="kv"><span class="k">Hard cost</span><span class="v">− ${money(c.hard)}</span></div>
+      <div class="kv"><span class="k">Gross profit</span><span class="v">${c.contract>0?money(c.gp)+' · '+pct(c.gpPct):'—'}</span></div>
+      ${c.repComm>0?`<div class="kv"><span class="k">Rep ${c.repRate}%${j.rep?' · '+esc(j.rep):''}${c.feePct>0?` on ${money(c.basis)} (after ${c.feePct}% ${j.payMethod==='card'?'card':'ACH'} fee)`:''}</span><span class="v">− ${money(c.repComm)}</span></div>`:''}
+      ${c.ovrComm>0?`<div class="kv"><span class="k">Overrides ${c.ovrRate}% · ${[c.mikeRate?'Mike '+c.mikeRate+'%':'', c.teamKey==='both'?'Richard 2% + Kaden 2%':(c.teamRate?MGRS[c.teamKey].name.split(' ')[0]+' '+c.teamRate+'%':'')].filter(Boolean).join(' + ')}</span><span class="v">− ${money(c.ovrComm)}</span></div>`:''}
+      <div class="kv tot"><span class="k">Net after commission <span class="pill ${c.status.cls}">${c.status.text}</span></span><span class="v">${c.contract>0?money(c.net):'—'}</span></div>
+      ${c.contract>0&&c.baseAlloc>0?`<div class="kv dim"><span class="k">Base pay allocation · sales ${money(n(state.pb.sales_base_wk))} + office/field ${money(n(state.pb.office_base_wk))} per wk + ${n(state.pb.payroll_tax)}% employer tax ÷ ${n(state.pb.jobs_per_wk)} jobs</span><span class="v">− ${money(c.baseAlloc)}</span></div><div class="kv dim"><span class="k">Net after base pay</span><span class="v">${money(c.netLoaded)} · ${pct(c.netLoadedPct)}</span></div>`:''}
+      ${isFinite(c.priceAtTarget)&&c.hard>0?`<div class="kv dim"><span class="k">Price for ${c.target}% net after commission</span><span class="v">${money(c.priceAtTarget)}</span></div>`:''}
+      ${ins&&(n(j.deductible)>0||n(j.rcv)>0)?`<div class="kv dim"><span class="k">Collect from homeowner</span><span class="v">${money(c.homeowner)}</span></div><div class="kv dim"><span class="k">Collect from carrier</span><span class="v">${money(c.carrier)}</span></div>`:''}
+    </div>
+    <details class="bd" open><summary>Line items</summary><div style="padding-bottom:10px">
+      ${grp('ABC Supply', c.L.material, c.matSub)}
+      ${c.sq>0?`<div class="line"><div>Sales tax ${n(state.pb.tax)}%</div><div class="v">${money(c.tax,2)}</div></div><div class="line"><div>Delivery</div><div class="v">${money(c.delivery,2)}</div></div>`:''}
+      ${grp('Crew labor', c.L.labor, c.labor)}
+      ${grp('Trades', c.L.trades, c.trades)}
+      ${grp('Permits & fees', c.L.fees, c.fees)}
+      ${grp('Extras', c.L.extras, c.extras)}
+    </div></details>
+    <details class="bd"><summary>vs. your history</summary><div class="bench">
+      <div class="row"><span class="k">Material /sq</span>${benchBar(o.m, BENCH.matched.matSq, true)}<span class="v">${isFinite(o.m)?money(o.m):'—'}</span></div>
+      <div class="row"><span class="k">Labor /sq</span>${benchBar(o.l, BENCH.matched.labSq, true)}<span class="v">${isFinite(o.l)?money(o.l):'—'}</span></div>
+      <div class="row"><span class="k">Hard cost /sq</span>${benchBar(o.h, BENCH.matched.hardSq, true)}<span class="v">${isFinite(o.h)?money(o.h):'—'}</span></div>
+      <div class="row"><span class="k">Contract /sq</span>${benchBar(o.k, BENCH.matched.contractSq, false)}<span class="v">${isFinite(o.k)?money(o.k):'—'}</span></div>
+      <div class="row"><span class="k">Net margin</span>${benchBar(c.netPct, BENCH.matched.gpComm, false)}<span class="v">${isFinite(c.netPct)?pct(c.netPct):'—'}</span></div>
+      <div class="legend"><span><i style="background:rgba(255,255,255,.22)"></i>your middle 50% · 206 jobs</span><span><i style="background:var(--ink)"></i>median · this job</span></div>
+      <div class="legend" style="padding-top:4px">Per square ordered from ABC (measured + waste), 2025–26 paid amounts.</div>
+    </div></details>
+    <div class="actions">
+      <button class="btn primary" id="saveJob" type="button">${j.id?'Update':'Save job'}</button>
+      <button class="btn" id="dupJob" type="button">Duplicate</button>
+      <button class="btn" id="newJob" type="button">New</button>
+    </div>
+    <div class="note" id="saveNote">${saveNoteText()}</div>`;
+  $('#dockTotal').textContent = money(c.hard);
+  $('#dockSub').textContent = c.contract>0 ? `Net ${money(c.net)} · ${pct(c.netPct)}` : (c.sq>0 ? money(c.perSq.hard)+'/sq' : '—');
+  $('#dockPill').innerHTML = c.contract>0 ? `<span class="pill ${c.status.cls}">${c.status.text}</span>` : '';
+  return c;
+}
+function saveNoteText(){
+  if (state.mode==='shared') return 'Saved jobs and the price book are shared with everyone who has Hard Cost access in the Master System.';
+  if (state.mode==='readonly') return 'Costing works, but you are not signed in to the Master System — saving is off.';
+  if (state.mode==='local') return 'Not connected to shared storage — saves stay on this device.';
+  return 'Connecting to shared storage…';
+}
+function recalc(){ return renderSummary(); }
+
+/* ===================== ABC CATALOG ===================== */
+function abcRow(i){
+  const cur = state.pb[i.k]; const changed = n(cur)!==i.cur;
+  const h = i.hist||{}; const cell = v => v==null ? '<td class="n dim">—</td>' : `<td class="n">${money(v,2)}</td>`;
+  return `<tr><td><div>${esc(i.desc)}</div><div class="sku">${esc(i.sku)} · ${esc(i.uom)}</div></td>${cell(h.dec25??h.mar)}${cell(h.jul)}${cell(h.aug)}${cell(h.sep)}${cell(i.sheet)}<td class="n"><input class="edit ${changed?'changed':''}" data-pb="${i.k}" type="number" inputmode="decimal" step="0.01" value="${cur}"> <span class="tag ${i.hist&&Object.keys(i.hist).length?'live':'list'}">${i.hist&&Object.keys(i.hist).length?'invoice':'list'}</span></td></tr>`;
+}
+function renderAbc(){
+  const q = state.abcSearch.trim().toLowerCase();
+  const match = (sku, desc) => !q || (sku+' '+desc).toLowerCase().includes(q);
+  let html = `<div class="tscroll"><table class="t"><thead><tr><th>Product</th><th style="text-align:right">Mar '26</th><th style="text-align:right">Jul '26</th><th style="text-align:right">Aug 3</th><th style="text-align:right">Sep 1</th><th style="text-align:right">List 4/13</th><th style="text-align:right">Current</th></tr></thead><tbody>`;
+  const core = ABC_CORE.filter(i=>match(i.sku,i.desc));
+  if (core.length) html += `<tr><td colspan="7" class="group-h" style="padding-top:8px">Your standard order — confirmed on invoices</td></tr>` + core.map(abcRow).join('');
+  const sh = ABC_SHINGLE_LIST.filter(s=>match(s[1],s[2]));
+  if (sh.length) html += `<tr><td colspan="7" class="group-h">Other shingles you can spec — April 13 list</td></tr>` + sh.map(s=>abcRow({k:s[0],sku:s[1],desc:s[2],uom:'SQ',hist:{},sheet:s[3],cur:s[3]})).join('');
+  const rest = SHEET.filter(s=>s[2]!=null && !ABC_SHINGLE_LIST.some(x=>x[1]===s[0]) && match(s[0],s[1]));
+  if (rest.length) html += `<tr><td colspan="7" class="group-h">Full April 13 price list — ${rest.length} items</td></tr>` + rest.map(s=>abcRow({k:'sheet:'+s[0],sku:s[0],desc:s[1],uom:s[3],hist:{},sheet:s[2],cur:s[2]})).join('');
+  const call = SHEET.filter(s=>s[2]==null && match(s[0],s[1]));
+  if (call.length && !q) html += `<tr><td colspan="7" class="src" style="padding-top:10px">Priced on request (CALL): ${call.map(s=>esc(s[1])).join(' · ')}</td></tr>`;
+  html += `</tbody></table></div>`;
+  $('#abcBody').innerHTML = html;
+  syncSaveButtons();
+}
+function onPbInput(e){
+  const k = e.target.dataset.pb; if(!k) return;
+  state.pb[k] = n(e.target.value); state.pbDirty = true;
+  e.target.classList.toggle('changed', state.pb[k]!==PB_DEF[k]);
+  syncSaveButtons(); recalc();
+}
+function syncSaveButtons(){ const off = !state.pbDirty || state.mode==='readonly' || state.mode==='connecting'; $('#pbSave').disabled = off; $('#pbSave2').disabled = off; }
+async function savePricebook(){
+  const payload = {items:{...state.pb}, updatedAt:new Date().toISOString(), version:2};
+  try{ await hcApi('hc_pricebook_save', {items: payload.items}); state.pbDirty=false; state.pbMeta={updatedAt:payload.updatedAt}; syncSaveButtons(); toast('Price book saved for everyone'); }
+  catch(err){ handleDbErr(err,'save the price book'); }
+}
+function resetPricebook(){ if (!confirm('Reset every price to the invoice / order-ack numbers?')) return; state.pb = {...PB_DEF}; state.pbDirty = true; renderAbc(); renderSubs(); recalc(); toast('Reset — save to keep it'); }
+
+/* ===================== SUB RATE CARDS ===================== */
+function renderSubs(){
+  const F = [['base','Base rate','$/sq'],['felt','Felt / shingle layer','$/sq per layer'],['steep1','Pitch adder 8/12–11/12','$/sq'],['steep2','Pitch adder 12/12+','$/sq'],['story','Story adder','$/sq per story'],['deck','Decking install','$/sheet'],['ridge','Ridge vent install','$/lf'],['cancel','Vent cancellation','$/ea'],['wood','Wood repair labor','$/lf'],['trip','Trip charge','$/ea']];
+  let html = `<div class="group-h">Roofing crews</div><div class="cards">`;
+  for (const [ck, c] of Object.entries(CREWS)){
+    html += `<div class="rc"><h3>${esc(c.name)}</h3><div class="who">${esc(c.who)}</div>` + F.map(([f,label,unit]) => { const k=`crew:${ck}:${f}`; return `<div class="kv"><span class="k">${label}${f==='base'?`<div class="src">${esc(c.base_note)}</div>`:''}${f==='felt'?`<div class="src">${c.feltFirst?'charged from the first layer':'first layer included · extra layers only'}</div>`:''}</span><span class="v"><input class="edit ${state.pb[k]!==PB_DEF[k]?'changed':''}" data-pb="${k}" type="number" inputmode="decimal" step="0.5" value="${state.pb[k]}"> <span class="sku">${unit}</span></span></div>`; }).join('') + `<div class="src">${esc(c.src)}</div></div>`;
+  }
+  html += `</div>`;
+  const groups = {}; SUBS.forEach(s => (groups[s.g] ||= []).push(s));
+  for (const g in groups){
+    html += `<div class="group-h">${esc(g)}</div><div class="tscroll"><table class="t"><tbody>` + groups[g].map(s => `<tr><td><div>${esc(s.label)}</div><div class="src">${esc(s.src)}</div></td><td class="n" style="width:140px"><input class="edit ${state.pb[s.k]!==PB_DEF[s.k]?'changed':''}" data-pb="${s.k}" type="number" inputmode="decimal" step="0.01" value="${state.pb[s.k]}"> <span class="sku">${esc(s.unit)}</span></td></tr>`).join('') + `</tbody></table></div>`;
+  }
+  html += `<div class="group-h">Pay plan · effective ${PAY_PLAN_EFFECTIVE}</div><div class="prose"><p>Reps: Moe Awadi 15% (no base) · Garrett Cook $750/wk + 13% · Daniel Gonzalez, Isaiah Wetzel, Ivan Paz, Orion Keith, Shane Holcomb $750/wk + 10%. Managers: Mike Mullens $10,000/wk + 2% on every payment · Richard Mullens $2,000/wk and Kaden Morel $1,500/wk, each 2% on every rep's payments except Moe's. No deal-claim pay. Commission is paid weekly on money received, net of card (4%) / ACH (1%) fees. Office & field (W-2, per Gusto): Alexandra Sinks $3,000/wk, Dean Madison $75,000/yr + truck + gas card, Thomas Harris $1,600/wk, Miranda Garcia-Torres $1,300/wk, Raneyah Awadi $1,300/wk. Gersom Hernandez $750/wk + 10% (hired 9/14). Daniel Gonzalez $750/wk + 10% once he is added to Gusto. Full table on the History tab.</p></div>`;
+  $('#subsBody').innerHTML = html;
+  syncSaveButtons();
+}
+
+/* ===================== SAVED JOBS ===================== */
+function jobTotals(){ const c = compute(state.pb, state.job); return {sq:c.sq, hard:Math.round(c.hard), materials:Math.round(c.materials), labor:Math.round(c.labor), contract:Math.round(c.contract), net:Math.round(c.net), netPct: isFinite(c.netPct)?+c.netPct.toFixed(1):null, status:c.status.text}; }
+async function saveJob(){
+  const j = state.job;
+  if (!j.customer && !j.address){ toast('Add a customer or address first'); $('#f_customer')?.focus(); return; }
+  const now = new Date().toISOString();
+  const doc = {customer:j.customer, address:j.address, rep:j.rep, jobType:j.jobType, city:j.city, inputs:{...j, example:false}, totals:jobTotals(), updatedAt:now, createdAt:j.createdAt||now, schema:2};
+  delete doc.inputs.id;
+  try{ const r = await hcApi('hc_job_save', {id: j.id||null, doc}); j.id = r.id; j.example=false; j.createdAt=doc.createdAt; renderForm(); recalc(); toast('Saved'); await hcRefresh(); }
+  catch(err){ handleDbErr(err,'save this job'); }
+  persistDraft();
+}
+function loadJob(rec){ state.job = {...newJob(), ...(rec.inputs||{}), id:rec.id, createdAt:rec.createdAt, example:false}; if (!Array.isArray(state.job.extras)) state.job.extras=[]; switchTab('job'); renderForm(); recalc(); persistDraft(); toast('Loaded'); window.scrollTo({top:0}); }
+async function deleteJob(rec){
+  if (!confirm(`Delete "${rec.customer||rec.address}"?`)) return;
+  try{ await hcApi('hc_job_delete', {id: rec.id}); toast('Deleted'); await hcRefresh(); }catch(err){ handleDbErr(err,'delete this job'); }
+  if (state.job.id===rec.id){ state.job.id=null; recalc(); }
+}
+function renderJobs(){
+  const q = state.search.trim().toLowerCase();
+  const list = state.jobs.filter(r => !q || [r.customer,r.address,r.rep,r.city].join(' ').toLowerCase().includes(q));
+  $('#jobsCount').textContent = `${list.length} job${list.length===1?'':'s'}${state.mode==='shared'?' · shared live':state.mode==='local'?' · this device':''}`;
+  if (!list.length){ $('#jobsList').innerHTML = `<div class="empty">${state.jobs.length?'No jobs match.':'No saved jobs yet — cost a job and save it.'}</div>`; return; }
+  $('#jobsList').innerHTML = list.map(r => { const t=r.totals||{}; const cls = t.status==='On target'?'good':t.status==='Thin'?'warn':(t.status==='Loss'||t.status==='Below target')?'bad':'neutral';
+    return `<div class="jrow" data-id="${esc(r.id)}" role="button" tabindex="0"><div><div class="t">${esc(r.customer||'(no name)')}</div><div class="m">${esc(r.address||'')}${r.rep?' · '+esc(r.rep):''} · ${r.jobType==='insurance'?'Insurance':'Retail'} · ${t.sq||0} sq · ${r.updatedAt?new Date(r.updatedAt).toLocaleDateString():''}</div></div><div class="r"><div>${money(t.hard||0)} hard</div>${t.contract?`<div>${money(t.net||0)} net</div>`:''}<div>${t.status&&t.status!=='No contract yet'?`<span class="pill ${cls}">${esc(t.status)}${t.netPct!=null?' · '+t.netPct+'%':''}</span>`:''} <button class="btn sm danger" data-del="${esc(r.id)}" type="button">Delete</button></div></div></div>`; }).join('');
+}
+
+/* ===================== HISTORY ===================== */
+function renderBench(){
+  const m = BENCH.matched, b = BENCH.built;
+  const stat = (k,v,s,r) => `<div class="stat"><div class="lbl">${k}</div><div class="v">${v}</div><div class="s">${s}</div>${r?`<div class="r">${r}</div>`:''}</div>`;
+  let html = `<div class="stats">
+    ${stat('Squares / job', m.sq[2], 'median · ABC field-shingle POs', `p25 ${m.sq[1]} · p75 ${m.sq[3]}`)}
+    ${stat('Material / sq', money(m.matSq[2]), 'ABC all-in incl. tax + delivery', `p25 ${money(m.matSq[1])} · p75 ${money(m.matSq[3])}`)}
+    ${stat('Labor / sq', money(m.labSq[2]), 'crew paid-outs incl. extras', `p25 ${money(m.labSq[1])} · p75 ${money(m.labSq[3])}`)}
+    ${stat('Hard cost / sq', money(m.hardSq[2]), 'everything but commission', `p25 ${money(m.hardSq[1])} · p75 ${money(m.hardSq[3])}`)}
+    ${stat('Contract / sq', money(m.contractSq[2]), 'approved job value ÷ squares', `p25 ${money(m.contractSq[1])} · p75 ${money(m.contractSq[3])}`)}
+    ${stat('Gross margin', pct(m.gp[2]), 'before commission', `p25 ${pct(m.gp[1])} · p75 ${pct(m.gp[3])}`)}
+    ${stat('Net margin', pct(m.gpComm[2]), 'after commission', `p25 ${pct(m.gpComm[1])} · p75 ${pct(m.gpComm[3])}`)}
+    ${stat('Built roofs', b.n, 'AccuLynx · Jun 2025 – Sep 2026', `${m.n} matched to ABC squares`)}
+  </div>
+  <div class="group-h">Where the contract dollar goes · ${b.n} built roofs</div>
+  <div class="tscroll"><table class="t"><thead><tr><th>Bucket</th><th style="text-align:right">p25</th><th style="text-align:right">Median</th><th style="text-align:right">p75</th></tr></thead><tbody>
+    <tr><td>Materials (ABC, Home Depot, Beacon)</td><td class="n">${pct(b.matPct[1])}</td><td class="n">${pct(b.matPct[2])}</td><td class="n">${pct(b.matPct[3])}</td></tr>
+    <tr><td>Roof labor (crews)</td><td class="n">${pct(b.labPct[1])}</td><td class="n">${pct(b.labPct[2])}</td><td class="n">${pct(b.labPct[3])}</td></tr>
+    <tr><td>All hard cost</td><td class="n">${pct(b.hardPct[1])}</td><td class="n">${pct(b.hardPct[2])}</td><td class="n">${pct(b.hardPct[3])}</td></tr>
+    <tr><td>Commissions</td><td class="n">${pct(b.commPct[1])}</td><td class="n">${pct(b.commPct[2])}</td><td class="n">${pct(b.commPct[3])}</td></tr>
+    <tr><td><b>Everything paid out</b></td><td class="n">${pct(b.allPct[1])}</td><td class="n"><b>${pct(b.allPct[2])}</b></td><td class="n">${pct(b.allPct[3])}</td></tr>
+  </tbody></table></div>
+  <div class="group-h">Other trades & fees on built roofs</div>
+  <div class="tscroll"><table class="t"><thead><tr><th>Item</th><th style="text-align:right">Jobs</th><th style="text-align:right">Share</th><th style="text-align:right">Median $</th></tr></thead><tbody>
+    ${BENCH.trades.map(t=>`<tr><td>${esc(t[0])}</td><td class="n">${t[1]}</td><td class="n">${pct(t[1]/b.n*100)}</td><td class="n">${money(t[2])}</td></tr>`).join('')}
+  </tbody></table></div>
+  <div class="group-h">Money on the table · from your paid-outs</div>
+  <div class="tscroll"><table class="t"><thead><tr><th>Leak</th><th style="text-align:right">Payments</th><th style="text-align:right">Paid</th><th style="text-align:right">Recoverable</th><th>Fix</th></tr></thead><tbody>
+    <tr><td>Blue Construction billed solar at $150/panel on 12 of 44 payments — your rate is $125</td><td class="n">12</td><td class="n">$57,600</td><td class="n">≈ $9,600</td><td>Hold Abram to $125; back-charge the 12</td></tr>
+    <tr><td>Gallardo's paid by card — 4% processing fee on 56 of 60 payments</td><td class="n">56</td><td class="n">$109,126</td><td class="n">≈ $4,000</td><td>Pay by check / ACH</td></tr>
+    <tr><td>Will Moore at $70/sq vs Texas Home Repair & Omar at $65</td><td class="n">11</td><td class="n">$29,100</td><td class="n">≈ $2,100</td><td>Route to $65 crews or negotiate</td></tr>
+    <tr><td>ABC list vs contract on a standard 34-sq order (if a ticket ever bills at list)</td><td class="n">—</td><td class="n">—</td><td class="n">$208 / job</td><td>Sync flags any ticket above contract</td></tr>
+    <tr><td>Claim / supplement / appraisal fees (Claim Experts, WM Contracting, Mike Taylor, Invictus, CROB)</td><td class="n">629</td><td class="n">$564,051</td><td class="n">largest fee line</td><td>Worth a rate conversation</td></tr>
+    <tr><td>Paid-outs entered in AccuLynx but still unpaid</td><td class="n">20</td><td class="n">$31,318</td><td class="n">—</td><td>Open payables to clear</td></tr>
+  </tbody></table></div>
+  <div class="group-h">Pay plan · effective ${PAY_PLAN_EFFECTIVE} · Aly 9/15 + 9/17, Blake 9/18 report</div>
+  <div class="tscroll"><table class="t"><thead><tr><th>Person</th><th>Role</th><th style="text-align:right">Weekly base</th><th style="text-align:right">Rate</th><th>On</th></tr></thead><tbody>
+    ${Object.entries(REPS).filter(([r,v])=>v.role!=='house').map(([r,v])=>`<tr><td>${esc(r)}</td><td>${v.role==='mgr'?'Manager':'Sales rep'}</td><td class="n">${v.base?money(v.base):'—'}</td><td class="n">${v.role==='mgr'?'2% override':v.rate+'%'}</td><td>${v.role==='mgr'?(r==='Mike Mullens'?'every payment received':'every rep\'s payments except Moe\'s'):'money received, net of card / ACH fee'}</td></tr>`).join('')}
+    <tr><td><b>Fixed sales payroll</b></td><td></td><td class="n"><b>${money(SALES_BASE_WK)}/wk</b></td><td class="n" colspan="2">${money(SALES_BASE_WK*52)} / yr · ${(SALES_BASE_WK*52/10939770*100).toFixed(1)}% of trailing-12 built contract ($10.94M)</td></tr>
+    <tr><td>Alexandra (Aly) Sinks</td><td>Director of Sales & Talent Ops · W-2</td><td class="n">${money(3000)}</td><td class="n">—</td><td>Gusto · Blake 9/20/26</td></tr>
+    <tr><td>Dean Madison</td><td>Supplement Operations · W-2</td><td class="n">${money(1442)}</td><td class="n">—</td><td>Gusto $75,000/yr (Blake said $1,500/wk) + truck + gas card</td></tr>
+    <tr><td>Thomas Harris</td><td>Field Project Manager · W-2</td><td class="n">${money(1600)}</td><td class="n">—</td><td>Gusto · hired 8/10/26 · confirmed by Blake 9/20</td></tr>
+    <tr><td>Miranda Garcia-Torres</td><td>Recruiter · W-2</td><td class="n">${money(1300)}</td><td class="n">—</td><td>Gusto · Blake 9/20/26</td></tr>
+    <tr><td>Raneyah Awadi</td><td>Customer relations / processing · W-2</td><td class="n">${money(1300)}</td><td class="n">—</td><td>Gusto · Blake 9/20/26</td></tr>
+    <tr><td colspan="5" class="dim">Gusto 2026 to date (Jan 30 – Sep 18, 48 runs): gross $1,883,397 = base $904,022 + commissions $944,310 + bonuses $35,064 · employer taxes $139,962 (7.4%) · reimbursements $23,907 · 85 people hired since Jan 26, 16 still active.</td></tr>
+    <tr><td colspan="5" class="dim">Old plan (Jun 2025 – Sep 2026 paid-outs): 8–15% per rep + stacked overrides, deal-claim fees, no bases — 11.2% of contract all-in. New plan on the same volume: bases 8.6% + rep 10–15% + overrides 2–6% ≈ 25%. Hector Garnica, Adam Rochester, Garrett Green and the other former reps are off the plan. ("Michael Mullens" in the paid-outs is Mike under his legal name.)</td></tr>
+  </tbody></table></div>
+  <div class="group-h">Permits by city · median paid</div><div class="tscroll"><table class="t"><tbody>`;
+  const cs = Object.entries(CITIES).sort((a,b)=>b[1]-a[1]); for (let i=0;i<cs.length;i+=2){ html += `<tr><td>${cs[i][0]}</td><td class="n">${money(cs[i][1])}</td><td>${cs[i+1]?cs[i+1][0]:''}</td><td class="n">${cs[i+1]?money(cs[i+1][1]):''}</td></tr>`; }
+  html += `</tbody></table></div>
+  <div class="group-h">Sources</div><div class="prose">
+    <p><b>ABC Supply</b> — order acks 2012829235 (PO 8296, 8/3/26) and 2013897631 (PO 8412, 9/1/26); nine 7/28/26 credit memos with rebills at contract; March 2026 COD tickets; customer price list effective 4/13/26; 2026 rebate terms (12/12/25). ABC confirmed on 7/29/26 the April contract was reinstated after the July mixup.</p>
+    <p><b>Crews & subs</b> — Texas Home Repair INV0571/0572/0580/0581/0582, DFW labor POs 8339 & 721 Poinsettia, Will Moore invoices 6/8/9/11/12 + change order, Omar Alvarez (303 Chicken St, 1903 Royal Oaks), R&R3 183/184, Blue Construction 1085/1090, JMW Solar pricing sheet, Flowers Gutters 3024/3025/3038/3129/3153/3157/3165/3174/3181, Silva Home Solutions, Garcia's 1128/1129, Gallardo's 000953/000961, Summit INV-000031, CROB INV-000137.</p>
+    <p><b>AccuLynx</b> — paid-out payments and approved job value on ${b.n} built roofs (Completed, Invoiced, Closed; Jun 2025 – Sep 2026); ${m.n} matched to ABC POs for true per-square numbers. AccuLynx's API cannot list or open the files in a job's Documents tab, so the invoices above are the emailed copies of the same documents.</p>
+  </div>`;
+  $('#benchBody').innerHTML = html;
+}
+
+/* ===================== TABS, DRAFT, SYNC ===================== */
+function switchTab(t){
+  state.tab = t;
+  document.querySelectorAll('.tabs [role=tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab===t)));
+  ['job','abc','subs','jobs','bench'].forEach(x => { $('#panel-'+x).hidden = x!==t; });
+  $('#dock').classList.toggle('show', t==='job');
+  try{ localStorage.setItem(LS+':tab', t); }catch(e){}
+}
+function persistDraft(){ lsSet(LS+':draft', state.job); }
+function setMode(m){ state.mode = m; const chip=$('#syncChip'); chip.className='status '+m; $('#syncText').textContent = m==='shared'?'Shared · live':m==='local'?'This device only':m==='readonly'?'View only':'Connecting'; const sn=$('#saveNote'); if(sn) sn.textContent=saveNoteText(); syncSaveButtons(); }
+function handleDbErr(err, what){
+  const code = err?.code || 'unavailable';
+  if (code==='invalid_argument'){ setMode('readonly'); toast("Couldn't "+what+' — view-only access'); }
+  else if (code==='quota_exceeded'){ toast('Storage full — delete old jobs'); }
+  else if (code==='resource_exhausted'){ toast('Too fast — wait a moment'); }
+  else { toast("Couldn't "+what+' — try again'); }
+  console.warn(err);
+}
+function applyPricebook(items){ state.pb = {...PB_DEF, ...(items||{})}; }
+function loadLocal(){ const pb = lsGet(LS+':pb'); if (pb?.items) applyPricebook(pb.items); state.jobs = lsGet(LS+':jobs') || []; renderAbc(); renderSubs(); renderJobs(); recalc(); }
+const HC_TOKEN = (()=>{ const m = location.hash.match(/tok=([^&]+)/); if (m) return decodeURIComponent(m[1]); try{ return localStorage.getItem('dfw_team_token'); }catch(e){ return null; } })();
+const HC_API = 'https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/hc-relay/api/';
+async function hcApi(action, body){
+  const r = await fetch(HC_API+action, {method:'POST', headers:{'content-type':'application/json', authorization:'Bearer '+(HC_TOKEN||'')}, body: JSON.stringify(body||{})});
+  const j = await r.json().catch(()=>({}));
+  if (!r.ok){ const e = new Error(j.error||('http_'+r.status)); e.code = r.status===401||r.status===403 ? 'invalid_argument' : 'unavailable'; throw e; }
+  return j;
+}
+async function hcRefresh(){
+  const d = await hcApi('hc_load');
+  if (d.pricebook?.items && !state.pbDirty){ applyPricebook(d.pricebook.items); state.pbMeta={updatedAt:d.pricebook.updated_at}; renderAbc(); renderSubs(); recalc(); }
+  state.jobs = d.jobs || []; renderJobs();
+}
+async function initCapabilities(){
+  if (!HC_TOKEN){ setMode('readonly'); loadLocal(); return; }
+  try{ await hcRefresh(); state.canWrite = true; setMode('shared'); }
+  catch(err){ if (err.code==='invalid_argument'){ setMode('readonly'); } else { setMode('local'); loadLocal(); } }
+  setInterval(()=>{ hcRefresh().catch(()=>{}); }, 60000);
+}
+
+/* ===================== BOOT ===================== */
+function start(hot){
+  const draft = lsGet(LS+':draft');
+  state.job = (hot && hot.job) ? hot.job : (draft && (draft.sq!=='' || draft.customer) ? {...newJob(), ...draft} : exampleJob());
+  if (!Array.isArray(state.job.extras)) state.job.extras=[];
+  let tab = (hot && hot.tab) || 'job'; try{ tab = localStorage.getItem(LS+':tab') || tab; }catch(e){}
+  renderForm(); renderAbc(); renderSubs(); renderJobs(); renderBench(); recalc(); switchTab(['job','abc','subs','jobs','bench'].includes(tab)?tab:'job');
+  document.querySelectorAll('.tabs [role=tab]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  $('#jobForm').addEventListener('input', onFormInput); $('#jobForm').addEventListener('change', onFormInput); $('#jobForm').addEventListener('click', onFormClick);
+  $('#summary').addEventListener('click', e => {
+    if (e.target.id==='saveJob') saveJob();
+    else if (e.target.id==='newJob'){ if (confirm('Start a new blank job? Unsaved changes will be lost.')) startBlank(); }
+    else if (e.target.id==='dupJob'){ state.job = {...state.job, id:null, example:false, customer:(state.job.customer||'')+' (copy)', createdAt:undefined}; renderForm(); recalc(); persistDraft(); toast('Duplicated'); }
+  });
+  $('#abcBody').addEventListener('input', onPbInput); $('#subsBody').addEventListener('input', onPbInput);
+  $('#pbSave').addEventListener('click', savePricebook); $('#pbSave2').addEventListener('click', savePricebook); $('#pbReset').addEventListener('click', resetPricebook);
+  $('#abcSearch').addEventListener('input', e => { state.abcSearch = e.target.value; renderAbc(); });
+  $('#jobSearch').addEventListener('input', e => { state.search = e.target.value; renderJobs(); });
+  $('#jobsList').addEventListener('click', e => { const del = e.target.closest('[data-del]'); if (del){ e.stopPropagation(); const rec = state.jobs.find(r=>r.id===del.dataset.del); if (rec) deleteJob(rec); return; } const row = e.target.closest('.jrow'); if (row){ const rec = state.jobs.find(r=>r.id===row.dataset.id); if (rec) loadJob(rec); } });
+  $('#jobsList').addEventListener('keydown', e => { if (e.key==='Enter'){ const row = e.target.closest('.jrow'); if (row){ const rec = state.jobs.find(r=>r.id===row.dataset.id); if (rec) loadJob(rec); } } });
+  
+/* ===================== JOB # LOOKUP (pulls the job from Lynx) ===================== */
+function lkRepKey(names){
+  const keys = Object.keys(REPS), al = {michael:'mike'};
+  for (const nm of (names||[])){
+    const w = String(nm).toLowerCase().trim().split(/\s+/); if (!w[0]) continue;
+    const f = al[w[0]]||w[0], l = w[w.length-1];
+    const k = keys.find(k=>{ const kw=k.toLowerCase().split(/\s+/); const kf=al[kw[0]]||kw[0]; return kw[kw.length-1]===l && (kf===f || kf[0]===f[0]); });
+    if (k) return k;
+  }
+  return '';
+}
+function lkMoney(v){ return '$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+let lkTimer=null, lkLast='', lkBusy=false;
+async function pullJob(){
+  clearTimeout(lkTimer);
+  const inp=$('#lkNum'), msg=$('#lkMsg'), btn=$('#lkGo');
+  const num=String(inp.value||'').replace(/\D/g,'');
+  if (!num){ msg.textContent='Type a job number first.'; inp.focus(); return; }
+  if (!HC_TOKEN){ msg.textContent='Sign in to the team app first, then open Hard Cost from there.'; return; }
+  if (lkBusy) return; lkBusy=true; lkLast=num;
+  msg.textContent='Pulling #'+num+' from Lynx…'; btn.disabled=true;
+  try{
+    const d = await hcApi('hc_job_lookup', {job_number:num});
+    const J=d.job||{}, F=d.fin||{}, I=d.ins||{};
+    if (state.job.example || (state.job.jobNumber && state.job.jobNumber!==J.num) || (state.job.id && state.job.jobNumber!==J.num)) state.job = newJob();
+    const j = state.job;
+    j.jobNumber = J.num; j.lynxId = J.id;
+    j.customer = J.customer || j.customer;
+    j.address = [J.street, J.city].filter(Boolean).join(', ') || j.address;
+    const ck = Object.keys(CITIES).find(c=>c.toLowerCase()===String(J.city||'').toLowerCase());
+    j.city = ck || (J.city ? 'Other' : j.city);
+    const rk = lkRepKey(J.reps); if (rk) j.rep = rk;
+    j.jobType = /insur/i.test(J.workType||'') ? 'insurance' : (J.workType ? 'retail' : j.jobType);
+    const r2 = v => v ? String(Math.round(v*100)/100) : '';
+    if (j.jobType==='insurance'){ j.rcv=r2(F.claim); j.deductible=r2(F.deductible); j.suppAmt=r2(F.supplements); j.upgrades=r2(F.upgrades); }
+    else { j.contract=r2(F.approved); }
+    switchTab('job'); renderForm(); recalc(); persistDraft();
+    const bits = [J.customer, J.workType, J.milestone, I.carrier?(I.carrier+(I.claim?' claim '+I.claim:'')):'', (J.reps||[]).join(', ')].filter(Boolean);
+    const money = j.jobType==='insurance' ? `RCV ${lkMoney(F.claim)} · deductible ${lkMoney(F.deductible)}${F.supplements?' · supplements '+lkMoney(F.supplements):''}${F.upgrades?' · upgrades '+lkMoney(F.upgrades):''}` : `contract ${lkMoney(F.approved)}`;
+    msg.innerHTML = `<b style="color:var(--ink)">#${esc(J.num)} filled from Lynx.</b> ${esc(bits.join(' · '))} · ${esc(money)}${rk||!(J.reps||[]).length?'':' · rep not on the pay plan list, pick one'} · <a href="${esc(J.lynx)}" target="_blank" rel="noopener">Open in Lynx</a>. Add the measurements below.`;
+    toast('Pulled #'+J.num+' from Lynx');
+  }catch(err){
+    lkLast='';
+    const c = err && (err.message||err.code||'');
+    msg.textContent = /not_found|404/.test(c) ? 'No job #'+num+' in Lynx. Check the number.' : /forbid|403|invalid_argument/.test(c) ? "Your login doesn't have Hard Cost access." : "Couldn't reach Lynx. Try again in a moment.";
+  }finally{ btn.disabled=false; lkBusy=false; }
+}
+$('#lkNum').addEventListener('keydown', e=>{ if (e.key==='Enter'){ e.preventDefault(); pullJob(); } });
+$('#lkNum').addEventListener('input', ()=>{ clearTimeout(lkTimer); const v=String($('#lkNum').value||'').replace(/\D/g,''); if (v.length>=4 && v!==lkLast) lkTimer=setTimeout(()=>{ if (String($('#lkNum').value||'').replace(/\D/g,'')===v) pullJob(); }, 900); });
+$('#lkGo').addEventListener('click', pullJob);
+$('#jobForm').addEventListener('keydown', e=>{ const t=e.target; if (e.key==='Enter' && t && t.dataset && t.dataset.k==='customer' && /^\s*#?\d{3,6}\s*$/.test(t.value||'')){ e.preventDefault(); const v=t.value.replace(/\D/g,''); t.value=''; state.job.customer=''; $('#lkNum').value=v; pullJob(); } });
+setTimeout(()=>{ const qj=new URLSearchParams(location.search).get('job'); if (qj){ $('#lkNum').value=String(qj).replace(/\D/g,''); pullJob(); } else if (!state.job.jobNumber){ try{ $('#lkNum').focus(); }catch(e){} } }, 600);
+$('#dockJump').addEventListener('click', () => $('#summary').scrollIntoView({behavior:'smooth', block:'start'}));
+  initCapabilities();
+}
+try{ window.claude?.hot?.snapshot?.(() => ({job:state.job, tab:state.tab})); }catch(e){}
+if (window.claude?.hot?.ready) window.claude.hot.ready(start); else start(window.claude?.hot?.data ?? {});
+</script>
+</body></html>
