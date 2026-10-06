@@ -1018,10 +1018,26 @@ async function pullJob(){
     const r2 = v => v ? String(Math.round(v*100)/100) : '';
     if (j.jobType==='insurance'){ j.rcv=r2(F.claim); j.deductible=r2(F.deductible); j.suppAmt=r2(F.supplements); j.upgrades=r2(F.upgrades); }
     else { j.contract=r2(F.approved); }
+    const RD = d.read; let readNote = '';
+    if (RD){
+      const blank = k => (j[k]===''||j[k]==null||j[k]===0||j[k]==='0');
+      const fill = (k,v) => { if (v==null||v==='') return; if (saved && !blank(k)) return; j[k] = (typeof v==='number') ? String(v) : v; };
+      ['sq','eaves','rakes','ridges','hips','valleys','wall','boots','boxvents','turbines','powervents','chimneys','skylights','deckSheets','ridgeVent','woodLf','ventCancel','versacaps','gutterLf','screens','garageDoors'].forEach(k=>fill(k, RD[k]));
+      if (RD.pitch && (!saved || !j.pitch)) j.pitch = RD.pitch;
+      if (+RD.stories>0 && !saved) j.stories = +RD.stories;
+      if (+RD.layers>0 && !saved) j.layers = +RD.layers;
+      if (RD.shingle && state.pb[RD.shingle]!=null && !saved) j.shingle = RD.shingle;
+      if (RD.cap && ['3tab','hr','ir'].includes(RD.cap) && !saved) j.cap = RD.cap;
+      if (RD.crew && typeof CREWS!=='undefined' && CREWS[RD.crew] && !saved) j.crew = RD.crew;
+      if (RD.valleyMetal) j.valleyMetal = true;
+      if (RD.garageIns) j.garageIns = true;
+      if (!saved && (+RD.hips + +RD.valleys) > 120) j.waste = 15;
+      if (+RD.sq>0) readNote = ` · Roofr ${RD.sq} sq${RD.rise?' at '+RD.rise+'/12':''} filled from the job read${RD.readAt?' ('+RD.readAt+')':''}`;
+    }
     switchTab('job'); renderForm(); recalc(); persistDraft();
     const bits = [J.customer, J.workType, J.milestone, I.carrier?(I.carrier+(I.claim?' claim '+I.claim:'')):'', (J.reps||[]).join(', ')].filter(Boolean);
     const money = j.jobType==='insurance' ? `RCV ${lkMoney(F.claim)} · deductible ${lkMoney(F.deductible)}${F.supplements?' · supplements '+lkMoney(F.supplements):''}${F.upgrades?' · upgrades '+lkMoney(F.upgrades):''}` : `contract ${lkMoney(F.approved)}`;
-    msg.innerHTML = `<b style="color:var(--ink)">#${esc(J.num)} filled from Lynx${saved?' with your saved estimate':''}.</b> ${esc(bits.join(' · '))} · ${esc(money)}${rk||!(J.reps||[]).length?'':' · rep not on the pay plan list, pick one'} · <a href="${esc(J.lynx)}" target="_blank" rel="noopener">Open in Lynx</a>. Add the measurements below.`;
+    msg.innerHTML = `<b style="color:var(--ink)">#${esc(J.num)} filled from Lynx${saved?' with your saved estimate':''}.</b> ${esc(bits.join(' · '))} · ${esc(money)}${rk||!(J.reps||[]).length?'':' · rep not on the pay plan list, pick one'} ${readNote} · <a href="${esc(J.lynx)}" target="_blank" rel="noopener">Open in Lynx</a>.${(RD&&+RD.sq>0)?' Check the measurements below.':' No Roofr read on file for this job yet. Add the measurements below.'}`;
     toast('Pulled #'+J.num+' from Lynx');
   }catch(err){
     lkLast='';
