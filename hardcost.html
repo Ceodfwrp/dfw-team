@@ -258,7 +258,7 @@ table.t .edit.changed{color:var(--warn);border-bottom-color:var(--warn)}
 
   <main>
     <section id="panel-job" role="tabpanel">
-      <div class="lookup" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)"><label for="lkNum" style="font-weight:700;letter-spacing:.02em">Job #</label><input class="in" id="lkNum" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 8424" style="max-width:150px"><button class="btn" id="lkGo" type="button">Pull from Lynx</button><span id="lkMsg" style="font-size:14px;color:var(--muted);flex:1 1 260px">Type a job number. It fills the customer, rep and claim numbers from Lynx.</span></div>
+      <div class="lookup" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)"><label for="lkNum" style="font-weight:700;letter-spacing:.02em">Job #</label><input class="in" id="lkNum" type="text" inputmode="text" autocomplete="off" placeholder="Job # or customer name" style="max-width:260px"><button class="btn" id="lkGo" type="button">Pull from Lynx</button><span id="lkMsg" style="font-size:14px;color:var(--muted);flex:1 1 260px">Type a job number or a customer name. It fills the job from Lynx.</span><div id="lkList" style="flex:1 1 100%;display:none;max-height:320px;overflow:auto"></div></div>
       <div id="actBox"></div>
       <div class="hud" id="hud"></div>
       <div class="grid">
@@ -1002,7 +1002,7 @@ async function pullJob(){
   const num=String(inp.value||'').replace(/\D/g,'');
   if (!num){ msg.textContent='Type a job number first.'; inp.focus(); return; }
   if (!HC_TOKEN){ msg.textContent='Sign in to the team app first, then open Hard Cost from there.'; return; }
-  if (lkBusy) return; lkBusy=true; lkLast=num;
+  if (lkBusy) return; lkBusy=true; lkLast=num; { const bx=document.getElementById('lkList'); if (bx){ bx.style.display='none'; bx.innerHTML=''; } }
   msg.textContent='Pulling #'+num+' from Lynx…'; btn.disabled=true;
   try{
     let d; try{ d = await hcApi('hc_pull', {job_number:num}); }catch(e1){ if (e1 && (e1.code==='invalid_argument' || /not_found/.test(e1.message||''))) throw e1; msg.textContent='Still pulling #'+num+'…'; await new Promise(r=>setTimeout(r,1500)); d = await hcApi('hc_pull', {job_number:num}); }
@@ -1052,9 +1052,29 @@ async function pullJob(){
     msg.textContent = /not_found|404/.test(c) ? 'No job #'+num+' in Lynx. Check the number.' : /forbid|403|invalid_argument/.test(c) ? "Your login doesn't have Hard Cost access." : "Couldn't reach Lynx ("+((err&&err.message)||'error')+"). Try again in a moment.";
   }finally{ btn.disabled=false; lkBusy=false; }
 }
-$('#lkNum').addEventListener('keydown', e=>{ if (e.key==='Enter'){ e.preventDefault(); pullJob(); } });
 $('#lkNum').addEventListener('input', ()=>{ clearTimeout(lkTimer); const v=String($('#lkNum').value||'').replace(/\D/g,''); if (v.length>=4 && v!==lkLast) lkTimer=setTimeout(()=>{ if (String($('#lkNum').value||'').replace(/\D/g,'')===v) pullJob(); }, 900); });
-$('#lkGo').addEventListener('click', pullJob);
+function lkIsName(s){ return /[a-z]/i.test(String(s||'')); }
+let lkFindT=null;
+async function lkFind(q){
+  const box=$('#lkList');
+  box.style.display='block'; box.innerHTML='<div style="font-size:14px;color:var(--muted);padding:6px 2px">Searching Lynx for "'+esc(q)+'"…</div>';
+  try{
+    const d = await hcApi('hc_find', {q});
+    if (String($('#lkNum').value||'').trim()!==q) return;
+    const it = d.items||[];
+    if (!it.length){ box.innerHTML='<div style="font-size:14px;color:var(--muted);padding:6px 2px">No jobs match "'+esc(q)+'". Try a last name or street.</div>'; return; }
+    box.innerHTML = it.map(x=>`<button type="button" class="lkHit" data-num="${esc(x.num)}" style="display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:9px 4px;color:var(--ink);cursor:pointer;font:inherit;font-size:14px"><b>#${esc(x.num)}</b> ${esc(x.customer||'')} <span style="color:var(--muted)">· ${esc([x.street,x.city].filter(Boolean).join(', '))}${x.milestone?' · '+esc(x.milestone):''}</span></button>`).join('');
+    box.querySelectorAll('.lkHit').forEach(b=>b.onclick=()=>{ $('#lkNum').value=b.dataset.num; box.style.display='none'; box.innerHTML=''; pullJob(); });
+  }catch(err){ box.innerHTML='<div style="font-size:14px;color:var(--bad);padding:6px 2px">Search failed ('+esc((err&&err.message)||'error')+'). Try again.</div>'; }
+}
+function lkGoNow(){
+  const s=String($('#lkNum').value||'').trim();
+  if (lkIsName(s)){ clearTimeout(lkFindT); const f=document.querySelector('#lkList .lkHit'); if (f) f.click(); else if (s.length>=2) lkFind(s); return; }
+  pullJob();
+}
+$('#lkNum').addEventListener('input', ()=>{ const s=String($('#lkNum').value||'').trim(); clearTimeout(lkFindT); const box=$('#lkList'); if (!lkIsName(s)){ box.style.display='none'; box.innerHTML=''; return; } clearTimeout(lkTimer); if (s.length<2){ box.style.display='none'; return; } lkFindT=setTimeout(()=>lkFind(s), 350); });
+$('#lkNum').addEventListener('keydown', e=>{ if (e.key==='Enter'){ e.preventDefault(); lkGoNow(); } });
+$('#lkGo').addEventListener('click', lkGoNow);
 $('#jobForm').addEventListener('keydown', e=>{ const t=e.target; if (e.key==='Enter' && t && t.dataset && t.dataset.k==='customer' && /^\s*#?\d{3,6}\s*$/.test(t.value||'')){ e.preventDefault(); const v=t.value.replace(/\D/g,''); t.value=''; state.job.customer=''; $('#lkNum').value=v; pullJob(); } });
 setTimeout(()=>{ const qj=new URLSearchParams(location.search).get('job'); if (qj){ $('#lkNum').value=String(qj).replace(/\D/g,''); pullJob(); } else if (!state.job.jobNumber){ try{ $('#lkNum').focus(); }catch(e){} } }, 600);
 $('#dockJump').addEventListener('click', () => $('#summary').scrollIntoView({behavior:'smooth', block:'start'}));
