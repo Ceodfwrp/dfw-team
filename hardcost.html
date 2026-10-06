@@ -1146,6 +1146,11 @@ async function pullJob(){
       if (!saved && (+RD.hips + +RD.valleys) > 120) j.waste = 15;
       if (+RD.sq>0) readNote += ` · Roofr ${RD.sq} sq${RD.rise?' at '+RD.rise+'/12':''} filled from the job read${RD.readAt?' ('+RD.readAt+')':''}`;
     }
+    const CD = d.cad;
+    if (CD && !saved){
+      if (CD.stories>=2){ if (!(+j.sq2story>0) && +j.sq>0 && CD.two_story_ratio>0){ j.sq2story = String(Math.round(+j.sq*CD.two_story_ratio*100)/100); } if (!(+j.stories>1)) j.stories = 2; readNote += ` · county record: ${esc(CD.stories_desc||'2 stories')}, ${CD.main_sf} / ${CD.living_sf-CD.main_sf} sq ft${+j.sq2story>0?', est. '+j.sq2story+' two-story sq':''}`; }
+      else if (CD.stories===1){ if (!(+j.sq2story>0)) j.stories = 1; readNote += ' · county record: 1 story'; }
+    }
     switchTab('job'); renderForm(); recalc(); persistDraft();
     const bits = [J.customer, J.workType, J.milestone, I.carrier?(I.carrier+(I.claim?' claim '+I.claim:'')):'', (J.reps||[]).join(', ')].filter(Boolean);
     const money = j.jobType==='insurance' ? `RCV ${lkMoney(F.claim)} · deductible ${lkMoney(F.deductible)}${F.supplements?' · supplements '+lkMoney(F.supplements):''}${F.upgrades?' · upgrades '+lkMoney(F.upgrades):''}` : `contract ${lkMoney(F.approved)}`;
