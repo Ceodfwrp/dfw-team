@@ -101,7 +101,7 @@ function login(){
 /* ---------- shell ---------- */
 async function boot(){
   if(!TOKEN) return login();
-  try{const r=await api("me");ME=r.me;if(!r.sales){$("#main").innerHTML=`<div class="empty">Your login doesn't have the sales portal turned on yet. Ask the office.</div>`;return}
+  try{const r=await api("me");ME=r.me;if(ME.team)SCOPE="team";if(!r.sales){$("#main").innerHTML=`<div class="empty">Your login doesn't have the sales portal turned on yet. Ask the office.</div>`;return}
     $("#who").innerHTML=`${esc(ME.name)}<br><button id="lo">Sign out</button>`;
     $("#lo").onclick=async()=>{try{await api("logout")}catch(e){};TOKEN=null;try{localStorage.removeItem(LS)}catch(e){};login()};
     try{const hr=await fetch(HCR+"hc_load",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+TOKEN},body:"{}"});HC=hr.ok}catch(e){HC=false}
