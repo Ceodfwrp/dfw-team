@@ -1186,7 +1186,8 @@ $('#lkNum').addEventListener('input', ()=>{ const s=String($('#lkNum').value||''
 $('#lkNum').addEventListener('keydown', e=>{ if (e.key==='Enter'){ e.preventDefault(); lkGoNow(); } });
 $('#lkGo').addEventListener('click', lkGoNow);
 $('#jobForm').addEventListener('keydown', e=>{ const t=e.target; if (e.key==='Enter' && t && t.dataset && t.dataset.k==='customer' && /^\s*#?\d{3,6}\s*$/.test(t.value||'')){ e.preventDefault(); const v=t.value.replace(/\D/g,''); t.value=''; state.job.customer=''; $('#lkNum').value=v; pullJob(); } });
-setTimeout(()=>{ const qj=new URLSearchParams(location.search).get('job'); if (qj){ $('#lkNum').value=String(qj).replace(/\D/g,''); pullJob(); } else if (!state.job.jobNumber){ try{ $('#lkNum').focus(); }catch(e){} } }, 600);
+setTimeout(()=>{ const qj=new URLSearchParams(location.search).get('job'); if (qj){ $('#lkNum').value=String(qj).replace(/\D/g,''); pullJob(); } else if (!state.job.jobNumber){ try{ $('#lkNum').focus(); }catch(e){} }     try{ const role=new URLSearchParams(location.search).get('role')||''; if (role!=='owner'){ ['abc','subs','bench'].forEach(x=>{ const b=document.querySelector('.tabs [data-tab="'+x+'"]'); if (b) b.hidden=true; }); } }catch(e){}
+  }, 600);
 $('#dockJump').addEventListener('click', () => $('#summary').scrollIntoView({behavior:'smooth', block:'start'}));
   initCapabilities();
 }
