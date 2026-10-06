@@ -924,7 +924,7 @@ async function initCapabilities(){
 /* ===================== BOOT ===================== */
 function start(hot){
   const draft = lsGet(LS+':draft');
-  state.job = (hot && hot.job) ? hot.job : (draft && (draft.sq!=='' || draft.customer) ? {...newJob(), ...draft} : exampleJob());
+  state.job = (hot && hot.job) ? hot.job : (draft && (draft.sq!=='' || draft.customer) ? {...newJob(), ...draft} : newJob());
   if (!Array.isArray(state.job.extras)) state.job.extras=[];
   let tab = (hot && hot.tab) || 'job'; try{ tab = localStorage.getItem(LS+':tab') || tab; }catch(e){}
   renderForm(); renderAbc(); renderSubs(); renderJobs(); renderBench(); recalc(); switchTab(['job','abc','subs','jobs','bench'].includes(tab)?tab:'job');
