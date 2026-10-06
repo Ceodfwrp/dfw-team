@@ -435,7 +435,7 @@ const SHINGLES = [...ABC_CORE.filter(i=>i.cls).map(i=>[i.k,i.desc.split(' — ')
 const LS = 'dfwrp_hardcost_v2';
 let state = {tab:'job', pb:{...PB_DEF}, pbDirty:false, pbMeta:null, job:null, jobs:[], db:null, user:null, canWrite:null, mode:'connecting', search:'', abcSearch:''};
 function newJob(){
-  return {id:null, example:false, jobNumber:'', lynxId:'', customer:'', address:'', city:'', rep:'', jobType:'insurance',
+  return {id:null, example:false, jobNumber:'', lynxId:'', matKnown:'', laborKnown:'', customer:'', address:'', city:'', rep:'', jobType:'insurance',
     sq:'', waste:PB_DEF.waste_default, pitch:'low', stories:1, layers:1, shingle:'sh_cambridge', cap:'3tab', crew:'thr', tyler:false,
     eaves:'', rakes:'', ridges:'', hips:'', valleys:'', wall:'', valleyMetal:false, ridgeVent:'', woodLf:'',
     boots:'', boxvents:'', versacaps:'', turbines:'', powervents:'', ventCancel:'', chimneys:'', skylights:'', deckSheets:'', tripCharges:'',
@@ -501,7 +501,8 @@ function compute(pb, j){
   const hdTotal = L.material.filter(l=>!l.sku).reduce((s,l)=>s+l.total,0);   // Home Depot lines (no ABC sku) — taxed too
   const tax = matSub * n(pb.tax)/100;
   const delivery = sq>0 ? n(pb.delivery) : 0;
-  const materials = matSub + tax + delivery;
+  let materials = matSub + tax + delivery;
+  if (n(j.matKnown)>0){ L.material = [{label:'ABC material — actual invoice from Lynx', qty:1, unit:'job', unitCost:n(j.matKnown), total:n(j.matKnown), note:'exact amount paid · replaces the estimated material list'}]; materials = n(j.matKnown); }
   const rebate = (matSub - hdTotal) * n(pb.rebate)/100;
 
   // Labor — selected crew's rate card
@@ -522,7 +523,8 @@ function compute(pb, j){
   add(L.labor, 'Wood repair labor', n(j.woodLf), 'lf', R('wood'));
   add(L.labor, 'Trip charges', n(j.tripCharges), 'ea', R('trip'));
   add(L.labor, 'Dumpster / haul-off', n(j.dumpster)>0?1:0, 'job', n(j.dumpster), 'crews include haul-off');
-  const labor = L.labor.reduce((s,l)=>s+l.total,0);
+  let labor = L.labor.reduce((s,l)=>s+l.total,0);
+  if (n(j.laborKnown)>0){ L.labor = [{label:crewName+' — actual crew invoice from Lynx', qty:1, unit:'job', unitCost:n(j.laborKnown), total:n(j.laborKnown), note:'exact amount billed · replaces the rate-card estimate'}]; labor = n(j.laborKnown); }
 
   // Trades
   add(L.trades, 'Solar detach & reset — Blue Construction', n(j.panels), 'panel', n(pb.solar_panel));
@@ -970,13 +972,15 @@ window.renderActuals = function(){
       <tbody>${hardKeys.map(k=>{ const b=(LK_ACT.buckets||[]).find(x=>x.bucket===k)||{}; return `<tr><td ${td}>${esc(ACT_LABEL[k]||k)}</td><td ${tdn}>${lkMoney(B[k])}</td><td ${tdn}>${b.n||''}</td></tr>`; }).join('')}
       <tr style="font-weight:700"><td ${td}>Total hard cost</td><td ${tdn}>${lkMoney(actHard)}</td><td ${tdn}></td></tr></tbody></table></div>
     ${refund?`<div style="font-size:13px;color:var(--muted);margin-top:6px">Refunds recorded: ${lkMoney(refund)} (not counted in hard cost).</div>`:''}
-    <div style="font-size:13px;color:var(--muted);margin-top:6px">Net so far = contract − hard cost recorded − commission paid. Costs not yet entered in Lynx aren't included.</div>`;
+    <div style="font-size:13px;color:var(--muted);margin-top:6px">Net so far = contract − hard cost recorded − commission paid. Costs not yet entered in Lynx aren't included.</div>
+    ${(B.material||B.roof_labor)?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">${B.material?`<button class="btn sm" type="button" data-useact="mat" aria-pressed="${n(state.job.matKnown)>0}">${n(state.job.matKnown)>0?'✓ Using':'Use'} actual ABC material ${lkMoney(B.material)}</button>`:''}${B.roof_labor?`<button class="btn sm" type="button" data-useact="lab" aria-pressed="${n(state.job.laborKnown)>0}">${n(state.job.laborKnown)>0?'✓ Using':'Use'} actual crew invoice ${lkMoney(B.roof_labor)}</button>`:''}</div><div style="font-size:12px;color:var(--muted);margin-top:4px">Swaps the estimate for the exact amount in Lynx. Tap again to go back to the estimate. Only use it once the full invoice is in.</div>`:''}`;
   if (c.sq>0) h += `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><div style="font-weight:700;margin-bottom:4px">Estimate vs. actual</div><div style="font-size:14px;margin-bottom:6px">${verdict}</div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em"><td ${td}>Category</td><td ${tdn}>Estimate</td><td ${tdn}>Actual so far</td><td ${tdn}>Difference</td></tr></thead>
     <tbody>${row('Materials',eM,aM)}${row('Roof labor',eL,aL)}${row('Other trades & fees',eO,aO)}${row('Total hard cost',eH,actHard,true)}</tbody></table></div></div>`;
   else h += `<div style="margin-top:10px;font-size:14px;color:var(--muted)">Add the squares from the Roofr report below to compare this against the estimate.</div>`;
   if (lines.length) h += `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:14px">Every payment on this job (${lines.length})</summary><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px">${lines.map(l=>`<tr><td style="padding:5px 8px;white-space:nowrap">${l.date?esc(String(l.date).slice(0,10)):'—'}</td><td style="padding:5px 8px">${esc(ACT_LABEL[l.bucket]||l.bucket||'')}</td><td style="padding:5px 8px">${esc(l.vendor||'')}${l.notes?` <span style="color:var(--muted)">· ${esc(l.notes)}</span>`:''}${l.is_paid===false?' <span style="color:var(--warn)">· unpaid</span>':''}</td><td class="n" style="padding:5px 8px">${lkMoney(l.amount)}</td></tr>`).join('')}</table></div></details>`;
   box.innerHTML = h + `</div>`;
+  box.querySelectorAll('[data-useact]').forEach(btn=>btn.onclick=()=>{ const k=btn.dataset.useact==='mat'?'matKnown':'laborKnown', amt=btn.dataset.useact==='mat'?B.material:B.roof_labor; state.job[k] = n(state.job[k])>0 ? '' : String(Math.round(amt*100)/100); renderForm(); recalc(); persistDraft(); toast(n(state.job[k])>0?'Using the actual invoice':'Back to the estimate'); });
 };
 
 /* ===================== JOB # LOOKUP (pulls the job from Lynx) ===================== */
@@ -1019,6 +1023,9 @@ async function pullJob(){
     if (j.jobType==='insurance'){ j.rcv=r2(F.claim); j.deductible=r2(F.deductible); j.suppAmt=r2(F.supplements); j.upgrades=r2(F.upgrades); }
     else { j.contract=r2(F.approved); }
     const RD = d.read; let readNote = '';
+    { const labs=((d.actual&&d.actual.lines)||[]).filter(l=>l.bucket==='roof_labor'&&l.vendor); const lv=labs.map(l=>String(l.vendor).toUpperCase()).join(' | ');
+      const ck = /TEXAS HOME|SERVANDO/.test(lv)?'thr':/OMAR/.test(lv)?'omar':/WILL/.test(lv)?'will':'';
+      if (ck && typeof CREWS!=='undefined' && CREWS[ck] && !saved){ j.crew = ck; readNote += ` · crew: ${CREWS[ck].name} (billed in Lynx)`; } }
     if (RD){
       const blank = k => (j[k]===''||j[k]==null||j[k]===0||j[k]==='0');
       const fill = (k,v) => { if (v==null||v==='') return; if (saved && !blank(k)) return; j[k] = (typeof v==='number') ? String(v) : v; };
@@ -1032,7 +1039,7 @@ async function pullJob(){
       if (RD.valleyMetal) j.valleyMetal = true;
       if (RD.garageIns) j.garageIns = true;
       if (!saved && (+RD.hips + +RD.valleys) > 120) j.waste = 15;
-      if (+RD.sq>0) readNote = ` · Roofr ${RD.sq} sq${RD.rise?' at '+RD.rise+'/12':''} filled from the job read${RD.readAt?' ('+RD.readAt+')':''}`;
+      if (+RD.sq>0) readNote += ` · Roofr ${RD.sq} sq${RD.rise?' at '+RD.rise+'/12':''} filled from the job read${RD.readAt?' ('+RD.readAt+')':''}`;
     }
     switchTab('job'); renderForm(); recalc(); persistDraft();
     const bits = [J.customer, J.workType, J.milestone, I.carrier?(I.carrier+(I.claim?' claim '+I.claim:'')):'', (J.reps||[]).join(', ')].filter(Boolean);
