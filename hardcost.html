@@ -258,7 +258,8 @@ table.t .edit.changed{color:var(--warn);border-bottom-color:var(--warn)}
 
   <main>
     <section id="panel-job" role="tabpanel">
-      <div class="lookup" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)"><label for="lkNum" style="font-weight:700;letter-spacing:.02em">Job #</label><input class="in" id="lkNum" type="text" inputmode="text" autocomplete="off" placeholder="Job # or customer name" style="max-width:260px"><button class="btn" id="lkGo" type="button">Pull from Lynx</button><span id="lkMsg" style="font-size:14px;color:var(--muted);flex:1 1 260px">Type a job number or a customer name. It fills the job from Lynx.</span><div id="lkList" style="flex:1 1 100%;display:none;max-height:320px;overflow:auto"></div></div>
+      <div class="lookup" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)"><label for="lkNum" style="font-weight:700;letter-spacing:.02em">Job #</label><input class="in" id="lkNum" type="text" inputmode="text" autocomplete="off" placeholder="Job # or customer name" style="max-width:260px"><button class="btn" id="lkGo" type="button">Pull from Lynx</button><button class="btn" id="ordBtn" type="button">Order materials from ABC</button><span id="lkMsg" style="font-size:14px;color:var(--muted);flex:1 1 260px">Type a job number or a customer name. It fills the job from Lynx.</span><div id="lkList" style="flex:1 1 100%;display:none;max-height:320px;overflow:auto"></div></div>
+      <div id="orderBox"></div>
       <div id="moneyBox"></div>
       <div id="actBox"></div>
       <div class="hud" id="hud"></div>
@@ -741,7 +742,7 @@ function saveNoteText(){
   if (state.mode==='local') return 'Not connected to shared storage — saves stay on this device.';
   return 'Connecting to shared storage…';
 }
-function recalc(){ const r = renderSummary(); try{ if (window.renderActuals) window.renderActuals(); }catch(e){} try{ if (window.renderMoney) window.renderMoney(); }catch(e){} return r; }
+function recalc(){ const r = renderSummary(); try{ if (window.renderActuals) window.renderActuals(); }catch(e){} try{ if (window.renderMoney) window.renderMoney(); }catch(e){} try{ if (window.renderOrder) window.renderOrder(); }catch(e){} return r; }
 
 /* ===================== ABC CATALOG ===================== */
 function abcRow(i){
@@ -945,6 +946,52 @@ function start(hot){
   
 
 
+
+/* ===================== ORDER MATERIALS FROM ABC (sent to the branch, logged on the Lynx job) ===================== */
+const ORD = {open:false, qty:{}, date:'', instr:'FIRST AM DROP', color:'', notes:'', busy:false, done:null, err:''};
+function ordNextBizDay(){ const d=new Date(); d.setDate(d.getDate()+1); while (d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1); return d.toISOString().slice(0,10); }
+window.renderOrder = function(){
+  const box=document.getElementById('orderBox'); if(!box) return;
+  const num=String(state.job.jobNumber||'');
+  if(!ORD.open || !num){ box.innerHTML=''; return; }
+  const c=compute(state.pb,state.job);
+  const lines=(c.L.material||[]).map((l,i)=>({i, sku:l.sku||'', desc:l.label, unit:l.unit, est:Math.round(+l.qty||0), qty: ORD.qty[l.label]!=null ? ORD.qty[l.label] : Math.round(+l.qty||0)}));
+  if(!ORD.date) ORD.date=ordNextBizDay();
+  const sh=(typeof SHINGLES!=='undefined' && SHINGLES.find(s=>s[0]===state.job.shingle)||[])[1]||'';
+  const td='style="padding:6px 8px"';
+  let h=`<div style="margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline"><div style="font-weight:700;letter-spacing:.02em">Order materials from ABC · PO #${esc(num)}</div><div style="font-size:13px;color:var(--muted)">Goes to the ABC branch reps · you and the office are copied · logged on the Lynx job</div></div>`;
+  if (ORD.done){ h+=`<div style="margin:10px 0;font-size:15px;color:var(--good)"><b>Order sent.</b> ${esc(ORD.done.to.join(', '))} · ${ORD.done.lynx_logged?'logged on the Lynx job':'Lynx note did not post'} · ${esc(ORD.done.subject)}</div><button class="btn sm" type="button" data-ord="close">Close</button></div>`; box.innerHTML=h; box.querySelector('[data-ord="close"]').onclick=()=>{ ORD.open=false; ORD.done=null; window.renderOrder(); }; return; }
+  if(!(c.sq>0)) h+=`<div style="margin:8px 0;color:var(--warn);font-size:14px">Add the squares first so the material list is right.</div>`;
+  h+=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em"><td ${td}>Item</td><td ${td}>SKU</td><td ${td}>Unit</td><td ${td}>Qty</td></tr></thead><tbody>
+    ${lines.map(l=>`<tr><td ${td}>${esc(l.desc)}</td><td ${td} style="color:var(--muted)">${esc(l.sku||'no ABC SKU')}</td><td ${td}>${esc(l.unit)}</td><td ${td}><input class="in" type="number" min="0" step="1" value="${l.qty}" data-ordqty="${esc(l.desc)}" style="width:90px"></td></tr>`).join('')}
+  </tbody></table></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:10px">
+    <label style="font-size:13px;color:var(--muted)">Delivery date<input class="in" type="date" id="ordDate" value="${esc(ORD.date)}" style="width:100%"></label>
+    <label style="font-size:13px;color:var(--muted)">Delivery instruction<input class="in" type="text" id="ordInstr" value="${esc(ORD.instr)}" style="width:100%"></label>
+    <label style="font-size:13px;color:var(--muted)">Shingle color<input class="in" type="text" id="ordColor" value="${esc(ORD.color)}" placeholder="e.g. Dual Black" style="width:100%"></label>
+  </div>
+  <label style="display:block;font-size:13px;color:var(--muted);margin-top:8px">Notes for ABC<textarea class="in" id="ordNotes" rows="2" style="width:100%">${esc(ORD.notes)}</textarea></label>
+  ${ORD.err?`<div style="color:var(--bad);font-size:14px;margin-top:8px">${esc(ORD.err)}</div>`:''}
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" type="button" data-ord="send" ${ORD.busy?'disabled':''}>${ORD.busy?'Sending…':'Send order to ABC'}</button><button class="btn" type="button" data-ord="cancel">Cancel</button></div>
+  <div style="font-size:12px;color:var(--muted);margin-top:6px">Shingle: ${esc(sh||state.job.shingle||'')}. Lines without an ABC SKU are sent by description.</div></div>`;
+  box.innerHTML=h;
+  box.querySelectorAll('[data-ordqty]').forEach(inp=>inp.onchange=()=>{ ORD.qty[inp.dataset.ordqty]=Math.max(0,Math.round(+inp.value||0)); });
+  const bind=(id,k)=>{ const el=box.querySelector('#'+id); if(el) el.onchange=()=>{ ORD[k]=el.value; }; };
+  bind('ordDate','date'); bind('ordInstr','instr'); bind('ordColor','color'); bind('ordNotes','notes');
+  box.querySelector('[data-ord="cancel"]').onclick=()=>{ ORD.open=false; window.renderOrder(); };
+  box.querySelector('[data-ord="send"]').onclick=async()=>{
+    const send=lines.map(l=>({sku:l.sku, desc:l.desc, qty: ORD.qty[l.desc]!=null?ORD.qty[l.desc]:l.qty, unit:l.unit})).filter(l=>l.qty>0);
+    if(!send.length){ ORD.err='Nothing to order — every quantity is 0.'; window.renderOrder(); return; }
+    if(!confirm(`Send this order to ABC for PO ${num}? ${send.length} items, delivery ${ORD.date} (${ORD.instr}).`)) return;
+    ORD.busy=true; ORD.err=''; window.renderOrder();
+    try{ const r=await hcApi('hc_order',{job_number:num, lines:send, delivery_date:ORD.date, instructions:ORD.instr, shingle:sh, color:ORD.color, notes:ORD.notes}); ORD.done=r; toast('Order sent to ABC'); }
+    catch(e){ ORD.err='Order not sent ('+((e&&e.message)||'error')+'). Nothing went to ABC.'; }
+    ORD.busy=false; window.renderOrder();
+  };
+};
+
+$('#ordBtn').addEventListener('click', ()=>{ if(!String(state.job.jobNumber||'')){ toast('Pull a job first'); $('#lkNum').focus(); return; } ORD.open=true; ORD.done=null; ORD.err=''; ORD.qty={}; window.renderOrder(); document.getElementById('orderBox').scrollIntoView({behavior:'smooth',block:'start'}); });
 /* ===================== MONEY ON THIS JOB (live from Lynx + mortgage desk) ===================== */
 let LK_MONEY=null, MON_FETCH='';
 const GAP_TXT = {INSTALLED_NO_SUPP:'Roof built, no supplement filed', PHOTOS_DONE_NO_SUPP:'Photos done, no supplement filed', NO_PHOTOS:'No supplement photos yet', SUPP_SUBMITTED_RECENT:'Submitted, at the carrier', SUPP_SUBMITTED:'Submitted, at the carrier', SUPP_PAID:'Paid', PAID:'Paid'};
