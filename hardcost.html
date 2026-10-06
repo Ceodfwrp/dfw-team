@@ -890,7 +890,7 @@ function loadLocal(){ const pb = lsGet(LS+':pb'); if (pb?.items) applyPricebook(
 const HC_TOKEN = (()=>{ const m = location.hash.match(/tok=([^&]+)/); if (m) return decodeURIComponent(m[1]); try{ return localStorage.getItem('dfw_team_token'); }catch(e){ return null; } })();
 const HC_API = 'https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/hc-relay/api/';
 async function hcApi(action, body){
-  const r = await fetch(HC_API+action, {method:'POST', headers:{'content-type':'application/json', authorization:'Bearer '+(HC_TOKEN||'')}, body: JSON.stringify(body||{})});
+  const r = await fetch(HC_API+action, {method:'POST', headers:{'content-type':'text/plain;charset=UTF-8'}, body: JSON.stringify(Object.assign({}, body||{}, {_t: HC_TOKEN||''}))});
   const j = await r.json().catch(()=>({}));
   if (r.status===401){ try{ localStorage.removeItem('dfw_team_token'); }catch(e){} if (window.hcShowLogin) window.hcShowLogin('Your sign-in expired. Sign in again.'); }
   if (!r.ok){ const e = new Error(j.error||('http_'+r.status)); e.code = r.status===401||r.status===403 ? 'invalid_argument' : 'unavailable'; throw e; }
@@ -1001,7 +1001,7 @@ async function pullJob(){
   if (lkBusy) return; lkBusy=true; lkLast=num;
   msg.textContent='Pulling #'+num+' from Lynx…'; btn.disabled=true;
   try{
-    const d = await hcApi('hc_job_lookup', {job_number:num});
+    let d; try{ d = await hcApi('hc_job_lookup', {job_number:num}); }catch(e1){ if (e1 && (e1.code==='invalid_argument' || /not_found/.test(e1.message||''))) throw e1; msg.textContent='Still pulling #'+num+'…'; await new Promise(r=>setTimeout(r,1500)); d = await hcApi('hc_job_lookup', {job_number:num}); }
     const J=d.job||{}, F=d.fin||{}, I=d.ins||{};
     LK_ACT = d.actual ? {...d.actual, num:String(J.num)} : null; ACT_FETCH=String(J.num); LK_FIN = {...F, num:String(J.num)};
     const saved = (state.jobs||[]).find(r=>String(((r.inputs||{}).jobNumber)||'')===String(J.num));
@@ -1026,7 +1026,7 @@ async function pullJob(){
   }catch(err){
     lkLast='';
     const c = err && (err.message||err.code||'');
-    msg.textContent = /not_found|404/.test(c) ? 'No job #'+num+' in Lynx. Check the number.' : /forbid|403|invalid_argument/.test(c) ? "Your login doesn't have Hard Cost access." : "Couldn't reach Lynx. Try again in a moment.";
+    msg.textContent = /not_found|404/.test(c) ? 'No job #'+num+' in Lynx. Check the number.' : /forbid|403|invalid_argument/.test(c) ? "Your login doesn't have Hard Cost access." : "Couldn't reach Lynx ("+((err&&err.message)||'error')+"). Try again in a moment.";
   }finally{ btn.disabled=false; lkBusy=false; }
 }
 $('#lkNum').addEventListener('keydown', e=>{ if (e.key==='Enter'){ e.preventDefault(); pullJob(); } });
