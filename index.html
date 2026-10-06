@@ -64,7 +64,7 @@ const API="https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/portal-api/api/
 const LS="dfw_team_token";
 let TOKEN=null; try{TOKEN=localStorage.getItem(LS)}catch(e){}
 let ME=null, HOME=null, TAB="jobs", STAGE="", Q="", SCOPE="mine";
-let HC=false; const HCR="https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/hc-relay/api/";
+let HC=false, HCJOB=""; const HCR="https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/hc-relay/api/";
 const STAGES=["Lead","Prospect","Approved","Completed","Invoiced"];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -113,7 +113,7 @@ function tabs(){const t=$("#tabs");t.hidden=false;
   t.querySelectorAll("button").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;tabs();render()});}
 async function load(){ $("#main").innerHTML=`<div class="empty">Loading…</div>`; HOME=await api("home",{scope:SCOPE}); render(); }
 function render(){$("#main").style.maxWidth=TAB==="hardcost"?"none":"";({jobs:renderJobs,day:renderDay,lead:renderLead,carriers:renderCarriers,colors:renderColors,hardcost:renderHC})[TAB]();}
-function renderHC(){if($("#hcf"))return;$("#main").innerHTML='<iframe id="hcf" src="hardcost.html?v='+Date.now()+'" title="Hard Cost tool" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--card)"></iframe>';}
+function renderHC(){if($("#hcf")&&!HCJOB)return;const jq=HCJOB?"&job="+encodeURIComponent(HCJOB):"";HCJOB="";$("#main").innerHTML='<iframe id="hcf" src="hardcost.html?v='+Date.now()+jq+'" title="Hard Cost tool" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--card)"></iframe>';}
 function scopeChips(){return ME.team?`<div class="tools"><button class="chip" data-sc="mine" aria-pressed="${SCOPE==="mine"}">Mine</button><button class="chip" data-sc="team" aria-pressed="${SCOPE==="team"}">Whole team</button></div>`:""}
 function bindScope(){document.querySelectorAll("[data-sc]").forEach(b=>b.onclick=async()=>{SCOPE=b.dataset.sc;await load()})}
 function freshLine(){const f=HOME&&HOME.fresh||{};return `<p class="fresh">Lynx jobs as of ${when(f.jobs_at)} · appointments as of ${when(f.appts_at)}</p>`}
@@ -287,13 +287,13 @@ async function openJob(id){
       <div class="panel facts">${a?`<div><span>Address</span><a href="${maps(a)}" target="_blank" rel="noopener">${esc(a)}</a></div>`:""}
         <div><span>Rep</span>${esc((d.reps||[]).filter(r=>r.type!=="Additional"&&r.name).map(r=>r.name).join(", ")||"—")}</div>
         ${j.leadSource?`<div><span>Lead source</span>${esc(j.leadSource)}</div>`:""}<div><span>Created</span>${when(j.created)}</div><div><span>Updated</span>${when(j.updated)}</div></div>
-      <div class="btns">${a?`<a class="btn ghost" href="${maps(a)}" target="_blank" rel="noopener">Directions</a>`:""}<a class="btn" href="${esc(j.lynx)}" target="_blank" rel="noopener">Open in Lynx</a></div>
+      <div class="btns">${a?`<a class="btn ghost" href="${maps(a)}" target="_blank" rel="noopener">Directions</a>`:""}<a class="btn" href="${esc(j.lynx)}" target="_blank" rel="noopener">Open in Lynx</a>${HC&&j.num?`<button class="btn ghost" id="hcGo" type="button">Hard Cost this job</button>`:""}</div>
       ${custBlock(d,j,a)}
       ${insBlock(d,j,a)}
       ${(d.appts||[]).length?`<h4>Appointments</h4><div class="panel"><ul class="list">${d.appts.map(x=>`<li class="row" style="cursor:default"><div><div class="t">${esc(x.title||"Appointment")}</div><div class="m">${esc(x.calendar_name||"")}${x.is_adjuster?" · Adjuster":""}</div></div><div class="r">${when(x.starts_at)}</div></li>`).join("")}</ul></div>`:""}
       <h4>Post a note to Lynx</h4><div class="panel" style="padding:12px"><textarea id="nt" placeholder="What happened, what's next, and @who needs to act"></textarea><div class="btns"><button class="btn" id="ns">Post to Lynx</button></div><div id="nr"></div></div>
       <h4>Notes</h4><div class="panel">${notes.length?notes.map(n=>`<div class="nt"><b>${esc(n.by||"")} · ${when(n.at)}</b>${esc(n.body)}</div>`).join(""):`<div class="empty">No notes captured yet. Lynx has the full history.</div>`}</div>`;
-    $("#cx").onclick=closeJob; bindContacts(bd); let op=null;
+    $("#cx").onclick=closeJob; bindContacts(bd); let op=null; { const hg=$("#hcGo"); if(hg) hg.onclick=()=>{ closeJob(); HCJOB=String(j.num); TAB="hardcost"; tabs(); render(); }; }
     $("#ns").onclick=async()=>{const t=$("#nt").value.trim();if(t.length<3){toast("Write a note first");return}
       if(!op)op=opId();const b=$("#ns");b.disabled=true;b.textContent="Posting…";
       try{await api("job_note",{job_id:id,text:t,op_id:op});op=null;$("#nt").value="";$("#nr").innerHTML=`<div class="ok">Posted to Lynx.</div>`;}
