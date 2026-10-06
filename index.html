@@ -113,7 +113,7 @@ function tabs(){const t=$("#tabs");t.hidden=false;
   t.querySelectorAll("button").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;tabs();render()});}
 async function load(){ $("#main").innerHTML=`<div class="empty">Loading…</div>`; HOME=await api("home",{scope:SCOPE}); render(); }
 function render(){$("#main").style.maxWidth=TAB==="hardcost"?"none":"";({jobs:renderJobs,day:renderDay,lead:renderLead,carriers:renderCarriers,colors:renderColors,hardcost:renderHC})[TAB]();}
-function renderHC(){if($("#hcf"))return;$("#main").innerHTML='<iframe id="hcf" src="hardcost.html" title="Hard Cost tool" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--card)"></iframe>';}
+function renderHC(){if($("#hcf"))return;$("#main").innerHTML='<iframe id="hcf" src="hardcost.html?v='+Date.now()+'" title="Hard Cost tool" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--card)"></iframe>';}
 function scopeChips(){return ME.team?`<div class="tools"><button class="chip" data-sc="mine" aria-pressed="${SCOPE==="mine"}">Mine</button><button class="chip" data-sc="team" aria-pressed="${SCOPE==="team"}">Whole team</button></div>`:""}
 function bindScope(){document.querySelectorAll("[data-sc]").forEach(b=>b.onclick=async()=>{SCOPE=b.dataset.sc;await load()})}
 function freshLine(){const f=HOME&&HOME.fresh||{};return `<p class="fresh">Lynx jobs as of ${when(f.jobs_at)} · appointments as of ${when(f.appts_at)}</p>`}
