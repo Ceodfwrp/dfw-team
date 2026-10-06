@@ -1,0 +1,17 @@
+name: county-appraisal-load
+on:
+  schedule:
+    - cron: "0 9 1 * *"
+  workflow_dispatch: {}
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install requests
+      - run: python scripts/cad_load.py
+        env:
+          CAD_LOADER_TOKEN: ${{ secrets.CAD_LOADER_TOKEN }}
