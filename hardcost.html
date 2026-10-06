@@ -259,6 +259,7 @@ table.t .edit.changed{color:var(--warn);border-bottom-color:var(--warn)}
   <main>
     <section id="panel-job" role="tabpanel">
       <div class="lookup" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)"><label for="lkNum" style="font-weight:700;letter-spacing:.02em">Job #</label><input class="in" id="lkNum" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 8424" style="max-width:150px"><button class="btn" id="lkGo" type="button">Pull from Lynx</button><span id="lkMsg" style="font-size:14px;color:var(--muted);flex:1 1 260px">Type a job number. It fills the customer, rep and claim numbers from Lynx.</span></div>
+      <div id="actBox"></div>
       <div class="hud" id="hud"></div>
       <div class="grid">
         <div class="inputs" id="jobForm"></div>
@@ -726,7 +727,7 @@ function saveNoteText(){
   if (state.mode==='local') return 'Not connected to shared storage — saves stay on this device.';
   return 'Connecting to shared storage…';
 }
-function recalc(){ return renderSummary(); }
+function recalc(){ const r = renderSummary(); try{ if (window.renderActuals) window.renderActuals(); }catch(e){} return r; }
 
 /* ===================== ABC CATALOG ===================== */
 function abcRow(i){
@@ -928,6 +929,40 @@ function start(hot){
   $('#jobsList').addEventListener('click', e => { const del = e.target.closest('[data-del]'); if (del){ e.stopPropagation(); const rec = state.jobs.find(r=>r.id===del.dataset.del); if (rec) deleteJob(rec); return; } const row = e.target.closest('.jrow'); if (row){ const rec = state.jobs.find(r=>r.id===row.dataset.id); if (rec) loadJob(rec); } });
   $('#jobsList').addEventListener('keydown', e => { if (e.key==='Enter'){ const row = e.target.closest('.jrow'); if (row){ const rec = state.jobs.find(r=>r.id===row.dataset.id); if (rec) loadJob(rec); } } });
   
+
+/* ===================== ESTIMATE vs ACTUAL (money really spent on the job, from Lynx) ===================== */
+let LK_ACT=null, ACT_FETCH='';
+const ACT_LABEL={material:'Materials',roof_labor:'Roof labor',gutters:'Gutters',paint:'Paint',stain:'Stain',garage:'Garage door',screens:'Screens',permit:'Permit',inspection:'Inspections',claim_fees:'Claim / supplement fees',measurement:'Measurement',other_sub:'Other subs',solar:'Solar',commission:'Commission paid',refund:'Refund'};
+window.renderActuals = function(){
+  const box=document.getElementById('actBox'); if(!box) return;
+  const num=String(state.job.jobNumber||'');
+  if(!num){ box.innerHTML=''; return; }
+  if(!LK_ACT || String(LK_ACT.num)!==num){
+    box.innerHTML='';
+    if(ACT_FETCH!==num && HC_TOKEN){ ACT_FETCH=num; hcApi('hc_job_actuals',{job_number:num}).then(d=>{ if(d&&d.actual){ LK_ACT=d.actual; window.renderActuals(); } }).catch(()=>{}); }
+    return;
+  }
+  const c=compute(state.pb,state.job), B={}; (LK_ACT.buckets||[]).forEach(b=>{ B[b.bucket]=(+b.amt||0); });
+  const actHard=Object.keys(B).filter(k=>k!=='commission'&&k!=='refund').reduce((s,k)=>s+B[k],0);
+  const aM=B.material||0, aL=B.roof_labor||0, aO=actHard-aM-aL;
+  const eM=c.materials||0, eL=c.labor||0, eH=c.hard||0, eO=eH-eM-eL;
+  const row=(l,e,a,strong)=>{ const v=a-e, pct=e>0?v/e*100:null, over=e>0&&a>e*1.05, under=a>0&&a<=e;
+    const diff = a ? ((v>=0?'+':'-')+lkMoney(Math.abs(v))+(pct!=null?` (${v>=0?'+':''}${pct.toFixed(1)}%)`:'')) : '—';
+    return `<tr${strong?' style="font-weight:700"':''}><td style="padding:7px 8px">${l}</td><td class="n" style="padding:7px 8px">${c.sq>0?lkMoney(e):'—'}</td><td class="n" style="padding:7px 8px">${a?lkMoney(a):'—'}</td><td class="n" style="padding:7px 8px;color:${!(c.sq>0)?'var(--muted)':over?'var(--bad)':under?'var(--good)':'var(--muted)'}">${c.sq>0?diff:'—'}</td></tr>`; };
+  const lines=(LK_ACT.lines||[]);
+  const when=LK_ACT.snapshot_at?new Date(LK_ACT.snapshot_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'}):'';
+  const verdict = !(c.sq>0) ? 'Add the squares below to compare against the estimate.' : !actHard ? 'No costs recorded on this job yet.' : actHard>eH*1.05 ? `<b style="color:var(--bad)">Over estimate by ${lkMoney(actHard-eH)}.</b>` : `<b style="color:var(--good)">Within estimate${eH>actHard?' by '+lkMoney(eH-actHard):''} so far.</b>`;
+  box.innerHTML = `<div style="margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline"><div style="font-weight:700;letter-spacing:.02em">Estimate vs. actual · #${esc(num)}</div><div style="font-size:13px;color:var(--muted)">Actual = money paid on this job in Lynx${when?' · as of '+when:''}</div></div>
+    <div style="margin:6px 0 8px;font-size:14px">${verdict}</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">
+      <thead><tr style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em"><td style="padding:6px 8px">Category</td><td class="n" style="padding:6px 8px">Estimate</td><td class="n" style="padding:6px 8px">Actual so far</td><td class="n" style="padding:6px 8px">Difference</td></tr></thead>
+      <tbody>${row('Materials',eM,aM)}${row('Roof labor',eL,aL)}${row('Other trades & fees',eO,aO)}${row('Total hard cost',eH,actHard,true)}</tbody></table></div>
+    ${B.commission?`<div style="font-size:13px;color:var(--muted);margin-top:6px">Commission paid so far: ${lkMoney(B.commission)} (not counted in hard cost).</div>`:''}
+    ${lines.length?`<details style="margin-top:8px"><summary style="cursor:pointer;font-size:14px">Every payment on this job (${lines.length})</summary><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px">${lines.map(l=>`<tr><td style="padding:5px 8px;white-space:nowrap">${l.date?esc(String(l.date).slice(0,10)):'—'}</td><td style="padding:5px 8px">${esc(ACT_LABEL[l.bucket]||l.bucket||'')}</td><td style="padding:5px 8px">${esc(l.vendor||'')}${l.notes?` <span style="color:var(--muted)">· ${esc(l.notes)}</span>`:''}</td><td class="n" style="padding:5px 8px">${lkMoney(l.amount)}</td></tr>`).join('')}</table></div></details>`:''}
+  </div>`;
+};
+
 /* ===================== JOB # LOOKUP (pulls the job from Lynx) ===================== */
 function lkRepKey(names){
   const keys = Object.keys(REPS), al = {michael:'mike'};
@@ -952,6 +987,7 @@ async function pullJob(){
   try{
     const d = await hcApi('hc_job_lookup', {job_number:num});
     const J=d.job||{}, F=d.fin||{}, I=d.ins||{};
+    LK_ACT = d.actual ? {...d.actual, num:String(J.num)} : null; ACT_FETCH=String(J.num);
     if (state.job.example || (state.job.jobNumber && state.job.jobNumber!==J.num) || (state.job.id && state.job.jobNumber!==J.num)) state.job = newJob();
     const j = state.job;
     j.jobNumber = J.num; j.lynxId = J.id;
