@@ -462,12 +462,19 @@ const abcItem = k => ABC_CORE.find(i=>i.k===k);
 
 /* ===================== COSTING ENGINE ===================== */
 function compute(pb, j){
-  const sq = n(j.sq), wasteF = 1 + n(j.waste)/100, sqSh = sq*wasteF;
+  const sqAll = n(j.sq), wasteF = 1 + n(j.waste)/100;
+  const bpFlat = (j.byPitch && typeof j.byPitch==='object') ? Object.entries(j.byPitch).filter(([p,v])=>parseFloat(p)<=2 && n(v)>0).reduce((a,[,v])=>a+n(v),0)/100 : 0;
+  const sqFlat = n(j.sqFlat)>0 ? Math.min(sqAll, n(j.sqFlat)) : Math.min(sqAll, Math.round(bpFlat*100)/100);
+  const sq = Math.max(0, Math.round((sqAll - sqFlat)*100)/100), sqSh = sq*wasteF;
   const L = {material:[], labor:[], trades:[], fees:[], extras:[]};
   const add = (arr, label, qty, unit, unitCost, note, sku) => { const total = qty*unitCost; if (qty>0 && isFinite(total)) arr.push({label, qty, unit, unitCost, total, note, sku}); return qty>0?total:0; };
   const sh = SHINGLES.find(s=>s[0]===j.shingle) || SHINGLES[0];
   const shPrice = n(pb[j.shingle]);
   if (sq>0) add(L.material, sh[1]+' shingles', Math.ceil(sqSh*3), 'bdl', shPrice/3, `${sq} sq + ${n(j.waste)}% = ${sqSh.toFixed(1)} sq · ${money(shPrice,2)}/sq${sh[3]==='list'?' · list price':''}`, (abcItem(j.shingle)||{}).sku);
+  if (sqFlat>0){
+    add(L.material, 'Mule-Hide SA base sheet (flat)', Math.ceil(sqFlat*1.1/2), 'roll', n(pb.flat_base), `${sqFlat} flat sq + 10% ÷ 2 sq/roll`, '06MHSAB');
+    add(L.material, 'Mule-Hide SA-SBS cap sheet (flat)', Math.ceil(sqFlat*1.1), 'roll', n(pb.flat_cap), `${sqFlat} flat sq + 10% · 1 sq/roll`, '06MHSASWW');
+  }
   const hrLf = n(j.ridges)+n(j.hips);
   if (hrLf>0){
     if (j.cap==='3tab') add(L.material, 'Hip & ridge — cut Marathon 3-tab', Math.ceil(hrLf/Math.max(1,n(pb.cap_3tab_cov))), 'bdl', n(pb.sh_3tab)/3, `${hrLf} lf ÷ ${n(pb.cap_3tab_cov)} lf/bdl`, '01IKAM25');
@@ -499,7 +506,7 @@ function compute(pb, j){
     add(L.material, 'MasterSeal NP1', 3, 'tube', n(pb.caulk), '3 per job', '30MINP196');
     add(L.material, 'Spray paint', 2, 'can', n(pb.paint), '2 per job', '200663243');
   }
-  const matSub = L.material.reduce((s,l)=>s+l.total,0);
+  const matSub = L.material.reduce((s,l)=>s+l.total,0); const sqTotal = sqAll;
   const hdTotal = L.material.filter(l=>!l.sku).reduce((s,l)=>s+l.total,0);   // Home Depot lines (no ABC sku) — taxed too
   const tax = matSub * n(pb.tax)/100;
   const delivery = sq>0 ? n(pb.delivery) : 0;
@@ -513,13 +520,14 @@ function compute(pb, j){
   const crewName = CREWS[c]?.name || 'Crew';
   let base = R('base'); let baseNote = 'measured squares';
   if (c==='omar' && j.tyler){ base = 80; baseNote = 'Tyler-area rate'; }
-  add(L.labor, `${crewName} — tear-off + install`, sq, 'sq', base, baseNote);
+  add(L.labor, `${crewName} — tear-off + install (shingle)`, sq, 'sq', base, baseNote + (sqFlat>0?` · ${sqAll} total − ${sqFlat} flat`:''));
+  if (sqFlat>0) add(L.labor, `${crewName} — flat roof, 2-ply self-adhered`, sqFlat, 'sq', R('flat')>0 ? R('flat') : n(pb.flat_labor), R('flat')>0 ? 'crew flat rate' : 'flat-roof sub rate (Top Repair Roofing)');
   const feltLayers = CREWS[c]?.feltFirst ? n(j.layers) : n(j.layers)-1;   /* THR & Omar: first layer included · Will: $5/sq from the first layer (Blake 9/20/26) */
-  if (feltLayers>0 && R('felt')>0) add(L.labor, CREWS[c]?.feltFirst ? `Felt / shingle layers (${n(j.layers)}, charged from the first)` : `Extra felt / shingle layers (${n(j.layers)-1}, first included)`, sq*feltLayers, 'sq', R('felt'));
+  if (feltLayers>0 && R('felt')>0) add(L.labor, CREWS[c]?.feltFirst ? `Felt / shingle layers (${n(j.layers)}, charged from the first)` : `Extra felt / shingle layers (${n(j.layers)-1}, first included)`, sqAll*feltLayers, 'sq', R('felt'));
   const stepRate = R('pitchStep');
   const stepAdd = rise => stepRate>0 ? Math.max(0, Math.round(rise)-7)*stepRate : (rise>=12 ? R('steep2') : rise>=8 ? R('steep1') : 0);
   const riseCls = r => r>=12 ? 'steep2' : r>=8 ? 'steep1' : 'low';
-  const bpE = j.byPitch && typeof j.byPitch==='object' ? Object.entries(j.byPitch).filter(([,v])=>n(v)>0) : [];
+  const bpE = j.byPitch && typeof j.byPitch==='object' ? Object.entries(j.byPitch).filter(([p,v])=>n(v)>0 && parseFloat(p)<=24) : [];
   const bpMax = bpE.reduce((m,[p,v])=> n(v)>m.v ? {p:parseFloat(p),v:n(v)} : m, {p:0,v:0}).p;
   if (bpE.length && sq>0 && riseCls(bpMax)===j.pitch){
     const tot = bpE.reduce((a,[,v])=>a+n(v),0)||1;
@@ -589,8 +597,8 @@ function compute(pb, j){
   const netLoaded = net - baseAlloc, netLoadedPct = contract>0 ? netLoaded/contract*100 : NaN;
   let status = {cls:'neutral', text:'No contract yet'};
   if (contract>0){ if (net<0) status={cls:'bad',text:'Loss'}; else if (netPct >= target) status={cls:'good',text:'On target'}; else if (netPct >= target-8) status={cls:'warn',text:'Thin'}; else status={cls:'bad',text:'Below target'}; }
-  return {sq, sqSh, L, matSub, tax, delivery, materials, rebate, labor, trades, fees, extras, hard, contract, gp, gpPct, commRate, repRate, ovrRate, mikeRate, teamRate, teamKey, feePct, basis, repComm, ovrComm, commission, net, netPct, baseAlloc, netLoaded, netLoadedPct, target, priceAtTarget, status, crewName,
-    perSq:{material: sq>0?materials/sq:NaN, labor: sq>0?labor/sq:NaN, hard: sq>0?hard/sq:NaN, contract: sq>0&&contract>0?contract/sq:NaN},
+  return {sq: sqTotal, sqShingle: sq, sqFlat, sqSh, L, matSub, tax, delivery, materials, rebate, labor, trades, fees, extras, hard, contract, gp, gpPct, commRate, repRate, ovrRate, mikeRate, teamRate, teamKey, feePct, basis, repComm, ovrComm, commission, net, netPct, baseAlloc, netLoaded, netLoadedPct, target, priceAtTarget, status, crewName,
+    perSq:{material: sqTotal>0?materials/sqTotal:NaN, labor: sqTotal>0?labor/sqTotal:NaN, hard: sqTotal>0?hard/sqTotal:NaN, contract: sqTotal>0&&contract>0?contract/sqTotal:NaN},
     homeowner: j.jobType==='insurance' ? n(j.deductible)+n(j.upgrades) : contract, carrier: j.jobType==='insurance' ? n(j.rcv)-n(j.deductible)+n(j.suppAmt) : 0};
 }
 
