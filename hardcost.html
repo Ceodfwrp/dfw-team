@@ -450,7 +450,7 @@ function exampleJob(){
 /* ===================== HELPERS ===================== */
 const $ = s => document.querySelector(s);
 const n = x => { const v = parseFloat(x); return isFinite(v) ? v : 0; };
-const money = (v, d=0) => (v<0?'−':'') + '$' + Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:d, maximumFractionDigits:d});
+const money = (v, d=2) => (v<0?'−':'') + '$' + Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:d, maximumFractionDigits:d});
 const pct = v => (isFinite(v) ? v.toFixed(1) : '—') + '%';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let toastT; function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2400); }
@@ -796,7 +796,7 @@ function renderSubs(){
 }
 
 /* ===================== SAVED JOBS ===================== */
-function jobTotals(){ const c = compute(state.pb, state.job); return {sq:c.sq, hard:Math.round(c.hard), materials:Math.round(c.materials), labor:Math.round(c.labor), contract:Math.round(c.contract), net:Math.round(c.net), netPct: isFinite(c.netPct)?+c.netPct.toFixed(1):null, status:c.status.text}; }
+function jobTotals(){ const c = compute(state.pb, state.job); return {sq:c.sq, hard:+(+c.hard).toFixed(2), materials:+(+c.materials).toFixed(2), labor:+(+c.labor).toFixed(2), contract:+(+c.contract).toFixed(2), net:+(+c.net).toFixed(2), netPct: isFinite(c.netPct)?+c.netPct.toFixed(1):null, status:c.status.text}; }
 async function saveJob(){
   const j = state.job;
   if (!j.customer && !j.address){ toast('Add a customer or address first'); $('#f_customer')?.focus(); return; }
@@ -993,7 +993,7 @@ window.renderActuals = function(){
     ${(B.material||B.roof_labor)?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">${B.material?`<button class="btn sm" type="button" data-useact="mat" aria-pressed="${n(state.job.matKnown)>0}">${n(state.job.matKnown)>0?'✓ Using':'Use'} actual ABC material ${lkMoney(B.material)}</button>`:''}${B.roof_labor?`<button class="btn sm" type="button" data-useact="lab" aria-pressed="${n(state.job.laborKnown)>0}">${n(state.job.laborKnown)>0?'✓ Using':'Use'} actual crew invoice ${lkMoney(B.roof_labor)}</button>`:''}</div><div style="font-size:12px;color:var(--muted);margin-top:4px">Swaps the estimate for the exact amount in Lynx. Tap again to go back to the estimate. Only use it once the full invoice is in.</div>`:''}`;
   if (c.sq>0) h += `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><div style="font-weight:700;margin-bottom:4px">Estimate vs. actual</div><div style="font-size:14px;margin-bottom:6px">${final?verdict:'<span style="color:var(--muted)">Partial: '+waitTxt+(notBuilt||waiting.length>1?' are':' is')+' not in Lynx yet. The comparison completes once entered.</span>'}</div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em"><td ${td}>Category</td><td ${tdn}>Estimate</td><td ${tdn}>Actual so far</td><td ${tdn}>Difference</td></tr></thead>
-    <tbody>${row('Materials',eM,aM)}${row('Roof labor',eL,aL)}${row('Other trades & fees',eO,aO)}${final?row('Total hard cost',eH,actHard,true):row('Total hard cost (partial)',eH,actHard,true).replace(/color:var\(--(good|bad)\)/g,'color:var(--muted)')}</tbody></table></div></div>`;
+    <tbody>${(()=>{ const rs = row('Materials',eM,aM)+row('Roof labor',eL,aL)+row('Other trades & fees',eO,aO)+row(final?'Total hard cost':'Total hard cost (partial)',eH,actHard,true); return final ? rs : rs.replace(/color:var\(--(good|bad)\)/g,'color:var(--muted)'); })()}</tbody></table></div></div>`;
   else h += `<div style="margin-top:10px;font-size:14px;color:var(--muted)">Add the squares from the Roofr report below to compare this against the estimate.</div>`;
   if (lines.length) h += `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:14px">Every payment on this job (${lines.length})</summary><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px">${lines.map(l=>`<tr><td style="padding:5px 8px;white-space:nowrap">${l.date?esc(String(l.date).slice(0,10)):'—'}</td><td style="padding:5px 8px">${esc(ACT_LABEL[l.bucket]||l.bucket||'')}</td><td style="padding:5px 8px">${esc(l.vendor||'')}${l.notes?` <span style="color:var(--muted)">· ${esc(l.notes)}</span>`:''}${l.is_paid===false?' <span style="color:var(--warn)">· unpaid</span>':''}</td><td class="n" style="padding:5px 8px">${lkMoney(l.amount)}</td></tr>`).join('')}</table></div></details>`;
   box.innerHTML = h + `</div>`;
