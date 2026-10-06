@@ -230,6 +230,7 @@ table.t .edit.changed{color:var(--warn);border-bottom-color:var(--warn)}
 
   <main>
     <section id="panel-job" role="tabpanel">
+      <div class="lookup" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)"><label for="lkNum" style="font-weight:700;letter-spacing:.02em">Job #</label><input class="in" id="lkNum" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 8424" style="max-width:150px"><button class="btn" id="lkGo" type="button">Pull from Lynx</button><span id="lkMsg" style="font-size:14px;color:var(--muted);flex:1 1 260px">Type a job number and press Enter to fill the customer, rep and claim numbers from Lynx.</span></div>
       <div class="hud" id="hud"></div>
       <div class="grid">
         <div class="inputs" id="jobForm"></div>
@@ -376,12 +377,12 @@ const REPS = {
   'Ivan Paz':       {role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10%'},
   'Orion Keith':    {role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10%'},
   'Shane Holcomb':  {role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10%'},
-  'Mike Mullens':   {role:'mgr', rate:0,  base:10000, team:'none', note:'$10,000/wk + 2% on every payment (house job when selected as rep)'},
+  'Mike Mullens':   {role:'mgr', rate:0,  base:10000, team:'none', note:'$10,000/wk + 3% on every payment from Oct 8, 2026 (house job when selected as rep)'},
   'Richard Mullens':{role:'mgr', rate:0,  base:2000, team:'none',  note:'$2,000/wk + 2% on his team'},
   'Kaden Morel':    {role:'mgr', rate:0,  base:1500, team:'none',  note:'$1,500/wk + 2% on his team'},
   'House / no rep': {role:'house', rate:0, base:0, team:'none', note:''}
 };
-const MGRS = {mike:{name:'Mike Mullens', rate:2, base:10000, scope:'every payment'}, richard:{name:'Richard Mullens', rate:2, base:2000, scope:'every rep except Moe'}, kaden:{name:'Kaden Morel', rate:2, base:1500, scope:'every rep except Moe'}, both:{name:'Richard Mullens + Kaden Morel', rate:4, base:0, scope:'every rep except Moe'}};
+const MGRS = {mike:{name:'Mike Mullens', rate:3, base:10000, scope:'every payment'}, richard:{name:'Richard Mullens', rate:2, base:2000, scope:'every rep except Moe'}, kaden:{name:'Kaden Morel', rate:2, base:1500, scope:'every rep except Moe'}, both:{name:'Richard Mullens + Kaden Morel', rate:4, base:0, scope:'every rep except Moe'}};
 const SALES_BASE_WK = Object.values(REPS).reduce((s,r)=>s+(r.base||0),0); /* $18,000 */
 const COMM = {none:{label:'No commission',rate:0},custom:{label:'Custom rep %',rate:null}};
 /* AccuLynx history, Jun 2025 â Sep 2026 Â· p10/p25/p50/p75/p90 */
@@ -405,7 +406,7 @@ const SHINGLES = [...ABC_CORE.filter(i=>i.cls).map(i=>[i.k,i.desc.split(' â
 const LS = 'dfwrp_hardcost_v2';
 let state = {tab:'job', pb:{...PB_DEF}, pbDirty:false, pbMeta:null, job:null, jobs:[], db:null, user:null, canWrite:null, mode:'connecting', search:'', abcSearch:''};
 function newJob(){
-  return {id:null, example:false, customer:'', address:'', city:'', rep:'', jobType:'insurance',
+  return {id:null, example:false, jobNumber:'', lynxId:'', customer:'', address:'', city:'', rep:'', jobType:'insurance',
     sq:'', waste:PB_DEF.waste_default, pitch:'low', stories:1, layers:1, shingle:'sh_cambridge', cap:'3tab', crew:'thr', tyler:false,
     eaves:'', rakes:'', ridges:'', hips:'', valleys:'', wall:'', valleyMetal:false, ridgeVent:'', woodLf:'',
     boots:'', boxvents:'', versacaps:'', turbines:'', powervents:'', ventCancel:'', chimneys:'', skylights:'', deckSheets:'', tripCharges:'',
@@ -594,6 +595,7 @@ function fieldHTML(f, j){
   return `<div class="f ${f.span?'span2':''}">${lab}${ctl}${f.hint?`<div class="hint">${esc(f.hint)}</div>`:''}</div>`;
 }
 function renderForm(){
+  { const ln=document.getElementById('lkNum'); if (ln && document.activeElement!==ln) ln.value = state.job.jobNumber||''; }
   const j = state.job; let html='';
   if (j.example) html += `<div class="callout"><b>Example job</b> â median of your last 206 built roofs. Edit anything or <button class="btn sm" id="startNew" type="button" style="margin-left:8px">Start blank</button></div>`;
   SECTIONS.forEach(s => { html += `<div class="sec"><h2>${esc(s.title)}${s.sub?`<small>${esc(s.sub)}</small>`:''}</h2><div class="fields">${s.fields.map(f=>fieldHTML(f,j)).join('')}</div></div>`; });
@@ -896,7 +898,53 @@ function start(hot){
   $('#jobSearch').addEventListener('input', e => { state.search = e.target.value; renderJobs(); });
   $('#jobsList').addEventListener('click', e => { const del = e.target.closest('[data-del]'); if (del){ e.stopPropagation(); const rec = state.jobs.find(r=>r.id===del.dataset.del); if (rec) deleteJob(rec); return; } const row = e.target.closest('.jrow'); if (row){ const rec = state.jobs.find(r=>r.id===row.dataset.id); if (rec) loadJob(rec); } });
   $('#jobsList').addEventListener('keydown', e => { if (e.key==='Enter'){ const row = e.target.closest('.jrow'); if (row){ const rec = state.jobs.find(r=>r.id===row.dataset.id); if (rec) loadJob(rec); } } });
-  $('#dockJump').addEventListener('click', () => $('#summary').scrollIntoView({behavior:'smooth', block:'start'}));
+  
+/* ===================== JOB # LOOKUP (pulls the job from Lynx) ===================== */
+function lkRepKey(names){
+  const keys = Object.keys(REPS), al = {michael:'mike'};
+  for (const nm of (names||[])){
+    const w = String(nm).toLowerCase().trim().split(/\s+/); if (!w[0]) continue;
+    const f = al[w[0]]||w[0], l = w[w.length-1];
+    const k = keys.find(k=>{ const kw=k.toLowerCase().split(/\s+/); const kf=al[kw[0]]||kw[0]; return kw[kw.length-1]===l && (kf===f || kf[0]===f[0]); });
+    if (k) return k;
+  }
+  return '';
+}
+function lkMoney(v){ return '$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+async function pullJob(){
+  const inp=$('#lkNum'), msg=$('#lkMsg'), btn=$('#lkGo');
+  const num=String(inp.value||'').replace(/\D/g,'');
+  if (!num){ msg.textContent='Type a job number first.'; inp.focus(); return; }
+  if (!HC_TOKEN){ msg.textContent='Sign in to the team app first, then open Hard Cost from there.'; return; }
+  msg.textContent='Pulling #'+num+' from Lynx…'; btn.disabled=true;
+  try{
+    const d = await hcApi('hc_job_lookup', {job_number:num});
+    const J=d.job||{}, F=d.fin||{}, I=d.ins||{};
+    if (state.job.example || (state.job.jobNumber && state.job.jobNumber!==J.num) || (state.job.id && state.job.jobNumber!==J.num)) state.job = newJob();
+    const j = state.job;
+    j.jobNumber = J.num; j.lynxId = J.id;
+    j.customer = J.customer || j.customer;
+    j.address = [J.street, J.city].filter(Boolean).join(', ') || j.address;
+    const ck = Object.keys(CITIES).find(c=>c.toLowerCase()===String(J.city||'').toLowerCase());
+    j.city = ck || (J.city ? 'Other' : j.city);
+    const rk = lkRepKey(J.reps); if (rk) j.rep = rk;
+    j.jobType = /insur/i.test(J.workType||'') ? 'insurance' : (J.workType ? 'retail' : j.jobType);
+    const r2 = v => v ? String(Math.round(v*100)/100) : '';
+    if (j.jobType==='insurance'){ j.rcv=r2(F.claim); j.deductible=r2(F.deductible); j.suppAmt=r2(F.supplements); j.upgrades=r2(F.upgrades); }
+    else { j.contract=r2(F.approved); }
+    renderForm(); recalc(); persistDraft();
+    const bits = [J.customer, J.workType, J.milestone, I.carrier?(I.carrier+(I.claim?' claim '+I.claim:'')):'', (J.reps||[]).join(', ')].filter(Boolean);
+    const money = j.jobType==='insurance' ? `RCV ${lkMoney(F.claim)} · deductible ${lkMoney(F.deductible)}${F.supplements?' · supplements '+lkMoney(F.supplements):''}${F.upgrades?' · upgrades '+lkMoney(F.upgrades):''}` : `contract ${lkMoney(F.approved)}`;
+    msg.innerHTML = `<b style="color:var(--ink)">#${esc(J.num)} filled from Lynx.</b> ${esc(bits.join(' · '))} · ${esc(money)}${rk||!(J.reps||[]).length?'':' · rep not on the pay plan list, pick one'} · <a href="${esc(J.lynx)}" target="_blank" rel="noopener">Open in Lynx</a>. Add the measurements below.`;
+    toast('Pulled #'+J.num+' from Lynx');
+  }catch(err){
+    const c = err && (err.message||err.code||'');
+    msg.textContent = /not_found|404/.test(c) ? 'No job #'+num+' in Lynx. Check the number.' : /forbid|403|invalid_argument/.test(c) ? "Your login doesn't have Hard Cost access." : "Couldn't reach Lynx. Try again in a moment.";
+  }finally{ btn.disabled=false; }
+}
+$('#lkNum').addEventListener('keydown', e=>{ if (e.key==='Enter'){ e.preventDefault(); pullJob(); } });
+$('#lkGo').addEventListener('click', pullJob);
+$('#dockJump').addEventListener('click', () => $('#summary').scrollIntoView({behavior:'smooth', block:'start'}));
   initCapabilities();
 }
 try{ window.claude?.hot?.snapshot?.(() => ({job:state.job, tab:state.tab})); }catch(e){}
