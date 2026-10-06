@@ -109,10 +109,10 @@ async function boot(){
   }catch(e){if(e.message!=="signed_out")$("#main").innerHTML=`<div class="empty">Couldn't load. Pull to refresh or try again.</div>`}
 }
 function tabs(){const t=$("#tabs");t.hidden=false;
-  t.innerHTML=[["jobs","My Jobs"],["day","My Day"],["lead","New Lead"],["carriers","Carriers"],["colors","Colors"],...(HC?[["hardcost","Hard Cost"]]:[]),...(ME&&ME.team?[["subs","Subs"]]:[])].map(([k,l])=>`<button data-t="${k}" aria-selected="${TAB===k}">${l}</button>`).join("");
+  t.innerHTML=[["jobs","My Jobs"],["day","My Day"],["lead","New Lead"],["carriers","Carriers"],["colors","Colors"],...(HC?[["hardcost","Hard Cost"]]:[]),...(ME&&ME.team?[["subs","Subs"]]:[]),...(ME&&["owner","office"].includes(ME.role)?[["conn","Connections"]]:[])].map(([k,l])=>`<button data-t="${k}" aria-selected="${TAB===k}">${l}</button>`).join("");
   t.querySelectorAll("button").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;tabs();render()});}
 async function load(){ $("#main").innerHTML=`<div class="empty">Loading…</div>`; HOME=await api("home",{scope:SCOPE}); render(); }
-function render(){$("#main").style.maxWidth=TAB==="hardcost"?"none":"";({jobs:renderJobs,day:renderDay,lead:renderLead,carriers:renderCarriers,colors:renderColors,hardcost:renderHC,subs:renderSubs})[TAB]();}
+function render(){$("#main").style.maxWidth=TAB==="hardcost"?"none":"";({jobs:renderJobs,day:renderDay,lead:renderLead,carriers:renderCarriers,colors:renderColors,hardcost:renderHC,subs:renderSubs,conn:renderConn})[TAB]();}
 
 /* ===== Subs hub: text crews and vendors from the company line, send labor POs, keep every thread here ===== */
 const SUBSAPI="https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/subs-hub/api/";
@@ -160,6 +160,20 @@ function renderSubPo(s){
   $("#poCancel").onclick=()=>{SUBPO=null;el.innerHTML="";};
   $("#poPrev").onclick=async()=>{grab();if(!p.job){toast("Job # first");return;}try{const r=await subsApi("po_preview",{sub_id:s.id,job_number:p.job,build_date:p.date,amount:p.amount,notes:p.notes});p.text=r.text;renderSubPo(s);}catch(e){toast("Couldn't build the PO ("+e.message+")");}};
   $("#poSend").onclick=async()=>{grab();if(!p.text){toast("Preview first");return;}if(!confirm("Text this labor PO to "+(s.name||"")+" and post it on job #"+p.job+"?"))return;$("#poSend").disabled=true;try{await subsApi("po_send",{sub_id:s.id,job_number:p.job,build_date:p.date,amount:p.amount,notes:p.notes,text:p.text});toast("PO sent");SUBPO=null;renderSubThread();}catch(e){toast("Not sent ("+e.message+")");$("#poSend").disabled=false;}};
+}
+
+
+/* ===== Connections: the logins the robots use, saved once, never shown again ===== */
+const CONNAPI="https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/connections/api/";
+async function connApi(action,body={}){const r=await fetch(CONNAPI+action,{method:"POST",headers:{"content-type":"text/plain;charset=UTF-8"},body:JSON.stringify(Object.assign({},body,{_t:TOKEN||""}))});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||j.error||("http_"+r.status));return j;}
+async function renderConn(){
+  $("#main").innerHTML=`<h1>Connections</h1><p class="sub">The logins the portal's robots use. Type each one once; it's saved on the server and never shown again.</p><div class="empty">Loading…</div>`;
+  let d; try{ d=await connApi("status"); }catch(e){ $("#main").innerHTML=`<h1>Connections</h1><div class="empty">${esc(e.message)}</div>`; return; }
+  const help={lynx:"Lets the portal place material orders inside the Lynx job's ABC order tool and read Roofr reports. Use the Command Center user.", abc:"Aly's myABCsupply login, so orders can be placed on the ABC account directly.", invoicing:"The Gmail app password for the invoicing mailbox, so vendor invoices file themselves into Lynx. In Google: Security → 2-Step Verification → App passwords."};
+  $("#main").innerHTML=`<h1>Connections</h1><p class="sub">The logins the portal's robots use. Type each one once; it's saved on the server and never shown again.</p>`+
+    d.items.map(it=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><div class="t">${esc(it.label)}</div><span class="tag ${it.set?'t-green':'t-red'}">${it.set?'Connected':'Not set'}</span></div><div class="m" style="margin:4px 0 8px">${esc(help[it.key]||'')}</div>
+      <div class="f"><label>Email / username<input id="c_${it.key}_e" autocomplete="off"></label><label>Password<input id="c_${it.key}_p" type="password" autocomplete="new-password"></label><button class="btn" type="button" data-conn="${it.key}">${it.set?'Replace':'Save'}</button></div></div>`).join("");
+  $("#main").querySelectorAll("[data-conn]").forEach(b=>b.onclick=async()=>{const k=b.dataset.conn; const email=$("#c_"+k+"_e").value.trim(), password=$("#c_"+k+"_p").value; if(!email||!password){toast("Both boxes, please");return;} b.disabled=true; try{ await connApi("save",{key:k,email,password}); toast("Saved"); renderConn(); }catch(e){ toast("Not saved ("+e.message+")"); b.disabled=false; }});
 }
 
 function renderHC(){if($("#hcf")&&!HCJOB)return;const jq=HCJOB?"&job="+encodeURIComponent(HCJOB):"";HCJOB="";$("#main").innerHTML='<iframe id="hcf" src="hardcost.html?v='+Date.now()+jq+'&role='+encodeURIComponent((ME&&ME.role)||'')+'" title="Hard Cost tool" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--card)"></iframe>';}
