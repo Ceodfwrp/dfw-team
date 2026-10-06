@@ -931,7 +931,7 @@ function start(hot){
   
 
 /* ===================== ESTIMATE vs ACTUAL (money really spent on the job, from Lynx) ===================== */
-let LK_ACT=null, ACT_FETCH='';
+let LK_ACT=null, ACT_FETCH='', LK_FIN=null;
 const ACT_LABEL={material:'Materials',roof_labor:'Roof labor',gutters:'Gutters',paint:'Paint',stain:'Stain',garage:'Garage door',screens:'Screens',permit:'Permit',inspection:'Inspections',claim_fees:'Claim / supplement fees',measurement:'Measurement',other_sub:'Other subs',solar:'Solar',commission:'Commission paid',refund:'Refund'};
 window.renderActuals = function(){
   const box=document.getElementById('actBox'); if(!box) return;
@@ -943,24 +943,40 @@ window.renderActuals = function(){
     return;
   }
   const c=compute(state.pb,state.job), B={}; (LK_ACT.buckets||[]).forEach(b=>{ B[b.bucket]=(+b.amt||0); });
-  const actHard=Object.keys(B).filter(k=>k!=='commission'&&k!=='refund').reduce((s,k)=>s+B[k],0);
+  const hardKeys=Object.keys(B).filter(k=>k!=='commission'&&k!=='refund').sort((a,b)=>B[b]-B[a]);
+  const actHard=hardKeys.reduce((s,k)=>s+B[k],0), comm=B.commission||0, refund=B.refund||0;
+  const contract = (LK_FIN && String(LK_FIN.num)===num && LK_FIN.approved) ? +LK_FIN.approved : (c.contract||0);
+  const net = contract - actHard - comm, netPct = contract>0 ? net/contract*100 : null;
   const aM=B.material||0, aL=B.roof_labor||0, aO=actHard-aM-aL;
   const eM=c.materials||0, eL=c.labor||0, eH=c.hard||0, eO=eH-eM-eL;
+  const td='style="padding:6px 8px"', tdn='class="n" style="padding:6px 8px"';
   const row=(l,e,a,strong)=>{ const v=a-e, pct=e>0?v/e*100:null, over=e>0&&a>e*1.05, under=a>0&&a<=e;
     const diff = a ? ((v>=0?'+':'-')+lkMoney(Math.abs(v))+(pct!=null?` (${v>=0?'+':''}${pct.toFixed(1)}%)`:'')) : '—';
-    return `<tr${strong?' style="font-weight:700"':''}><td style="padding:7px 8px">${l}</td><td class="n" style="padding:7px 8px">${c.sq>0?lkMoney(e):'—'}</td><td class="n" style="padding:7px 8px">${a?lkMoney(a):'—'}</td><td class="n" style="padding:7px 8px;color:${!(c.sq>0)?'var(--muted)':over?'var(--bad)':under?'var(--good)':'var(--muted)'}">${c.sq>0?diff:'—'}</td></tr>`; };
+    return `<tr${strong?' style="font-weight:700"':''}><td ${td}>${l}</td><td ${tdn}>${lkMoney(e)}</td><td ${tdn}>${a?lkMoney(a):'—'}</td><td class="n" style="padding:6px 8px;color:${over?'var(--bad)':under?'var(--good)':'var(--muted)'}">${diff}</td></tr>`; };
   const lines=(LK_ACT.lines||[]);
   const when=LK_ACT.snapshot_at?new Date(LK_ACT.snapshot_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'}):'';
-  const verdict = !(c.sq>0) ? 'Add the squares below to compare against the estimate.' : !actHard ? 'No costs recorded on this job yet.' : actHard>eH*1.05 ? `<b style="color:var(--bad)">Over estimate by ${lkMoney(actHard-eH)}.</b>` : actHard>eH ? `<b style="color:var(--warn)">Within 5% of estimate (${lkMoney(actHard-eH)} over so far).</b>` : `<b style="color:var(--good)">Under estimate by ${lkMoney(eH-actHard)} so far.</b>`;
-  box.innerHTML = `<div style="margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)">
-    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline"><div style="font-weight:700;letter-spacing:.02em">Estimate vs. actual · #${esc(num)}</div><div style="font-size:13px;color:var(--muted)">Actual = costs recorded on this job in Lynx${when?' · as of '+when:''}</div></div>
-    <div style="margin:6px 0 8px;font-size:14px">${verdict}</div>
+  const verdict = !(c.sq>0) ? '' : !actHard ? '' : actHard>eH*1.05 ? `<b style="color:var(--bad)">Over estimate by ${lkMoney(actHard-eH)}.</b>` : actHard>eH ? `<b style="color:var(--warn)">Within 5% of estimate (${lkMoney(actHard-eH)} over so far).</b>` : `<b style="color:var(--good)">Under estimate by ${lkMoney(eH-actHard)} so far.</b>`;
+  const card='margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)';
+  let h = `<div style="${card}">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline"><div style="font-weight:700;letter-spacing:.02em">Actual hard cost · #${esc(num)}</div><div style="font-size:13px;color:var(--muted)">Costs recorded on this job in Lynx${when?' · as of '+when:''}</div></div>`;
+  if (!actHard && !comm){ h += `<div style="margin:8px 0 2px;font-size:14px;color:var(--muted)">No costs recorded on this job in Lynx yet.</div></div>`; box.innerHTML=h; return; }
+  h += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0">
+      <div><div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Contract</div><div style="font-size:20px;font-weight:700">${lkMoney(contract)}</div></div>
+      <div><div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Hard cost so far</div><div style="font-size:20px;font-weight:700">${lkMoney(actHard)}</div></div>
+      <div><div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Commission paid</div><div style="font-size:20px;font-weight:700">${lkMoney(comm)}</div></div>
+      <div><div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Net so far</div><div style="font-size:20px;font-weight:700;color:${net>=0?'var(--good)':'var(--bad)'}">${lkMoney(net)}${netPct!=null?` · ${netPct.toFixed(1)}%`:''}</div></div></div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">
-      <thead><tr style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em"><td style="padding:6px 8px">Category</td><td class="n" style="padding:6px 8px">Estimate</td><td class="n" style="padding:6px 8px">Actual so far</td><td class="n" style="padding:6px 8px">Difference</td></tr></thead>
-      <tbody>${row('Materials',eM,aM)}${row('Roof labor',eL,aL)}${row('Other trades & fees',eO,aO)}${row('Total hard cost',eH,actHard,true)}</tbody></table></div>
-    ${B.commission?`<div style="font-size:13px;color:var(--muted);margin-top:6px">Commission paid so far: ${lkMoney(B.commission)} (not counted in hard cost).</div>`:''}
-    ${lines.length?`<details style="margin-top:8px"><summary style="cursor:pointer;font-size:14px">Every payment on this job (${lines.length})</summary><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px">${lines.map(l=>`<tr><td style="padding:5px 8px;white-space:nowrap">${l.date?esc(String(l.date).slice(0,10)):'—'}</td><td style="padding:5px 8px">${esc(ACT_LABEL[l.bucket]||l.bucket||'')}</td><td style="padding:5px 8px">${esc(l.vendor||'')}${l.notes?` <span style="color:var(--muted)">· ${esc(l.notes)}</span>`:''}</td><td class="n" style="padding:5px 8px">${lkMoney(l.amount)}</td></tr>`).join('')}</table></div></details>`:''}
-  </div>`;
+      <thead><tr style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em"><td ${td}>Category</td><td ${tdn}>Actual</td><td ${tdn}>Payments</td></tr></thead>
+      <tbody>${hardKeys.map(k=>{ const b=(LK_ACT.buckets||[]).find(x=>x.bucket===k)||{}; return `<tr><td ${td}>${esc(ACT_LABEL[k]||k)}</td><td ${tdn}>${lkMoney(B[k])}</td><td ${tdn}>${b.n||''}</td></tr>`; }).join('')}
+      <tr style="font-weight:700"><td ${td}>Total hard cost</td><td ${tdn}>${lkMoney(actHard)}</td><td ${tdn}></td></tr></tbody></table></div>
+    ${refund?`<div style="font-size:13px;color:var(--muted);margin-top:6px">Refunds recorded: ${lkMoney(refund)} (not counted in hard cost).</div>`:''}
+    <div style="font-size:13px;color:var(--muted);margin-top:6px">Net so far = contract − hard cost recorded − commission paid. Costs not yet entered in Lynx aren't included.</div>`;
+  if (c.sq>0) h += `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><div style="font-weight:700;margin-bottom:4px">Estimate vs. actual</div><div style="font-size:14px;margin-bottom:6px">${verdict}</div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em"><td ${td}>Category</td><td ${tdn}>Estimate</td><td ${tdn}>Actual so far</td><td ${tdn}>Difference</td></tr></thead>
+    <tbody>${row('Materials',eM,aM)}${row('Roof labor',eL,aL)}${row('Other trades & fees',eO,aO)}${row('Total hard cost',eH,actHard,true)}</tbody></table></div></div>`;
+  else h += `<div style="margin-top:10px;font-size:14px;color:var(--muted)">Add the squares from the Roofr report below to compare this against the estimate.</div>`;
+  if (lines.length) h += `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:14px">Every payment on this job (${lines.length})</summary><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px">${lines.map(l=>`<tr><td style="padding:5px 8px;white-space:nowrap">${l.date?esc(String(l.date).slice(0,10)):'—'}</td><td style="padding:5px 8px">${esc(ACT_LABEL[l.bucket]||l.bucket||'')}</td><td style="padding:5px 8px">${esc(l.vendor||'')}${l.notes?` <span style="color:var(--muted)">· ${esc(l.notes)}</span>`:''}${l.is_paid===false?' <span style="color:var(--warn)">· unpaid</span>':''}</td><td class="n" style="padding:5px 8px">${lkMoney(l.amount)}</td></tr>`).join('')}</table></div></details>`;
+  box.innerHTML = h + `</div>`;
 };
 
 /* ===================== JOB # LOOKUP (pulls the job from Lynx) ===================== */
@@ -987,8 +1003,10 @@ async function pullJob(){
   try{
     const d = await hcApi('hc_job_lookup', {job_number:num});
     const J=d.job||{}, F=d.fin||{}, I=d.ins||{};
-    LK_ACT = d.actual ? {...d.actual, num:String(J.num)} : null; ACT_FETCH=String(J.num);
-    if (state.job.example || (state.job.jobNumber && state.job.jobNumber!==J.num) || (state.job.id && state.job.jobNumber!==J.num)) state.job = newJob();
+    LK_ACT = d.actual ? {...d.actual, num:String(J.num)} : null; ACT_FETCH=String(J.num); LK_FIN = {...F, num:String(J.num)};
+    const saved = (state.jobs||[]).find(r=>String(((r.inputs||{}).jobNumber)||'')===String(J.num));
+    if (saved && state.job.id!==saved.id && !(String(state.job.jobNumber||'')===String(J.num) && +state.job.sq>0)){ state.job = {...newJob(), ...(saved.inputs||{}), id:saved.id, createdAt:saved.createdAt, example:false}; if (!Array.isArray(state.job.extras)) state.job.extras=[]; }
+    else if (state.job.example || (state.job.jobNumber && state.job.jobNumber!==J.num) || (state.job.id && state.job.jobNumber!==J.num)) state.job = newJob();
     const j = state.job;
     j.jobNumber = J.num; j.lynxId = J.id;
     j.customer = J.customer || j.customer;
@@ -1003,7 +1021,7 @@ async function pullJob(){
     switchTab('job'); renderForm(); recalc(); persistDraft();
     const bits = [J.customer, J.workType, J.milestone, I.carrier?(I.carrier+(I.claim?' claim '+I.claim:'')):'', (J.reps||[]).join(', ')].filter(Boolean);
     const money = j.jobType==='insurance' ? `RCV ${lkMoney(F.claim)} · deductible ${lkMoney(F.deductible)}${F.supplements?' · supplements '+lkMoney(F.supplements):''}${F.upgrades?' · upgrades '+lkMoney(F.upgrades):''}` : `contract ${lkMoney(F.approved)}`;
-    msg.innerHTML = `<b style="color:var(--ink)">#${esc(J.num)} filled from Lynx.</b> ${esc(bits.join(' · '))} · ${esc(money)}${rk||!(J.reps||[]).length?'':' · rep not on the pay plan list, pick one'} · <a href="${esc(J.lynx)}" target="_blank" rel="noopener">Open in Lynx</a>. Add the measurements below.`;
+    msg.innerHTML = `<b style="color:var(--ink)">#${esc(J.num)} filled from Lynx${saved?' with your saved estimate':''}.</b> ${esc(bits.join(' · '))} · ${esc(money)}${rk||!(J.reps||[]).length?'':' · rep not on the pay plan list, pick one'} · <a href="${esc(J.lynx)}" target="_blank" rel="noopener">Open in Lynx</a>. Add the measurements below.`;
     toast('Pulled #'+J.num+' from Lynx');
   }catch(err){
     lkLast='';
