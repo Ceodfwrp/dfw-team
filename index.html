@@ -162,15 +162,22 @@ function renderSubPo(s){
   $("#poSend").onclick=async()=>{grab();if(!p.text){toast("Preview first");return;}if(!confirm("Text this labor PO to "+(s.name||"")+" and post it on job #"+p.job+"?"))return;$("#poSend").disabled=true;try{await subsApi("po_send",{sub_id:s.id,job_number:p.job,build_date:p.date,amount:p.amount,notes:p.notes,text:p.text});toast("PO sent");SUBPO=null;renderSubThread();}catch(e){toast("Not sent ("+e.message+")");$("#poSend").disabled=false;}};
 }
 
-function renderHC(){if($("#hcf")&&!HCJOB)return;const jq=HCJOB?"&job="+encodeURIComponent(HCJOB):"";HCJOB="";$("#main").innerHTML='<iframe id="hcf" src="hardcost.html?v='+Date.now()+jq+'" title="Hard Cost tool" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--card)"></iframe>';}
+function renderHC(){if($("#hcf")&&!HCJOB)return;const jq=HCJOB?"&job="+encodeURIComponent(HCJOB):"";HCJOB="";$("#main").innerHTML='<iframe id="hcf" src="hardcost.html?v='+Date.now()+jq+'&role='+encodeURIComponent((ME&&ME.role)||'')+'" title="Hard Cost tool" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--card)"></iframe>';}
 function scopeChips(){return ME.team?`<div class="tools"><button class="chip" data-sc="mine" aria-pressed="${SCOPE==="mine"}">Mine</button><button class="chip" data-sc="team" aria-pressed="${SCOPE==="team"}">Whole team</button></div>`:""}
 function bindScope(){document.querySelectorAll("[data-sc]").forEach(b=>b.onclick=async()=>{SCOPE=b.dataset.sc;await load()})}
 function freshLine(){const f=HOME&&HOME.fresh||{};return `<p class="fresh">Lynx jobs as of ${when(f.jobs_at)} · appointments as of ${when(f.appts_at)}</p>`}
 /* ---------- My Jobs ---------- */
+function startHere(){ try{ if(!ME||!ME.team||localStorage.getItem('dfw_start_v1')==='1') return ''; }catch(e){ return ''; }
+  return `<div class="card" id="startHere" style="border-left:4px solid var(--red);margin-bottom:12px"><div class="t">Start here</div><div class="m" style="margin:6px 0 10px">Three things you'll do most. Everything fills itself in from Lynx, nothing to type twice.</div>
+  <div class="m"><b>1. Cost a job:</b> tap <b>Hard Cost</b>, type the job number or the customer's name, pick it. The roof, claim, money and costs fill in.</div>
+  <div class="m"><b>2. Order materials:</b> on that job, tap <b>Order materials from ABC</b>, check the delivery date, send. ABC and the Lynx file both get it.</div>
+  <div class="m"><b>3. Text a crew:</b> tap <b>Subs</b>, pick the crew, type a text or send a <b>Labor PO</b>. It goes from the company line and lands on the job.</div>
+  <div style="margin-top:10px"><button class="btn ghost" type="button" id="startHide">Got it</button></div></div>`; }
+document.addEventListener("click",e=>{ if(e.target&&e.target.id==="startHide"){ try{localStorage.setItem('dfw_start_v1','1')}catch(x){} const c=document.getElementById('startHere'); if(c) c.remove(); } });
 function renderJobs(){
   const js=(HOME.jobs||[]).filter(j=>(!STAGE||j.milestone===STAGE)&&(!Q||[j.name,j.num,addr(j.addr),j.reps].join(" ").toLowerCase().includes(Q)));
   const counts=Object.fromEntries(STAGES.map(s=>[s,(HOME.jobs||[]).filter(j=>j.milestone===s).length]));
-  $("#main").innerHTML=`<h2>${SCOPE==="team"?"Team jobs":"My jobs"}</h2><p class="sub">Every open job in Lynx${SCOPE==="team"?"":" where you're the rep"}. Tap one for details and to post a note.</p>
+  $("#main").innerHTML=startHere()+`<h2>${SCOPE==="team"?"Team jobs":"My jobs"}</h2><p class="sub">Every open job in Lynx${SCOPE==="team"?"":" where you're the rep"}. Tap one for details and to post a note.</p>
     ${scopeChips()}<div class="tools"><input id="q" type="search" placeholder="Search name, job # or street" value="${esc(Q)}"></div>
     <div class="tools">${["",...STAGES].map(s=>`<button class="chip" data-s="${s}" aria-pressed="${STAGE===s}">${s||"All"}${s?" "+counts[s]:""}</button>`).join("")}</div>
     ${HOME.note?`<div class="err">${esc(HOME.note)}</div>`:""}
