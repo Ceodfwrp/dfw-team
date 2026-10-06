@@ -939,7 +939,7 @@ window.renderActuals = function(){
   if(!num){ box.innerHTML=''; return; }
   if(!LK_ACT || String(LK_ACT.num)!==num){
     box.innerHTML='';
-    if(ACT_FETCH!==num && HC_TOKEN){ ACT_FETCH=num; hcApi('hc_job_actuals',{job_number:num}).then(d=>{ if(d&&d.actual){ LK_ACT=d.actual; window.renderActuals(); } }).catch(()=>{}); }
+    if(ACT_FETCH!==num && HC_TOKEN){ ACT_FETCH=num; hcApi('hc_costs',{job_number:num}).then(d=>{ if(d&&d.actual){ LK_ACT=d.actual; window.renderActuals(); } }).catch(()=>{}); }
     return;
   }
   const c=compute(state.pb,state.job), B={}; (LK_ACT.buckets||[]).forEach(b=>{ B[b.bucket]=(+b.amt||0); });
@@ -1001,7 +1001,7 @@ async function pullJob(){
   if (lkBusy) return; lkBusy=true; lkLast=num;
   msg.textContent='Pulling #'+num+' from Lynx…'; btn.disabled=true;
   try{
-    let d; try{ d = await hcApi('hc_job_lookup', {job_number:num}); }catch(e1){ if (e1 && (e1.code==='invalid_argument' || /not_found/.test(e1.message||''))) throw e1; msg.textContent='Still pulling #'+num+'…'; await new Promise(r=>setTimeout(r,1500)); d = await hcApi('hc_job_lookup', {job_number:num}); }
+    let d; try{ d = await hcApi('hc_pull', {job_number:num}); }catch(e1){ if (e1 && (e1.code==='invalid_argument' || /not_found/.test(e1.message||''))) throw e1; msg.textContent='Still pulling #'+num+'…'; await new Promise(r=>setTimeout(r,1500)); d = await hcApi('hc_pull', {job_number:num}); }
     const J=d.job||{}, F=d.fin||{}, I=d.ins||{};
     LK_ACT = d.actual ? {...d.actual, num:String(J.num)} : null; ACT_FETCH=String(J.num); LK_FIN = {...F, num:String(J.num)};
     const saved = (state.jobs||[]).find(r=>String(((r.inputs||{}).jobNumber)||'')===String(J.num));
