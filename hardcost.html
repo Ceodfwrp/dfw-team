@@ -514,9 +514,20 @@ function compute(pb, j){
   add(L.labor, `${crewName} — tear-off + install`, sq, 'sq', base, baseNote);
   const feltLayers = CREWS[c]?.feltFirst ? n(j.layers) : n(j.layers)-1;   /* THR & Omar: first layer included · Will: $5/sq from the first layer (Blake 9/20/26) */
   if (feltLayers>0 && R('felt')>0) add(L.labor, CREWS[c]?.feltFirst ? `Felt / shingle layers (${n(j.layers)}, charged from the first)` : `Extra felt / shingle layers (${n(j.layers)-1}, first included)`, sq*feltLayers, 'sq', R('felt'));
-  const steep = j.pitch==='steep1' ? R('steep1') : j.pitch==='steep2' ? R('steep2') : 0;
-  if (steep>0) add(L.labor, j.pitch==='steep1' ? 'Pitch adder 8/12–11/12' : 'Pitch adder 12/12+', sq, 'sq', steep);
-  if (n(j.stories)>1 && R('story')>0) add(L.labor, `Story adder (${n(j.stories)}-story)`, sq*(n(j.stories)-1), 'sq', R('story'));
+  const stepRate = R('pitchStep');
+  const stepAdd = rise => stepRate>0 ? Math.max(0, Math.round(rise)-7)*stepRate : (rise>=12 ? R('steep2') : rise>=8 ? R('steep1') : 0);
+  const riseCls = r => r>=12 ? 'steep2' : r>=8 ? 'steep1' : 'low';
+  const bpE = j.byPitch && typeof j.byPitch==='object' ? Object.entries(j.byPitch).filter(([,v])=>n(v)>0) : [];
+  const bpMax = bpE.reduce((m,[p,v])=> n(v)>m.v ? {p:parseFloat(p),v:n(v)} : m, {p:0,v:0}).p;
+  if (bpE.length && sq>0 && riseCls(bpMax)===j.pitch){
+    const tot = bpE.reduce((a,[,v])=>a+n(v),0)||1;
+    bpE.filter(([p])=>parseFloat(p)>=8).sort((a,b)=>parseFloat(a[0])-parseFloat(b[0])).forEach(([p,v])=>{ const s_=n(v)/tot*sqSh; const ad=stepAdd(parseFloat(p)); if (s_>0&&ad>0) add(L.labor, `Pitch adder ${parseFloat(p)}/12`, Math.round(s_*100)/100, 'sq', ad, 'Roofr pitch breakdown'); });
+  } else {
+    const rise = (n(j.rise)>0 && riseCls(n(j.rise))===j.pitch) ? n(j.rise) : (j.pitch==='steep1' ? 8 : j.pitch==='steep2' ? 12 : 0);
+    const ad = stepAdd(rise); if (ad>0 && sq>0) add(L.labor, `Pitch adder ${rise}/12`, Math.round(sqSh*100)/100, 'sq', ad);
+  }
+  const sq2 = n(j.sq2story)>0 ? Math.min(n(j.sq2story), sq) : (n(j.stories)>1 ? sq : 0);
+  if (sq2>0 && R('story')>0) add(L.labor, '2-story adder', Math.round(sq2*100)/100, 'sq', R('story'), n(j.sq2story)>0 ? 'scope high-roof squares' : 'whole roof marked 2-story');
   add(L.labor, 'Decking install', n(j.deckSheets), 'sheet', R('deck'));
   add(L.labor, 'Ridge vent install', n(j.ridgeVent), 'lf', R('ridge'));
   add(L.labor, 'Vent cancellations', n(j.ventCancel), 'ea', R('cancel'));
@@ -594,7 +605,7 @@ const SECTIONS = [
     {k:'waste',label:'Waste',type:'sel',unit:'%',opts:[[10,'10% standard'],[12,'12%'],[15,'15% hips & valleys'],[20,'20% cut-up']]},
     {k:'pitch',label:'Pitch',type:'sel',opts:[['low','Up to 7/12'],['steep1','8/12 – 11/12'],['steep2','12/12 and up']]},
     {k:'stories',label:'Stories',type:'sel',opts:[[1,'1'],[2,'2'],[3,'3']]},
-    {k:'layers',label:'Layers to remove',type:'sel',opts:[[1,'1 layer'],[2,'2 layers'],[3,'3 layers'],[4,'4 layers'],[5,'5 layers']]},
+    {k:'layers',label:'Felt / shingle layers',type:'sel',opts:[[1,'1 layer'],[2,'2 layers'],[3,'3 layers'],[4,'4 layers'],[5,'5 layers']]},
     {k:'shingle',label:'Shingle',type:'sel',opts:SHINGLES.map(s=>[s[0],s[1]+(s[3]==='list'?' (list)':'')])},
     {k:'cap',label:'Hip & ridge',type:'sel',opts:[['3tab','Cut Marathon 3-tab'],['hr','IKO Hip & Ridge 12"'],['ir','Class 4 hip & ridge']]},
     {k:'crew',label:'Crew',type:'sel',opts:Object.entries(CREWS).map(([k,c])=>[k,`${c.name} · $${c.base}/sq`])},
@@ -1035,7 +1046,9 @@ async function pullJob(){
     if (RD){
       const blank = k => (j[k]===''||j[k]==null||j[k]===0||j[k]==='0');
       const fill = (k,v) => { if (v==null||v==='') return; if (saved && !blank(k)) return; j[k] = (typeof v==='number') ? String(v) : v; };
-      ['sq','eaves','rakes','ridges','hips','valleys','wall','boots','boxvents','turbines','powervents','chimneys','skylights','deckSheets','ridgeVent','woodLf','ventCancel','versacaps','gutterLf','screens','garageDoors'].forEach(k=>fill(k, RD[k]));
+      ['sq','eaves','rakes','ridges','hips','valleys','wall','boots','boxvents','turbines','powervents','chimneys','skylights','deckSheets','ridgeVent','woodLf','ventCancel','versacaps','gutterLf','screens','garageDoors','rise','sq2story','stainSqft','paintAmt','panels','guardLf','inspections','supplements','permit'].forEach(k=>fill(k, RD[k]));
+      if (RD.byPitch && typeof RD.byPitch==='object' && !saved) j.byPitch = RD.byPitch;
+      if (RD.appraisal && !saved) j.appraisal = true;
       if (RD.pitch && (!saved || !j.pitch)) j.pitch = RD.pitch;
       if (+RD.stories>0 && !saved) j.stories = +RD.stories;
       if (+RD.layers>0 && !saved) j.layers = +RD.layers;
