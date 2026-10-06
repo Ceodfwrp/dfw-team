@@ -1,4 +1,32 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><title>DFW Roofing Pro Hard Cost</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<div id="hcLogin" style="display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.94);align-items:center;justify-content:center;padding:20px">
+ <div style="width:100%;max-width:420px;border:1px solid var(--line-2);background:var(--panel-2);border-radius:12px;padding:24px">
+  <div style="font-size:12px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase">DFW Roofing Pro</div>
+  <h2 style="margin:6px 0 4px;font-family:var(--display);font-size:30px;letter-spacing:.02em;text-transform:uppercase">Hard Cost</h2>
+  <p id="hlNote" style="color:var(--muted);margin:0 0 16px;font-size:14px">Sign in with your work email. We'll text and email you a 6-digit code.</p>
+  <label for="hlEm" style="display:block;font-weight:700;margin:0 0 6px">Work email</label>
+  <input class="in" id="hlEm" type="email" inputmode="email" autocomplete="email" style="width:100%">
+  <div id="hlCodeBox" style="display:none"><label for="hlCd" style="display:block;font-weight:700;margin:14px 0 6px">Code</label><input class="in" id="hlCd" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="width:100%"></div>
+  <button class="btn" id="hlGo" type="button" style="margin-top:16px;width:100%">Send my code</button>
+  <div id="hlMsg" role="status" style="margin-top:12px;font-size:14px;color:var(--muted)"></div>
+ </div></div>
+<script>
+(function(){
+ var PAPI="https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/portal-api/api/";
+ var $$=function(id){return document.getElementById(id)}; var stage="start";
+ async function call(a,b){ var r=await fetch(PAPI+a,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)}); var j=await r.json().catch(function(){return {}}); if(!r.ok){ throw new Error(j.error||("http_"+r.status)); } return j; }
+ async function go(){ var b=$$("hlGo"), m=$$("hlMsg"), em=$$("hlEm").value.trim(); if(!/@/.test(em)){ m.textContent="Enter your work email."; return; }
+   b.disabled=true; try{
+     if(stage==="start"){ var r=await call("login_start",{email:em}); $$("hlCodeBox").style.display="block"; $$("hlCd").focus(); stage="verify"; b.textContent="Sign in";
+       m.textContent=r.sent?("Code sent"+(r.texted?" by text":"")+(r.emailed?(r.texted?" and email":" by email"):"")+". It expires in 10 minutes."):"If that email is on the team, a code is on its way."; }
+     else { var v=await call("login_verify",{email:em,code:$$("hlCd").value.trim()}); try{ localStorage.setItem("dfw_team_token",v.token); }catch(e){} m.textContent="Signed in. Loading…"; location.reload(); }
+   }catch(e){ m.textContent=e.message==="code_invalid"?"That code didn't match. Try again.":e.message==="too_many_codes"?"Too many codes requested. Wait a few minutes.":"Something went wrong. Try again."; }
+   finally{ b.disabled=false; } }
+ window.hcShowLogin=function(note){ var o=$$("hcLogin"); if(!o||o.style.display==="flex") return; if(note) $$("hlNote").textContent=note; o.style.display="flex"; setTimeout(function(){ $$("hlEm").focus(); },50); };
+ $$("hlGo").onclick=go; $$("hlEm").onkeydown=function(e){ if(e.key==="Enter") go(); }; $$("hlCd").onkeydown=function(e){ if(e.key==="Enter") go(); };
+})();
+</script>
+<title>DFW Roofing Pro Hard Cost</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -863,6 +891,7 @@ const HC_API = 'https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/hc-relay/a
 async function hcApi(action, body){
   const r = await fetch(HC_API+action, {method:'POST', headers:{'content-type':'application/json', authorization:'Bearer '+(HC_TOKEN||'')}, body: JSON.stringify(body||{})});
   const j = await r.json().catch(()=>({}));
+  if (r.status===401){ try{ localStorage.removeItem('dfw_team_token'); }catch(e){} if (window.hcShowLogin) window.hcShowLogin('Your sign-in expired. Sign in again.'); }
   if (!r.ok){ const e = new Error(j.error||('http_'+r.status)); e.code = r.status===401||r.status===403 ? 'invalid_argument' : 'unavailable'; throw e; }
   return j;
 }
@@ -872,7 +901,7 @@ async function hcRefresh(){
   state.jobs = d.jobs || []; renderJobs();
 }
 async function initCapabilities(){
-  if (!HC_TOKEN){ setMode('readonly'); loadLocal(); return; }
+  if (!HC_TOKEN){ setMode('readonly'); loadLocal(); if (window.hcShowLogin) window.hcShowLogin(); return; }
   try{ await hcRefresh(); state.canWrite = true; setMode('shared'); }
   catch(err){ if (err.code==='invalid_argument'){ setMode('readonly'); } else { setMode('local'); loadLocal(); } }
   setInterval(()=>{ hcRefresh().catch(()=>{}); }, 60000);
