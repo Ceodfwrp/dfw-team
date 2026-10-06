@@ -259,6 +259,7 @@ table.t .edit.changed{color:var(--warn);border-bottom-color:var(--warn)}
   <main>
     <section id="panel-job" role="tabpanel">
       <div class="lookup" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)"><label for="lkNum" style="font-weight:700;letter-spacing:.02em">Job #</label><input class="in" id="lkNum" type="text" inputmode="text" autocomplete="off" placeholder="Job # or customer name" style="max-width:260px"><button class="btn" id="lkGo" type="button">Pull from Lynx</button><span id="lkMsg" style="font-size:14px;color:var(--muted);flex:1 1 260px">Type a job number or a customer name. It fills the job from Lynx.</span><div id="lkList" style="flex:1 1 100%;display:none;max-height:320px;overflow:auto"></div></div>
+      <div id="moneyBox"></div>
       <div id="actBox"></div>
       <div class="hud" id="hud"></div>
       <div class="grid">
@@ -740,7 +741,7 @@ function saveNoteText(){
   if (state.mode==='local') return 'Not connected to shared storage — saves stay on this device.';
   return 'Connecting to shared storage…';
 }
-function recalc(){ const r = renderSummary(); try{ if (window.renderActuals) window.renderActuals(); }catch(e){} return r; }
+function recalc(){ const r = renderSummary(); try{ if (window.renderActuals) window.renderActuals(); }catch(e){} try{ if (window.renderMoney) window.renderMoney(); }catch(e){} return r; }
 
 /* ===================== ABC CATALOG ===================== */
 function abcRow(i){
@@ -943,6 +944,43 @@ function start(hot){
   $('#jobsList').addEventListener('keydown', e => { if (e.key==='Enter'){ const row = e.target.closest('.jrow'); if (row){ const rec = state.jobs.find(r=>r.id===row.dataset.id); if (rec) loadJob(rec); } } });
   
 
+
+/* ===================== MONEY ON THIS JOB (live from Lynx + mortgage desk) ===================== */
+let LK_MONEY=null, MON_FETCH='';
+const GAP_TXT = {INSTALLED_NO_SUPP:'Roof built, no supplement filed', PHOTOS_DONE_NO_SUPP:'Photos done, no supplement filed', NO_PHOTOS:'No supplement photos yet', SUPP_SUBMITTED_RECENT:'Submitted, at the carrier', SUPP_SUBMITTED:'Submitted, at the carrier', SUPP_PAID:'Paid', PAID:'Paid'};
+window.renderMoney = function(){
+  const box=document.getElementById('moneyBox'); if(!box) return;
+  const num=String(state.job.jobNumber||'');
+  if(!num){ box.innerHTML=''; return; }
+  if(!LK_MONEY || String(LK_MONEY.num)!==num){
+    box.innerHTML='';
+    if(MON_FETCH!==num && HC_TOKEN){ MON_FETCH=num; hcApi('hc_money',{job_number:num}).then(d=>{ if(d&&d.money){ LK_MONEY={...d.money, num}; window.renderMoney(); } }).catch(()=>{}); }
+    return;
+  }
+  const M=LK_MONEY, rec=M.received||{list:[],total:0}, mort=M.mortgage||[], sp=M.supplements||{};
+  const dt = s => s ? new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/Chicago'}) : '';
+  const td='style="padding:6px 8px"', tdn='class="n" style="padding:6px 8px"';
+  const tile=(l,v,sub)=>`<div><div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">${l}</div><div style="font-size:20px;font-weight:700">${v}</div>${sub?`<div style="font-size:12px;color:var(--muted)">${sub}</div>`:''}</div>`;
+  const openChecks = mort.filter(m=>!m.deposited && !m.cleared);
+  const atM = openChecks.reduce((s,m)=>s+(+m.amount||0),0), unknownAmt = openChecks.filter(m=>!(+m.amount>0)).length;
+  let h = `<div style="margin:0 0 14px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline"><div style="font-weight:700;letter-spacing:.02em">Money on this job · #${esc(num)}</div><div style="font-size:13px;color:var(--muted)">Live from Lynx${M.arAge!=null&&M.arAge>=0?' · A/R age '+M.arAge+' days':''}</div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0">
+      ${tile('Contract', lkMoney(M.sales||0))}
+      ${tile('Collected', lkMoney(rec.total||0), (M.pctCollected!=null?M.pctCollected+'% of contract':''))}
+      ${tile('Balance due', M.balance!=null?lkMoney(M.balance):'—')}
+      ${tile('At mortgage company', openChecks.length ? (atM>0?lkMoney(atM):'amount not recorded') : lkMoney(0), openChecks.length ? openChecks.length+(openChecks.length>1?' checks':' check')+' still out'+(unknownAmt&&atM>0?' · '+unknownAmt+' without an amount':'') : 'no checks out')}
+      ${tile('Paid out', lkMoney(M.paidOut||0), 'vendors, crews, commissions')}
+    </div>`;
+  if (rec.list && rec.list.length) h += `<div style="font-weight:700;margin-top:4px">Payments received (${rec.list.length})</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">${rec.list.map(p=>`<tr><td ${td} style="white-space:nowrap">${esc(dt(p.date))}</td><td ${td}>${esc(p.from||'')}${p.check?` · check ${esc(p.check)}`:''}${p.notes?` <span style="color:var(--muted)">· ${esc(p.notes.trim())}</span>`:''}</td><td ${tdn}>${lkMoney(p.amount)}</td></tr>`).join('')}</table></div>`;
+  else h += `<div style="font-size:14px;color:var(--muted);margin-top:4px">No payments received yet.</div>`;
+  if (mort.length) h += `<div style="font-weight:700;margin-top:10px">Mortgage checks (${mort.length})</div>` + mort.map(m=>`<div style="font-size:14px;padding:6px 0;border-top:1px solid var(--line)"><b>${+m.amount>0?lkMoney(m.amount):'Amount not recorded'}</b> · ${esc(m.mortgage_company||'lender')} · ${esc(String(m.status||'').replace(/_/g,' '))}${m.current_custodian?' · held by '+esc(m.current_custodian):''}${m.latest_tracking_status?' · '+esc(m.latest_tracking_status):''}${m.deposited?' · deposited '+esc(dt(m.deposited)):''}${m.cleared?' · cleared '+esc(dt(m.cleared)):''}${m.next_action?`<div style="color:var(--muted);font-size:13px;margin-top:2px">Next: ${esc(m.next_action)}${m.next_due?' · by '+esc(dt(m.next_due)):''}</div>`:''}</div>`).join('');
+  const g=sp.gap; const gapTxt = g ? (GAP_TXT[g.gap] || String(g.gap||'').replace(/_/g,' ').toLowerCase()) : '';
+  h += `<div style="font-weight:700;margin-top:10px">Supplements</div><div style="font-size:14px">${(+sp.worksheet>0)?`${lkMoney(sp.worksheet)} on the Lynx worksheet`:'None on the Lynx worksheet'}${g?` · ${esc(gapTxt)}${+g.supp_expected>0?' · '+lkMoney(g.supp_expected)+' expected':''}${g.supp_received!=null?' · '+lkMoney(g.supp_received)+' received':''}`:''}</div>`;
+  if (sp.lynx && sp.lynx.length) h += `<div style="font-size:13px;color:var(--muted)">${sp.lynx.map(s=>esc([s.name,s.status,s.amount?lkMoney(s.amount):''].filter(Boolean).join(' · '))).join('<br>')}</div>`;
+  box.innerHTML = h + `</div>`;
+};
+
 /* ===================== ESTIMATE vs ACTUAL (money really spent on the job, from Lynx) ===================== */
 let LK_ACT=null, ACT_FETCH='', LK_FIN=null;
 const ACT_LABEL={material:'Materials',roof_labor:'Roof labor',gutters:'Gutters',paint:'Paint',stain:'Stain',garage:'Garage door',screens:'Screens',permit:'Permit',inspection:'Inspections',claim_fees:'Claim / supplement fees',measurement:'Measurement',other_sub:'Other subs',solar:'Solar',commission:'Commission paid',refund:'Refund'};
@@ -1025,6 +1063,7 @@ async function pullJob(){
     let d; try{ d = await hcApi('hc_pull', {job_number:num}); }catch(e1){ if (e1 && (e1.code==='invalid_argument' || /not_found/.test(e1.message||''))) throw e1; msg.textContent='Still pulling #'+num+'…'; await new Promise(r=>setTimeout(r,1500)); d = await hcApi('hc_pull', {job_number:num}); }
     const J=d.job||{}, F=d.fin||{}, I=d.ins||{};
     LK_ACT = d.actual ? {...d.actual, num:String(J.num)} : null; ACT_FETCH=String(J.num); LK_FIN = {...F, num:String(J.num), milestone:J.milestone||''};
+    LK_MONEY = d.money ? {...d.money, num:String(J.num)} : null; MON_FETCH = String(J.num);
     const saved = (state.jobs||[]).find(r=>String(((r.inputs||{}).jobNumber)||'')===String(J.num));
     if (saved && state.job.id!==saved.id && !(String(state.job.jobNumber||'')===String(J.num) && +state.job.sq>0)){ state.job = {...newJob(), ...(saved.inputs||{}), id:saved.id, createdAt:saved.createdAt, example:false}; if (!Array.isArray(state.job.extras)) state.job.extras=[]; }
     else if (state.job.example || (state.job.jobNumber && state.job.jobNumber!==J.num) || (state.job.id && state.job.jobNumber!==J.num)) state.job = newJob();
