@@ -109,10 +109,10 @@ async function boot(){
   }catch(e){if(e.message!=="signed_out")$("#main").innerHTML=`<div class="empty">Couldn't load. Pull to refresh or try again.</div>`}
 }
 function tabs(){const t=$("#tabs");t.hidden=false;
-  t.innerHTML=[["jobs","My Jobs"],["day","My Day"],["lead","New Lead"],["carriers","Carriers"],["colors","Colors"],...(HC?[["hardcost","Hard Cost"]]:[]),...(ME&&ME.team?[["subs","Subs"]]:[]),...(ME&&["owner","office"].includes(ME.role)?[["conn","Connections"]]:[])].map(([k,l])=>`<button data-t="${k}" aria-selected="${TAB===k}">${l}</button>`).join("");
+  t.innerHTML=[["jobs","My Jobs"],["day","My Day"],["lead","New Lead"],["carriers","Carriers"],["colors","Colors"],...(HC?[["hardcost","Hard Cost"]]:[]),...(ME&&ME.team?[["subs","Subs"]]:[]),...(ME&&["owner","office"].includes(ME.role)?[["conn","Connections"]]:[]),...(ME&&ME.team?[["cmd","Command"]]:[])].map(([k,l])=>`<button data-t="${k}" aria-selected="${TAB===k}">${l}</button>`).join("");
   t.querySelectorAll("button").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;tabs();render()});}
 async function load(){ $("#main").innerHTML=`<div class="empty">Loading…</div>`; HOME=await api("home",{scope:SCOPE}); render(); }
-function render(){$("#main").style.maxWidth=TAB==="hardcost"?"none":"";({jobs:renderJobs,day:renderDay,lead:renderLead,carriers:renderCarriers,colors:renderColors,hardcost:renderHC,subs:renderSubs,conn:renderConn})[TAB]();}
+function render(){$("#main").style.maxWidth=TAB==="hardcost"?"none":"";({jobs:renderJobs,day:renderDay,lead:renderLead,carriers:renderCarriers,colors:renderColors,hardcost:renderHC,subs:renderSubs,conn:renderConn,cmd:renderCmd})[TAB]();}
 
 /* ===== Subs hub: text crews and vendors from the company line, send labor POs, keep every thread here ===== */
 const SUBSAPI="https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/subs-hub/api/";
@@ -174,6 +174,54 @@ async function renderConn(){
     d.items.map(it=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><div class="t">${esc(it.label)}</div><span class="tag ${it.set?'t-green':'t-red'}">${it.set?'Connected':'Not set'}</span></div><div class="m" style="margin:4px 0 8px">${esc(help[it.key]||'')}</div>
       <div class="f"><label>Email / username<input id="c_${it.key}_e" autocomplete="off"></label><label>Password<input id="c_${it.key}_p" type="password" autocomplete="new-password"></label><button class="btn" type="button" data-conn="${it.key}">${it.set?'Replace':'Save'}</button></div></div>`).join("");
   $("#main").querySelectorAll("[data-conn]").forEach(b=>b.onclick=async()=>{const k=b.dataset.conn; const email=$("#c_"+k+"_e").value.trim(), password=$("#c_"+k+"_p").value; if(!email||!password){toast("Both boxes, please");return;} b.disabled=true; try{ await connApi("save",{key:k,email,password}); toast("Saved"); renderConn(); }catch(e){ toast("Not saved ("+e.message+")"); b.disabled=false; }});
+}
+
+
+/* ===== Command Center: company-wide numbers. Money/payroll/bank are owner-only (server enforces it too). ===== */
+const CMDAPI="https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/command-api";
+let CMD=null;
+async function cmdApi(){const r=await fetch(CMDAPI,{method:"POST",headers:{"content-type":"text/plain;charset=UTF-8"},body:JSON.stringify({_t:TOKEN||""})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||j.error||("http_"+r.status));return j;}
+const cmdMoney=v=>(v<0?"-":"")+"$"+Math.abs(+v||0).toLocaleString("en-US",{maximumFractionDigits:0});
+const cmdNum=v=>(+v||0).toLocaleString("en-US",{maximumFractionDigits:1});
+const cmdAgo=s=>{if(!s)return"never";const m=Math.round((Date.now()-new Date(s))/60000);return m<1?"just now":m<60?m+" min ago":m<1440?Math.round(m/60)+" hr ago":Math.round(m/1440)+" days ago";};
+function cmdTile(label,val,sub){return `<div class="card" style="padding:12px 14px"><div class="m" style="text-transform:uppercase;letter-spacing:.08em;font-size:11px">${esc(label)}</div><div style="font-size:22px;font-weight:700;margin-top:2px">${esc(val)}</div>${sub?`<div class="m" style="font-size:12px">${esc(sub)}</div>`:""}</div>`;}
+function cmdGrid(inner){return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:8px 0 16px">${inner}</div>`;}
+async function renderCmd(){
+  $("#main").innerHTML=`<h2>Command Center</h2><div class="empty">Loading…</div>`;
+  let d; try{ d=await cmdApi(); }catch(e){ $("#main").innerHTML=`<h2>Command Center</h2><div class="empty">${esc(e.message)}</div>`; return; }
+  CMD=d;
+  const get=(dom,metric,period)=>{const a=(d.kpi&&d.kpi[dom])||[];const r=a.find(x=>x.metric===metric&&(!period||x.period===period));return r?r:null;};
+  const v=(dom,m,p)=>{const r=get(dom,m,p);return r?r.value:null;};
+  let h=`<h2>Command Center</h2><p class="sub">Every number here comes from your own systems. ${d.owner?"You're signed in as owner, so the money side is visible.":"Money, payroll and bank are owner-only and aren't sent to this screen."}</p>`;
+  h+=`<h3 style="margin:14px 0 2px">Pipeline</h3>`;
+  h+=cmdGrid([["Leads","jobs_lead"],["Prospects","jobs_prospect"],["Approved","jobs_approved"],["Completed","jobs_completed"],["Invoiced","jobs_invoiced"]]
+    .map(([l,m])=>cmdTile(l,cmdNum(v("pipeline",m,"now")||0))).join("")
+    + cmdTile("Approved contract value",cmdMoney(v("pipeline","approved_contract_value","now")),"sold work in production"));
+  if(d.owner && d.kpi && d.kpi.money){
+    h+=`<h3 style="margin:14px 0 2px">Money · year to date</h3>`;
+    h+=cmdGrid(cmdTile("Revenue",cmdMoney(v("money","total_income","ytd2026")))
+      + cmdTile("Gross profit",cmdMoney(v("money","gross_profit","ytd2026")),cmdNum(v("money","gross_margin_pct","ytd2026"))+"% margin")
+      + cmdTile("Net income",cmdMoney(v("money","net_income","ytd2026")),cmdNum(v("money","net_margin_pct","ytd2026"))+"% margin")
+      + cmdTile("EBITDA",cmdMoney(v("money","ebitda","ytd2026")),"net income + interest + depreciation")
+      + cmdTile("Balance due, open jobs",cmdMoney(v("money","balance_due_open","now")),"from Lynx, live"));
+    h+=`<h3 style="margin:14px 0 2px">Where it goes</h3>`;
+    h+=cmdGrid(cmdTile("Subcontractors",cmdMoney(v("money","subcontractors","ytd2026")))
+      + cmdTile("Materials",cmdMoney(v("money","materials","ytd2026")))
+      + cmdTile("Commission",cmdMoney(v("money","commission_cogs","ytd2026")))
+      + cmdTile("Admin payroll",cmdMoney(v("money","admin_payroll","ytd2026")))
+      + cmdTile("Marketing",cmdMoney(v("money","marketing","ytd2026"))));
+  }
+  const s=d.sync||{};
+  h+=`<h3 style="margin:14px 0 2px">Data from Lynx</h3>`;
+  h+=cmdGrid(cmdTile("Jobs fully synced",cmdNum(s.jobs||0),"every section Lynx gives us")
+    + cmdTile("Still syncing",cmdNum(s.queue_left||0),"tonight's queue")
+    + cmdTile("Last update",cmdAgo(s.newest))
+    + (s.globals||[]).map(g=>cmdTile(g.name.replace(/_/g," "),cmdNum(g.rows),cmdAgo(g.at))).join(""));
+  const ag=d.agents||[];
+  h+=`<h3 style="margin:14px 0 6px">Agents</h3>`;
+  h+= ag.length ? `<div class="list">${ag.map(a=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><div><div class="t">${esc(a.agent)}</div><div class="m">${esc(a.summary||"")}</div></div><div style="text-align:right;white-space:nowrap"><span class="tag ${a.ok?"t-green":"t-red"}">${a.ok?"ok":"needs help"}</span><div class="m">${esc(cmdAgo(a.at))}</div></div></div></div>`).join("")}</div>`
+    : `<div class="empty">No agent has reported in yet.</div>`;
+  $("#main").innerHTML=h;
 }
 
 function renderHC(){if($("#hcf")&&!HCJOB)return;const jq=HCJOB?"&job="+encodeURIComponent(HCJOB):"";HCJOB="";$("#main").innerHTML='<iframe id="hcf" src="hardcost.html?v='+Date.now()+jq+'&role='+encodeURIComponent((ME&&ME.role)||'')+'" title="Hard Cost tool" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--card)"></iframe>';}
