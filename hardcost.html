@@ -321,7 +321,7 @@ table.t .edit.changed{color:var(--warn);border-bottom-color:var(--warn)}
 
 /* ===================== STATE ===================== */
 const LS = 'dfwrp_hardcost_v2';
-let state = {tab:'job', pb:{...PB_DEF}, pbDirty:false, pbMeta:null, job:null, jobs:[], db:null, user:null, canWrite:null, mode:'connecting', search:'', abcSearch:''};
+let state = {tab:'job', owner:null, role:null, pb:{...PB_DEF}, pbDirty:false, pbMeta:null, job:null, jobs:[], db:null, user:null, canWrite:null, mode:'connecting', search:'', abcSearch:''};
 function newJob(){
   return {id:null, example:false, jobNumber:'', lynxId:'', matKnown:'', laborKnown:'', customer:'', address:'', city:'', rep:'', jobType:'insurance',
     sq:'', waste:PB_DEF.waste_default, pitch:'low', stories:1, layers:1, shingle:'sh_cambridge', cap:'3tab', crew:'thr', tyler:false,
@@ -407,7 +407,7 @@ function renderForm(){
     const autoTeam = ri ? ri.team : 'none';
     html += fieldHTML({k:'teamMgr',label:'Manager overrides',type:'sel',opts:[['auto',`Per plan · ${autoTeam==='none'?'none':autoTeam==='both'?'Richard 2% + Kaden 2%':MGRS[autoTeam].name+' 2%'}`],['both','Richard 2% + Kaden 2%'],['richard','Richard 2% only'],['kaden','Kaden 2% only'],['none','None']]},j);
   }
-  html += `</div><div class="hint-row">Pay plan effective ${PAY_PLAN_EFFECTIVE}: commission is paid weekly on money received, net of card / ACH fees. No deal-claim pay. Weekly bases (${money(SALES_BASE_WK)}/wk) are shown as an allocation, not a job cost.</div><div class="f" style="margin-top:12px"><label for="f_notes"><span>Notes</span></label><textarea class="in" id="f_notes" data-k="notes" rows="2">${esc(j.notes)}</textarea></div></div>`;
+  html += `</div><div class="hint-row">Pay plan effective ${PAY_PLAN_EFFECTIVE}: commission is paid weekly on money received, net of card / ACH fees. No deal-claim pay. ${n(state.pb.sales_base_wk)>0?`Weekly bases (${money(n(state.pb.sales_base_wk))}/wk) are shown as an allocation, not a job cost.`:''}</div><div class="f" style="margin-top:12px"><label for="f_notes"><span>Notes</span></label><textarea class="in" id="f_notes" data-k="notes" rows="2">${esc(j.notes)}</textarea></div></div>`;
   $('#jobForm').innerHTML = html;
 }
 function onFormInput(e){
@@ -471,7 +471,7 @@ function renderSummary(){
       <div class="row"><span class="k">Labor /sq</span>${benchBar(o.l, BENCH.matched.labSq, true)}<span class="v">${isFinite(o.l)?money(o.l):'—'}</span></div>
       <div class="row"><span class="k">Hard cost /sq</span>${benchBar(o.h, BENCH.matched.hardSq, true)}<span class="v">${isFinite(o.h)?money(o.h):'—'}</span></div>
       <div class="row"><span class="k">Contract /sq</span>${benchBar(o.k, BENCH.matched.contractSq, false)}<span class="v">${isFinite(o.k)?money(o.k):'—'}</span></div>
-      <div class="row"><span class="k">Net margin</span>${benchBar(c.netPct, BENCH.matched.gpComm, false)}<span class="v">${isFinite(c.netPct)?pct(c.netPct):'—'}</span></div>
+      ${state.owner&&state.owner.bench?`<div class="row"><span class="k">Net margin</span>${benchBar(c.netPct, state.owner.bench.gpComm, false)}<span class="v">${isFinite(c.netPct)?pct(c.netPct):'—'}</span></div>`:''}
       <div class="legend"><span><i style="background:rgba(255,255,255,.22)"></i>your middle 50% · 206 jobs</span><span><i style="background:var(--ink)"></i>median · this job</span></div>
       <div class="legend" style="padding-top:4px">Per square ordered from ABC (measured + waste), 2025–26 paid amounts.</div>
     </div></details>
@@ -538,11 +538,11 @@ function renderSubs(){
     html += `<div class="rc"><h3>${esc(c.name)}</h3><div class="who">${esc(c.who)}</div>` + F.map(([f,label,unit]) => { const k=`crew:${ck}:${f}`; return `<div class="kv"><span class="k">${label}${f==='base'?`<div class="src">${esc(c.base_note)}</div>`:''}${f==='felt'?`<div class="src">${c.feltFirst?'charged from the first layer':'first layer included · extra layers only'}</div>`:''}</span><span class="v"><input class="edit ${state.pb[k]!==PB_DEF[k]?'changed':''}" data-pb="${k}" type="number" inputmode="decimal" step="0.5" value="${state.pb[k]}"> <span class="sku">${unit}</span></span></div>`; }).join('') + `<div class="src">${esc(c.src)}</div></div>`;
   }
   html += `</div>`;
-  const groups = {}; SUBS.forEach(s => (groups[s.g] ||= []).push(s));
+  const groups = {}; SUBS.filter(s => !s.owner || state.owner).forEach(s => (groups[s.g] ||= []).push(s));
   for (const g in groups){
     html += `<div class="group-h">${esc(g)}</div><div class="tscroll"><table class="t"><tbody>` + groups[g].map(s => `<tr><td><div>${esc(s.label)}</div><div class="src">${esc(s.src)}</div></td><td class="n" style="width:140px"><input class="edit ${state.pb[s.k]!==PB_DEF[s.k]?'changed':''}" data-pb="${s.k}" type="number" inputmode="decimal" step="0.01" value="${state.pb[s.k]}"> <span class="sku">${esc(s.unit)}</span></td></tr>`).join('') + `</tbody></table></div>`;
   }
-  html += `<div class="group-h">Pay plan · effective ${PAY_PLAN_EFFECTIVE}</div><div class="prose"><p>Reps: Moe Awadi 15% (no base) · Garrett Cook $750/wk + 13% · Daniel Gonzalez, Isaiah Wetzel, Ivan Paz, Orion Keith, Shane Holcomb $750/wk + 10%. Managers: Mike Mullens $10,000/wk + 2% on every payment · Richard Mullens $2,000/wk and Kaden Morel $1,500/wk, each 2% on every rep's payments except Moe's. No deal-claim pay. Commission is paid weekly on money received, net of card (4%) / ACH (1%) fees. Office & field (W-2, per Gusto): Alexandra Sinks $3,000/wk, Dean Madison $75,000/yr + truck + gas card, Thomas Harris $1,600/wk, Miranda Garcia-Torres $1,300/wk, Raneyah Awadi $1,300/wk. Gersom Hernandez $750/wk + 10% (hired 9/14). Daniel Gonzalez $750/wk + 10% once he is added to Gusto. Full table on the History tab.</p></div>`;
+  html += `<div class="group-h">Pay plan · effective ${PAY_PLAN_EFFECTIVE}</div><div class="prose"><p>Commission is paid weekly on money received, net of card (${n(state.pb.fee_card)}%) / ACH (${n(state.pb.fee_ach)}%) fees. No deal-claim pay. Rep rates: ${Object.entries(REPS).filter(([r,v])=>v.role==='rep').map(([r,v])=>`${esc(r)} ${v.rate}%`).join(' · ')}. Managers: Mike Mullens ${MGRS.mike.rate}% on every payment; Richard Mullens and Kaden Morel ${MGRS.richard.rate}% each on every rep's payments except Moe's.${state.owner?' Weekly base pay and W-2 pay are on the History tab (owner only).':''}</p></div>`;
   $('#subsBody').innerHTML = html;
   syncSaveButtons();
 }
@@ -576,7 +576,7 @@ function renderJobs(){
 
 /* ===================== HISTORY ===================== */
 function renderBench(){
-  const m = BENCH.matched, b = BENCH.built;
+  const m = BENCH.matched, b = BENCH.built, O = state.owner;
   const stat = (k,v,s,r) => `<div class="stat"><div class="lbl">${k}</div><div class="v">${v}</div><div class="s">${s}</div>${r?`<div class="r">${r}</div>`:''}</div>`;
   let html = `<div class="stats">
     ${stat('Squares / job', m.sq[2], 'median · ABC field-shingle POs', `p25 ${m.sq[1]} · p75 ${m.sq[3]}`)}
@@ -584,8 +584,7 @@ function renderBench(){
     ${stat('Labor / sq', money(m.labSq[2]), 'crew paid-outs incl. extras', `p25 ${money(m.labSq[1])} · p75 ${money(m.labSq[3])}`)}
     ${stat('Hard cost / sq', money(m.hardSq[2]), 'everything but commission', `p25 ${money(m.hardSq[1])} · p75 ${money(m.hardSq[3])}`)}
     ${stat('Contract / sq', money(m.contractSq[2]), 'approved job value ÷ squares', `p25 ${money(m.contractSq[1])} · p75 ${money(m.contractSq[3])}`)}
-    ${stat('Gross margin', pct(m.gp[2]), 'before commission', `p25 ${pct(m.gp[1])} · p75 ${pct(m.gp[3])}`)}
-    ${stat('Net margin', pct(m.gpComm[2]), 'after commission', `p25 ${pct(m.gpComm[1])} · p75 ${pct(m.gpComm[3])}`)}
+    ${O&&O.bench?stat('Gross margin', pct(O.bench.gp[2]), 'before commission', `p25 ${pct(O.bench.gp[1])} · p75 ${pct(O.bench.gp[3])}`)+stat('Net margin', pct(O.bench.gpComm[2]), 'after commission', `p25 ${pct(O.bench.gpComm[1])} · p75 ${pct(O.bench.gpComm[3])}`):''}
     ${stat('Built roofs', b.n, 'AccuLynx · Jun 2025 – Sep 2026', `${m.n} matched to ABC squares`)}
   </div>
   <div class="group-h">Where the contract dollar goes · ${b.n} built roofs</div>
@@ -593,8 +592,8 @@ function renderBench(){
     <tr><td>Materials (ABC, Home Depot, Beacon)</td><td class="n">${pct(b.matPct[1])}</td><td class="n">${pct(b.matPct[2])}</td><td class="n">${pct(b.matPct[3])}</td></tr>
     <tr><td>Roof labor (crews)</td><td class="n">${pct(b.labPct[1])}</td><td class="n">${pct(b.labPct[2])}</td><td class="n">${pct(b.labPct[3])}</td></tr>
     <tr><td>All hard cost</td><td class="n">${pct(b.hardPct[1])}</td><td class="n">${pct(b.hardPct[2])}</td><td class="n">${pct(b.hardPct[3])}</td></tr>
-    <tr><td>Commissions</td><td class="n">${pct(b.commPct[1])}</td><td class="n">${pct(b.commPct[2])}</td><td class="n">${pct(b.commPct[3])}</td></tr>
-    <tr><td><b>Everything paid out</b></td><td class="n">${pct(b.allPct[1])}</td><td class="n"><b>${pct(b.allPct[2])}</b></td><td class="n">${pct(b.allPct[3])}</td></tr>
+    ${O&&O.bench?`<tr><td>Commissions</td><td class="n">${pct(O.bench.commPct[1])}</td><td class="n">${pct(O.bench.commPct[2])}</td><td class="n">${pct(O.bench.commPct[3])}</td></tr>
+    <tr><td><b>Everything paid out</b></td><td class="n">${pct(O.bench.allPct[1])}</td><td class="n"><b>${pct(O.bench.allPct[2])}</b></td><td class="n">${pct(O.bench.allPct[3])}</td></tr>`:''}
   </tbody></table></div>
   <div class="group-h">Other trades & fees on built roofs</div>
   <div class="tscroll"><table class="t"><thead><tr><th>Item</th><th style="text-align:right">Jobs</th><th style="text-align:right">Share</th><th style="text-align:right">Median $</th></tr></thead><tbody>
@@ -609,18 +608,13 @@ function renderBench(){
     <tr><td>Claim / supplement / appraisal fees (Claim Experts, WM Contracting, Mike Taylor, Invictus, CROB)</td><td class="n">629</td><td class="n">$564,051</td><td class="n">largest fee line</td><td>Worth a rate conversation</td></tr>
     <tr><td>Paid-outs entered in AccuLynx but still unpaid</td><td class="n">20</td><td class="n">$31,318</td><td class="n">—</td><td>Open payables to clear</td></tr>
   </tbody></table></div>
-  <div class="group-h">Pay plan · effective ${PAY_PLAN_EFFECTIVE} · Aly 9/15 + 9/17, Blake 9/18 report</div>
+  ${O?`<div class="group-h">Pay plan · effective ${esc(O.pay_plan_effective||PAY_PLAN_EFFECTIVE)} · owner only</div>
   <div class="tscroll"><table class="t"><thead><tr><th>Person</th><th>Role</th><th style="text-align:right">Weekly base</th><th style="text-align:right">Rate</th><th>On</th></tr></thead><tbody>
-    ${Object.entries(REPS).filter(([r,v])=>v.role!=='house').map(([r,v])=>`<tr><td>${esc(r)}</td><td>${v.role==='mgr'?'Manager':'Sales rep'}</td><td class="n">${v.base?money(v.base):'—'}</td><td class="n">${v.role==='mgr'?'2% override':v.rate+'%'}</td><td>${v.role==='mgr'?(r==='Mike Mullens'?'every payment received':'every rep\'s payments except Moe\'s'):'money received, net of card / ACH fee'}</td></tr>`).join('')}
-    <tr><td><b>Fixed sales payroll</b></td><td></td><td class="n"><b>${money(SALES_BASE_WK)}/wk</b></td><td class="n" colspan="2">${money(SALES_BASE_WK*52)} / yr · ${(SALES_BASE_WK*52/10939770*100).toFixed(1)}% of trailing-12 built contract ($10.94M)</td></tr>
-    <tr><td>Alexandra (Aly) Sinks</td><td>Director of Sales & Talent Ops · W-2</td><td class="n">${money(3000)}</td><td class="n">—</td><td>Gusto · Blake 9/20/26</td></tr>
-    <tr><td>Dean Madison</td><td>Supplement Operations · W-2</td><td class="n">${money(1442)}</td><td class="n">—</td><td>Gusto $75,000/yr (Blake said $1,500/wk) + truck + gas card</td></tr>
-    <tr><td>Thomas Harris</td><td>Field Project Manager · W-2</td><td class="n">${money(1600)}</td><td class="n">—</td><td>Gusto · hired 8/10/26 · confirmed by Blake 9/20</td></tr>
-    <tr><td>Miranda Garcia-Torres</td><td>Recruiter · W-2</td><td class="n">${money(1300)}</td><td class="n">—</td><td>Gusto · Blake 9/20/26</td></tr>
-    <tr><td>Raneyah Awadi</td><td>Customer relations / processing · W-2</td><td class="n">${money(1300)}</td><td class="n">—</td><td>Gusto · Blake 9/20/26</td></tr>
-    <tr><td colspan="5" class="dim">Gusto 2026 to date (Jan 30 – Sep 18, 48 runs): gross $1,883,397 = base $904,022 + commissions $944,310 + bonuses $35,064 · employer taxes $139,962 (7.4%) · reimbursements $23,907 · 85 people hired since Jan 26, 16 still active.</td></tr>
-    <tr><td colspan="5" class="dim">Old plan (Jun 2025 – Sep 2026 paid-outs): 8–15% per rep + stacked overrides, deal-claim fees, no bases — 11.2% of contract all-in. New plan on the same volume: bases 8.6% + rep 10–15% + overrides 2–6% ≈ 25%. Hector Garnica, Adam Rochester, Garrett Green and the other former reps are off the plan. ("Michael Mullens" in the paid-outs is Mike under his legal name.)</td></tr>
-  </tbody></table></div>
+    ${(O.payplan||[]).map(r=>`<tr><td>${esc(r.person)}</td><td>${esc(r.role)}</td><td class="n">${r.base?money(r.base):'—'}</td><td class="n">${esc(r.rate)}</td><td>${esc(r.on)}</td></tr>`).join('')}
+    <tr><td><b>Fixed sales payroll</b></td><td></td><td class="n"><b>${money(O.sales_base_wk||0)}/wk</b></td><td class="n" colspan="2">${money((O.sales_base_wk||0)*52)} / yr${O.trailing12_built_contract?` · ${((O.sales_base_wk||0)*52/O.trailing12_built_contract*100).toFixed(1)}% of trailing-12 built contract (${money(O.trailing12_built_contract)})`:''}</td></tr>
+    ${(O.w2||[]).map(r=>`<tr><td>${esc(r.person)}</td><td>${esc(r.role)}</td><td class="n">${money(r.base)}</td><td class="n">—</td><td>${esc(r.on)}</td></tr>`).join('')}
+    ${(O.notes||[]).map(t=>`<tr><td colspan="5" class="dim">${esc(t)}</td></tr>`).join('')}
+  </tbody></table></div>`:''}
   <div class="group-h">Permits by city · median paid</div><div class="tscroll"><table class="t"><tbody>`;
   const cs = Object.entries(CITIES).sort((a,b)=>b[1]-a[1]); for (let i=0;i<cs.length;i+=2){ html += `<tr><td>${cs[i][0]}</td><td class="n">${money(cs[i][1])}</td><td>${cs[i+1]?cs[i+1][0]:''}</td><td class="n">${cs[i+1]?money(cs[i+1][1]):''}</td></tr>`; }
   html += `</tbody></table></div>
@@ -663,6 +657,7 @@ async function hcApi(action, body){
 }
 async function hcRefresh(){
   const d = await hcApi('hc_load');
+  state.owner = d.owner || null; state.role = d.role || null;
   if (d.pricebook?.items && !state.pbDirty){ applyPricebook(d.pricebook.items); state.pbMeta={updatedAt:d.pricebook.updated_at}; renderAbc(); renderSubs(); recalc(); }
   state.jobs = d.jobs || []; renderJobs();
 }

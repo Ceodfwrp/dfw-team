@@ -78,36 +78,37 @@ const SUBS = [
   {g:'Business', k:'target_net', label:'Target net margin after commission', unit:'%', def:45, src:'your history: 46% median'},
   {g:'Business', k:'fee_card', label:'Card processing fee (off commission basis)', unit:'%', def:4, src:'9/18/26 commission report: CC payments × 0.96'},
   {g:'Business', k:'fee_ach', label:'ACH fee (off commission basis)', unit:'%', def:1, src:'9/18/26 commission report: ACH payments × 0.99'},
-  {g:'Business', k:'sales_base_wk', label:'Weekly sales base pay (managers + reps)', unit:'$/wk', def:18000, src:'Aly 9/15/26: Mike $10,000 + Richard $2,000 + Kaden $1,500 + 6 reps × $750'},
-  {g:'Business', k:'office_base_wk', label:'Weekly office & field W-2 pay', unit:'$/wk', def:8642, src:'Gusto 9/20/26: Alexandra Sinks $3,000 · Dean Madison $75,000/yr ($1,442) · Thomas Harris (Field Project Mgr) $1,600 · Miranda Garcia-Torres $1,300 · Raneyah Awadi $1,300'},
-  {g:'Business', k:'payroll_tax', label:'Employer payroll taxes on W-2 pay', unit:'%', def:7.4, src:'Gusto 2026 YTD: $139,962 employer taxes on $1,883,397 gross'},
-  {g:'Business', k:'jobs_per_wk', label:'Built jobs per week (for base-pay allocation)', unit:'jobs', def:9.2, src:'478 built jobs, trailing 12 months ÷ 52'},
+  /* Owner-only inputs: the live values are kept in the shared price book on the server and are only sent to the owner.
+     Everyone else gets 0 here, so the base-pay allocation simply does not appear for them. */
+  {g:'Business', k:'sales_base_wk', label:'Weekly sales base pay (managers + reps)', unit:'$/wk', def:0, src:'owner only · kept in the shared price book', owner:true},
+  {g:'Business', k:'office_base_wk', label:'Weekly office & field W-2 pay', unit:'$/wk', def:0, src:'owner only · kept in the shared price book', owner:true},
+  {g:'Business', k:'payroll_tax', label:'Employer payroll taxes on W-2 pay', unit:'%', def:0, src:'owner only · kept in the shared price book', owner:true},
+  {g:'Business', k:'jobs_per_wk', label:'Built jobs per week (for base-pay allocation)', unit:'jobs', def:0, src:'owner only · kept in the shared price book', owner:true},
 ];
-/* PAY PLAN — effective week of Sep 18, 2026. Source: Aly Sinks "Pay" email 9/15/26 + correction 9/17/26 (Cook $750/wk + 13%, confirmed by Blake 9/20), and Blake's 9/18/26 commission report.
-   Commission is paid weekly on money RECEIVED (AccuLynx payment), on a basis net of processing fees: card −4%, ACH −1%, check 0%. No deal-claim pay for anyone.
-   Managers: weekly base + 2% override each. Mike 2% on every payment; Richard 2% + Kaden 2% on every rep's payments except Moe's (Blake 9/20/26). */
+/* PAY PLAN — commission rates only (what the costing engine needs). Weekly base pay, Gusto and per-person pay
+   terms are NOT in this file: they live in the Master System (comp_private.plan_terms) and are owner-only. */
 const PAY_PLAN_EFFECTIVE = 'week of Sep 18, 2026';
+const OWNER_ONLY_PB_KEYS = ['sales_base_wk','office_base_wk','payroll_tax','jobs_per_wk'];
 const REPS = {
-  'Moe Awadi':      {role:'rep', rate:15, base:0,   team:'none',    note:'no weekly base · 15% across the board'},
-  'Garrett Cook':   {role:'rep', rate:13, base:750, team:'both', note:'$750/wk + 13% (Aly 9/17, Blake 9/20)'},
-  'Daniel Gonzalez':{role:'rep', rate:10, base:0, team:'both', note:'$750/wk + 10% (Blake 9/20) — not in Gusto yet as of 9/20, base counted once he is'},
-  'Gersom Hernandez':{role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10% (Gusto, hired 9/14/26; confirmed by Blake 9/20)'},
-  'Isaiah Wetzel':  {role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10%'},
-  'Ivan Paz':       {role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10%'},
-  'Orion Keith':    {role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10%'},
-  'Shane Holcomb':  {role:'rep', rate:10, base:750, team:'both', note:'$750/wk + 10%'},
-  'Mike Mullens':   {role:'mgr', rate:0,  base:10000, team:'none', note:'$10,000/wk + 3% on every payment from Oct 8, 2026 (house job when selected as rep)'},
-  'Richard Mullens':{role:'mgr', rate:0,  base:2000, team:'none',  note:'$2,000/wk + 2% on his team'},
-  'Kaden Morel':    {role:'mgr', rate:0,  base:1500, team:'none',  note:'$1,500/wk + 2% on his team'},
-  'House / no rep': {role:'house', rate:0, base:0, team:'none', note:''}
+  'Moe Awadi':      {role:'rep', rate:15, team:'none'},
+  'Garrett Cook':   {role:'rep', rate:13, team:'both'},
+  'Daniel Gonzalez':{role:'rep', rate:10, team:'both'},
+  'Gersom Hernandez':{role:'rep', rate:10, team:'both'},
+  'Isaiah Wetzel':  {role:'rep', rate:10, team:'both'},
+  'Ivan Paz':       {role:'rep', rate:10, team:'both'},
+  'Orion Keith':    {role:'rep', rate:10, team:'both'},
+  'Shane Holcomb':  {role:'rep', rate:10, team:'both'},
+  'Mike Mullens':   {role:'mgr', rate:0, team:'none'},
+  'Richard Mullens':{role:'mgr', rate:0, team:'none'},
+  'Kaden Morel':    {role:'mgr', rate:0, team:'none'},
+  'House / no rep': {role:'house', rate:0, team:'none'}
 };
-const MGRS = {mike:{name:'Mike Mullens', rate:3, base:10000, scope:'every payment'}, richard:{name:'Richard Mullens', rate:2, base:2000, scope:'every rep except Moe'}, kaden:{name:'Kaden Morel', rate:2, base:1500, scope:'every rep except Moe'}, both:{name:'Richard Mullens + Kaden Morel', rate:4, base:0, scope:'every rep except Moe'}};
-const SALES_BASE_WK = Object.values(REPS).reduce((s,r)=>s+(r.base||0),0); /* $18,000 */
+const MGRS = {mike:{name:'Mike Mullens', rate:3, scope:'every payment'}, richard:{name:'Richard Mullens', rate:2, scope:'every rep except Moe'}, kaden:{name:'Kaden Morel', rate:2, scope:'every rep except Moe'}, both:{name:'Richard Mullens + Kaden Morel', rate:4, scope:'every rep except Moe'}};
 const COMM = {none:{label:'No commission',rate:0},custom:{label:'Custom rep %',rate:null}};
-/* AccuLynx history, Jun 2025 – Sep 2026 · p10/p25/p50/p75/p90 */
+/* AccuLynx history, Jun 2025 – Sep 2026 · p10/p25/p50/p75/p90. Company margin percentiles are owner-only and come from the server (hc_load → ownerBench). */
 const BENCH = {
-  matched:{n:206, sq:[24.4,29.4,33.7,40.6,49.9], matSq:[112,115,120,133,146], labSq:[61,66,76,90,124], hardSq:[191,224,254,314,363], contractSq:[364,444,543,648,829], gp:[29.9,42.7,52.6,60.7,66.2], gpComm:[23.6,36.6,46.0,52.9,60.6]},
-  built:{n:476, contract:[11274,15903,20114,27952,36779], material:[3333,3872,4664,6004,7763], labor:[1947,2231,2728,3663,4910], matPct:[15.8,19.0,23.7,28.9,35.3], labPct:[9.1,11.4,13.7,17.3,22.6], hardPct:[34.6,39.5,48.0,57.0,68.3], commPct:[0,0,11.4,15.0,16.0], allPct:[41.2,48.8,57.0,66.3,77.0]},
+  matched:{n:206, sq:[24.4,29.4,33.7,40.6,49.9], matSq:[112,115,120,133,146], labSq:[61,66,76,90,124], hardSq:[191,224,254,314,363], contractSq:[364,444,543,648,829]},
+  built:{n:476, contract:[11274,15903,20114,27952,36779], material:[3333,3872,4664,6004,7763], labor:[1947,2231,2728,3663,4910], matPct:[15.8,19.0,23.7,28.9,35.3], labPct:[9.1,11.4,13.7,17.3,22.6], hardPct:[34.6,39.5,48.0,57.0,68.3]},
   trades:[['Gutters (Flowers)',162,1406],['Permit',298,100],['Claim / supplement / appraisal fees',341,1150],['Inspections',87,200],['Measurement reports',222,14],["Paint & interior (Garcia's)",88,750],['Fence stain (Silva / R3)',48,914],["Garage door (Gallardo's)",45,1560],['Screens & glass (Mesquite Glass)',64,362],['Solar detach/reset (Blue Construction)',35,4000]]
 };
 
