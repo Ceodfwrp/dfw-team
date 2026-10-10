@@ -233,6 +233,7 @@ function renderHC(){if($("#hcf")&&!HCJOB)return;const jq=HCJOB?"&job="+encodeURI
 /* Office pages live in their own files and load in an iframe (same sign-in token). Add a page here and it gets a tab. */
 const PAGES=[
   {key:"pipe",label:"Pipeline",file:"pipeline.html",roles:["owner","manager","office","rep","sales"],all:true},
+  {key:"team",label:"Scorecard",file:"team.html",roles:["owner","manager","office","rep","sales"],all:true},
   {key:"prod",label:"Production",file:"production.html",roles:["owner","manager","office"]},
   {key:"coc",label:"COC",file:"coc.html",roles:["owner","manager","office"]},
   {key:"supps",label:"Supplements",file:"supps.html",roles:["owner","manager","office"]},
