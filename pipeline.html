@@ -35,7 +35,7 @@ var D = window.DESK, $ = function (s) { return document.querySelector(s); }, esc
 var API = "https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/pipeline-api/api/";
 var Q = (function () { var o = {}; location.search.replace(/^\?/, "").split("&").forEach(function (p) { if (!p) return; var kv = p.split("="); o[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1] || "").replace(/\+/g, " ")); }); return o; })();
 var B = null, ERR = "", STAGE = "", OWNER = Q.owner || "all", SCOPE = Q.scope === "mine" ? "mine" : "team", SEARCH = "", REP = "", LATE = false;
-var GROUPS = [["Sales", ["new_lead", "inspection_scheduled", "prospect", "claim_needed", "adjuster_needed", "adjuster_scheduled", "awaiting_scope", "claim_approved", "bid_requested", "bid_priced", "bid_sent"]], ["Production", ["blocked", "permit", "ready_to_schedule", "build_scheduled"]], ["Close-out", ["coc", "supplement", "depreciation", "invoice", "collect", "payment_plan", "trades", "closeout"]]];
+var GROUPS = [["Sales", ["new_lead", "inspection_scheduled", "prospect", "claim_needed", "adjuster_needed", "adjuster_scheduled", "awaiting_scope", "carrier_review", "denied", "appraisal", "claim_approved", "bid_requested", "bid_priced", "bid_sent"]], ["Waiting", ["blocked"]], ["Production", ["permit", "ready_to_schedule", "build_scheduled"]], ["Close-out", ["coc", "supplement", "depreciation", "invoice", "collect", "payment_plan", "trades", "closeout"]]];
 var token = function () { try { return localStorage.getItem("dfw_team_token"); } catch (e) { return null; } };
 async function api(action, body) {
   var tok = token(); if (!tok) throw new Error("signin");
@@ -96,7 +96,7 @@ function paint() {
     });
     if (!list.length) h += '<div class="empty">Nothing matches.</div>';
   }
-  h += '<p class="note">Stages: new lead → inspection → claim filed → adjuster meeting → scope → approved/contract (or cash bid for retail) → sold: colors/HOA/money → permit → build → COC → supplement/depreciation → collect → paid → closed. Tap a job to open it in Lynx. Refreshes every 5 minutes.</p>';
+  h += '<p class="note">Stages: new lead → inspection → claim filed → adjuster meeting → scope (or estimate sent / denied / appraisal) → approved/contract (or cash bid for retail) → sold: colors/HOA/money → permit → build → COC → supplement/depreciation → collect → paid → closed. The office’s job-name tags (DENIAL, APPRAISAL, XM8 SENT, NEEDS INS SENT…) are read and win. Tap a job to open it in Lynx. Refreshes every 5 minutes.</p>';
   app.innerHTML = h;
   app.querySelectorAll("[data-stage]").forEach(function (b) { b.onclick = function () { STAGE = STAGE === b.dataset.stage ? "" : b.dataset.stage; paint(); }; });
   app.querySelectorAll("[data-owner]").forEach(function (b) { b.onclick = function () { OWNER = b.dataset.owner; paint(); }; });
