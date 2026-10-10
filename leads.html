@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Leads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="desk.css">
+<style>
+.row .t .st{display:inline-block;font:700 11px var(--body);padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;background:var(--paper);border:1px solid var(--line);color:var(--muted)}
+.st.replied{background:var(--red-soft);color:var(--red-ink);border-color:transparent}.st.review{background:var(--amber-soft);color:var(--amber);border-color:transparent}
+.st.new,.st.contacting{background:var(--blue-soft);color:var(--blue);border-color:transparent}.st.booked{background:var(--green-soft);color:var(--green);border-color:transparent}
+.row.hot{border-left:4px solid var(--red)}
+.onoff{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-radius:10px;margin:0 0 14px;background:var(--amber-soft);color:var(--amber)}
+.onoff.on{background:var(--green-soft);color:var(--green)}
+.onoff b{font-size:16px}
+.conv{display:flex;flex-direction:column;gap:6px;margin:8px 0 12px}
+.msg{max-width:88%;padding:8px 12px;border-radius:12px;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.out{align-self:flex-end;background:var(--blue-soft);color:var(--ink);border-bottom-right-radius:3px}
+.msg.in{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:3px}
+.msg.note{align-self:center;background:none;color:var(--muted);font-size:13px;font-style:italic}
+.msg .w{display:block;font-size:11px;color:var(--muted);margin-top:3px;font-style:normal}
+.msg.failed{border:1px solid var(--red)}
+label.f{display:block;font-size:13px;color:var(--muted);margin:8px 0 3px}
+input[type=datetime-local],select.f{font:inherit;color:inherit;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+.tpl textarea{min-height:88px;font-size:14px}
+.kv{font-size:14px;color:var(--muted);margin:2px 0}.kv b{color:var(--ink);font-weight:600}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}.toolbar input[type=search]{flex:1;min-width:200px}
+.ok{background:var(--green-soft);color:var(--green);border-radius:8px;padding:10px 14px;margin:0 0 12px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">Loading leads…</div></div>
+<div id="sheet" hidden><div class="sh" id="shc"></div></div>
+<script src="desk.js"></script>
+<script>
+(function(){
+"use strict";
+var D = window.DESK, $ = function (s) { return document.querySelector(s); }, esc = D.esc;
+var API = "https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/lead-engine/api/";
+var B = null, ERR = "", CUR = "needs", SEARCH = "", OPEN = null, FLASH = "";
+var token = function () { try { return localStorage.getItem("dfw_team_token"); } catch (e) { return null; } };
+async function api(action, body) {
+  var tok = token(); if (!tok) throw new Error("signin");
+  var r = await fetch(API + action, { method: "POST", headers: { "content-type": "application/json", "authorization": "Bearer " + tok }, body: JSON.stringify(body || {}) });
+  var j = await r.json().catch(function () { return {}; });
+  if (r.status === 401) throw new Error("signin"); if (r.status === 403) throw new Error("forbidden");
+  if (!r.ok) throw new Error(j.detail || j.error || ("http_" + r.status)); return j;
+}
+async function load() { try { B = await api("inbox"); ERR = ""; } catch (e) { ERR = e.message; } paint(); if (OPEN != null) sheet(OPEN); }
+var STATUS = { replied: "REPLIED", review: "NEEDS YOUR CALL", new: "NEW", contacting: "CONTACTING", quiet: "QUIET", booked: "BOOKED", dead: "DEAD", handoff: "ALY" };
+function inView(l, v) {
+  var VIEW = v || CUR;
+  if (VIEW === "needs") return l.status === "replied" || l.status === "review";
+  if (VIEW === "working") return (l.status === "new" || l.status === "contacting") && l.mode !== "rep";
+  if (VIEW === "rep") return l.mode === "rep" && l.status !== "booked" && l.status !== "dead";
+  if (VIEW === "booked") return l.status === "booked";
+  if (VIEW === "quiet") return l.status === "quiet";
+  if (VIEW === "dead") return l.status === "dead";
+  return true;
+}
+function stLabel(l) { if (l.status === "new" && l.mode === "rep") return "REP'S LEAD"; return STATUS[l.status] || l.status.toUpperCase(); }
+function row(l) {
+  var tags = [];
+  if (l.lead_source) tags.push('<span class="tag">' + esc(l.lead_source) + "</span>");
+  if (l.rep) tags.push('<span class="tag b">' + esc(l.rep) + "</span>");
+  if (l.kind === "warranty") tags.push('<span class="tag a">warranty</span>');
+  if (l.touches) tags.push('<span class="tag">' + l.touches + " touch" + (l.touches === 1 ? "" : "es") + "</span>");
+  if (l.last_reply_at) tags.push('<span class="tag r">replied ' + esc(D.ago(l.last_reply_at)) + "</span>");
+  if (l.next_touch_at && (l.status === "new" || l.status === "contacting")) tags.push('<span class="tag">next ' + esc(D.stamp(l.next_touch_at)) + "</span>");
+  if (l.appointment_at) tags.push('<span class="tag g">inspection ' + esc(D.stamp(l.appointment_at)) + "</span>");
+  if (l.blocked_reason) tags.push('<span class="tag a">' + esc(l.blocked_reason) + "</span>");
+  if (l.sms_opt_out) tags.push('<span class="tag r">no texts</span>');
+  if (!l.phone) tags.push('<span class="tag a">no phone</span>');
+  var sub = [l.address, l.city].filter(Boolean).join(", ") || (l.email_subject ? l.email_subject : "no address");
+  var m = l.status === "replied" && l.last_reply_text ? '<div class="s">“' + esc(l.last_reply_text.slice(0, 140)) + "”</div>" : l.status === "review" && l.reason ? '<div class="s">Not built in Lynx: ' + esc(l.reason) + "</div>" : "";
+  return '<div class="row' + (l.status === "replied" || l.status === "review" ? " hot" : "") + '" data-id="' + l.id + '" style="cursor:pointer"><div><div class="t">' + esc(l.name || "Lead") + '<span class="st ' + esc(l.status) + '">' + esc(stLabel(l)) + "</span></div>" +
+    '<div class="m">' + esc(sub) + (l.phone ? " · " + esc(D.phone(l.phone)) : "") + "</div>" + m + (tags.length ? '<div class="tags">' + tags.join("") + "</div>" : "") + "</div>" +
+    '<div class="r"><div class="sm">' + esc(D.ago(l.created_at)) + "</div></div></div>";
+}
+function paint() {
+  var app = $("#app");
+  if (!B) { app.innerHTML = D.errorBox(ERR); var rb = app.querySelector("[data-retry]"); if (rb) rb.onclick = load; return; }
+  var y = window.scrollY, K = B.counts || {}, leads = B.leads || [], W = B.warranties || [];
+  var q = SEARCH.trim().toLowerCase();
+  var list = leads.filter(function (l) { return inView(l, CUR) && (!q || ((l.name || "") + " " + (l.address || "") + " " + (l.city || "") + " " + (l.phone || "") + " " + (l.rep || "") + " " + (l.lead_source || "")).toLowerCase().indexOf(q) >= 0); });
+  var n = function (v) { return leads.filter(function (l) { return inView(l, v); }).length; };
+  var counts = { needs: n("needs"), working: n("working"), rep: n("rep"), booked: n("booked"), quiet: n("quiet"), dead: n("dead"), all: leads.length };
+  var h = '<h2>Leads <span style="font:700 15px var(--body);color:var(--muted)">owner only · lead → inspection on the calendar</span></h2>' +
+    '<p class="sub">Every inbound lead (website, Google, the contact@ mailbox) is texted and emailed the minute it lands, then again on a schedule, until the inspection is on the Lynx calendar. A homeowner who texts back a day and time is booked automatically. Reps’ own door-knock leads are listed but left to the rep.</p>' +
+    (FLASH ? '<div class="ok">' + esc(FLASH) + "</div>" : "") +
+    '<div class="onoff' + (B.send_enabled ? " on" : "") + '"><b>' + (B.send_enabled ? "Auto-contact is ON" : "Auto-contact is OFF") + "</b><span>" + (B.send_enabled ? "Texts and emails go out to inbound leads 8am–8pm Central." : "Nothing is sent until you approve the wording. Leads still land here.") + '</span><span style="margin-left:auto;display:flex;gap:8px"><button class="btn ghost" id="tplBtn" type="button">' + (B.send_enabled ? "Edit wording" : "Review wording") + '</button><button class="btn" id="toggleBtn" type="button">' + (B.send_enabled ? "Turn OFF" : "Approve & turn ON") + "</button></span></div>" +
+    '<div class="stats"><div class="stat' + ((K.replied || 0) + (K.review || 0) ? " hot" : "") + '"><div class="v">' + ((K.replied || 0) + (K.review || 0)) + '</div><div class="l">need you · ' + (K.replied || 0) + " replied · " + (K.review || 0) + " to decide</div></div>" +
+    '<div class="stat"><div class="v">' + ((K.new || 0) + (K.contacting || 0)) + '</div><div class="l">being contacted · ' + (K.texts_sent_7d || 0) + " texts out / " + (K.replies_7d || 0) + " replies, 7d</div></div>" +
+    '<div class="stat"><div class="v">' + (K.booked_30d || 0) + '</div><div class="l">inspections booked, 30 days</div></div>' +
+    '<div class="stat' + (K.warranties_flagged ? " hot" : "") + '"><div class="v">' + (K.warranties_open || 0) + '</div><div class="l">open warranties · ' + (K.warranties_flagged || 0) + " waiting on Aly</div></div></div>";
+  h += '<div class="toolbar"><div class="chips" style="margin:0">' + [["needs", "Needs you"], ["working", "Being contacted"], ["rep", "Reps’ leads"], ["booked", "Booked"], ["quiet", "Quiet"], ["dead", "Dead"], ["all", "All"]].map(function (v) { return '<button class="chip" data-view="' + v[0] + '" aria-pressed="' + (CUR === v[0]) + '">' + v[1] + " · " + counts[v[0]] + "</button>"; }).join("") + "</div>" +
+    '<input type="search" id="q" placeholder="Search name, street, phone, rep, source" value="' + esc(SEARCH) + '"></div>';
+  h += '<div class="panel">' + (list.map(row).join("") || '<div class="empty">' + (CUR === "needs" ? "Nothing waiting on you." : "Nothing here.") + "</div>") + "</div>";
+  if (W.length) {
+    h += '<div class="sec" style="margin-top:22px"><div class="sech"><h3>Warranties <span class="n">' + W.length + " open · Aly owns the calendar</span></h3></div><div class=\"panel\">" + W.map(function (w) {
+      return '<a class="row" href="' + esc(w.lynx) + '" target="_blank" rel="noopener"><div><div class="t">' + D.title({ job_number: w.job_number, customer: w.customer }) + (w.flagged_at ? '<span class="st review">WAITING ON ALY</span>' : "") + '</div><div class="m">' + (w.assigned_to_aly ? "Assigned to Aly" : "Rep: " + esc(w.rep || "—")) + " · last note " + esc(D.ago(w.last_note_at)) + (w.tag_count ? " · Aly tagged " + w.tag_count + "×, last " + esc(D.ago(w.tagged_at)) : "") + "</div></div><div class=\"r\"></div></a>";
+    }).join("") + "</div></div>";
+  }
+  h += '<p class="note">Schedule: text + email right away, then 4 hours, 1 day, 2 days, 4 days, 7 days and 14 days later, until booked or the homeowner says no. Texts only go 8am–8pm Central. Every text, email, reply and booking is also written to the Lynx job as a note. Replies come in on the company texting line (866-912-5726). ' + (B.last_sweep ? "Last check " + esc(D.stamp(B.last_sweep.at)) + "." : "") + "</p>";
+  app.innerHTML = h;
+  app.querySelectorAll("[data-view]").forEach(function (b) { b.onclick = function () { CUR = b.dataset.view; paint(); }; });
+  app.querySelectorAll("[data-id]").forEach(function (r) { r.onclick = function () { sheet(+r.dataset.id); }; });
+  var qi = $("#q"); if (qi) qi.oninput = function () { SEARCH = qi.value; paint(); var e = $("#q"); e.focus(); e.setSelectionRange(SEARCH.length, SEARCH.length); };
+  $("#tplBtn").onclick = function () { templates(false); };
+  $("#toggleBtn").onclick = function () { if (B.send_enabled) toggle(false); else templates(true); };
+  window.scrollTo(0, y);
+}
+async function toggle(on) { try { await api("settings", { send_enabled: on }); FLASH = on ? "Auto-contact is ON. Inbound leads will be texted and emailed from now on." : "Auto-contact is OFF."; } catch (e) { FLASH = "Couldn't change it: " + e.message; } closeSheet(); load(); }
+function closeSheet() { $("#sheet").hidden = true; OPEN = null; }
+$("#sheet").onclick = function (e) { if (e.target.id === "sheet") closeSheet(); };
+function templates(thenOn) {
+  var t = B.templates || {}; OPEN = null;
+  var f = function (k, label, rows) { return '<label class="f">' + label + '</label><textarea data-k="' + k + '" rows="' + (rows || 3) + '">' + esc(t[k] || "") + "</textarea>"; };
+  $("#shc").innerHTML = '<div class="sh-head"><div><h3>What the app says to a lead</h3><p class="sub">Placeholders: {first} {address} {day1} {day2} (the next two weekdays). Texts come from 866-912-5726; emails from master@reports.dfwroofingpro.com with replies to you.</p></div><button class="sh-x" type="button" id="shx">×</button></div>' +
+    '<div class="tpl">' + f("text", "Text 1 — the moment the lead lands (and again 4 hours later)") + f("text_2", "Text 2 — day 1 and day 2") + f("text_3", "Text 3 — days 4, 7 and 14") + f("email_subject", "Email subject", 1) + f("email", "Email — sent with text 1, text 3 and text 6", 8) + "</div>" +
+    '<div class="acts"><button class="btn ghost" id="prevBtn" type="button">Preview with a real lead</button><button class="btn" id="saveTpl" type="button">' + (thenOn ? "Save & turn ON" : "Save wording") + '</button></div><div id="prev"></div>';
+  $("#sheet").hidden = false; $("#shx").onclick = closeSheet;
+  $("#saveTpl").onclick = async function () { var tp = {}; document.querySelectorAll("#shc textarea[data-k]").forEach(function (ta) { tp[ta.dataset.k] = ta.value; }); try { await api("settings", { templates: tp }); if (thenOn) return toggle(true); FLASH = "Wording saved."; closeSheet(); load(); } catch (e) { $("#prev").innerHTML = '<div class="err">' + esc(e.message) + "</div>"; } };
+  $("#prevBtn").onclick = async function () { var l = (B.leads || []).find(function (x) { return x.mode !== "rep" && x.status !== "dead"; }) || (B.leads || [])[0]; try { var p = await api("preview", { lead_id: l ? l.id : null }); $("#prev").innerHTML = '<div class="panel" style="padding:12px 14px"><div class="kv"><b>Text 1:</b> ' + esc(p.text) + '</div><div class="kv"><b>Text 2:</b> ' + esc(p.text_2) + '</div><div class="kv"><b>Text 3:</b> ' + esc(p.text_3) + '</div><div class="kv"><b>Email:</b> ' + esc(p.email_subject) + '</div><div class="kv" style="white-space:pre-wrap">' + esc(p.email) + "</div></div>"; } catch (e) { $("#prev").innerHTML = '<div class="err">' + esc(e.message) + "</div>"; } };
+}
+function sheet(id) {
+  var l = (B.leads || []).find(function (x) { return x.id === id; }); if (!l) return; OPEN = id;
+  var conv = (l.touch_list || []).slice().sort(function (a, b) { return new Date(a.at) - new Date(b.at); }).map(function (t) {
+    var cls = t.channel === "note" ? "note" : t.direction === "in" ? "in" : "out"; var failed = /failed/.test(t.status || "");
+    return '<div class="msg ' + cls + (failed ? " failed" : "") + '">' + esc(t.body) + '<span class="w">' + esc(D.stamp(t.at)) + " · " + esc(t.channel) + (t.direction === "out" ? " · " + esc(t.by || "") : "") + (failed ? " · " + esc(t.status) : "") + "</span></div>";
+  }).join("") || '<div class="msg note">No contact yet.</div>';
+  var when = l.appointment_at ? D.stamp(l.appointment_at) : "";
+  var dflt = new Date(Date.now() + 86400000); dflt.setHours(10, 0, 0, 0); var pad = function (n) { return String(n).padStart(2, "0"); };
+  var dl = dflt.getFullYear() + "-" + pad(dflt.getMonth() + 1) + "-" + pad(dflt.getDate()) + "T" + pad(dflt.getHours()) + ":" + pad(dflt.getMinutes());
+  $("#shc").innerHTML = '<div class="sh-head"><div><h3>' + esc(l.name || "Lead") + ' <span class="st ' + esc(l.status) + '">' + esc(stLabel(l)) + '</span></h3>' +
+    '<div class="kv">' + esc([l.address, l.city, l.zip].filter(Boolean).join(", ") || "no address") + "</div>" +
+    '<div class="kv">' + (l.phone ? '<a href="tel:' + esc(D.tel(l.phone)) + '">' + esc(D.phone(l.phone)) + "</a>" : "no phone") + (l.email ? " · " + esc(l.email) : "") + "</div>" +
+    '<div class="kv">' + esc(l.lead_source || l.source) + (l.work_type ? " · " + esc(l.work_type) : "") + (l.rep ? " · rep " + esc(l.rep) : " · no rep") + " · came in " + esc(D.stamp(l.created_at)) + (l.job_number ? " · job #" + esc(l.job_number) : "") + "</div>" +
+    (l.mode === "rep" ? '<div class="kv"><b>' + esc((l.rep || "The rep").split(",")[0]) + " created this lead</b> (door knock / own referral), so the app leaves it alone. Start outreach below if you want the app on it.</div>" : "") +
+    (l.status === "review" ? '<div class="kv"><b>Not built in Lynx:</b> ' + esc(l.reason || "the mailbox system was not sure it was a real lead") + (l.gmail_url ? '. <a href="' + esc(l.gmail_url) + '" target="_blank" rel="noopener">Open the email</a> and reply YES to build the Lynx file, or mark it dead here.' : "") + "</div>" : "") +
+    (l.email_body && l.status === "review" ? '<details class="grp" style="border:0"><summary style="padding:6px 0">What they wrote</summary><div class="kv" style="white-space:pre-wrap">' + esc(l.email_body.slice(0, 1500)) + "</div></details>" : "") +
+    (when ? '<div class="kv"><b>Inspection:</b> ' + esc(when) + "</div>" : "") + (l.wants ? '<div class="kv"><b>Asked for:</b> ' + esc(l.wants) + "</div>" : "") +
+    '</div><button class="sh-x" type="button" id="shx">×</button></div>' +
+    '<div class="conv">' + conv + "</div>" +
+    (l.phone && !l.sms_opt_out ? '<label class="f">Text ' + esc(l.first_name || "them") + ' (from the company line)</label><textarea id="txt" rows="2" placeholder="Type a text…"></textarea><div class="acts"><button class="btn" id="sendTxt" type="button">Send text</button></div>' : "") +
+    (l.source_job_id && l.status !== "booked" && l.status !== "dead" ? '<label class="f">Put the inspection on the Lynx calendar</label><div class="acts"><input type="datetime-local" id="bookAt" value="' + dl + '"><button class="btn" id="bookBtn" type="button">Book it' + (B.send_enabled && l.phone && !l.sms_opt_out ? " & text them" : "") + "</button></div>" : "") +
+    '<div class="acts">' + (l.status !== "contacting" && l.status !== "booked" && l.status !== "dead" && (l.mode === "rep" || l.status === "quiet" || l.status === "review" || l.status === "replied") ? '<button class="btn ghost" data-st="new" type="button">Start / restart outreach</button>' : "") +
+    (l.status === "new" || l.status === "contacting" ? '<button class="btn ghost" data-st="quiet" type="button">Pause outreach</button>' : "") +
+    (l.status !== "dead" ? '<button class="btn ghost" data-st="dead" type="button">Mark dead</button>' : '<button class="btn ghost" data-st="new" type="button">Revive</button>') +
+    (l.lynx ? '<a class="btn ghost" href="' + esc(l.lynx) + '" target="_blank" rel="noopener">Open in Lynx</a>' : "") + "</div>" +
+    '<label class="f">Note for the file</label><textarea id="nt" rows="2" placeholder="What happened…"></textarea><div class="acts"><button class="btn ghost" id="noteBtn" type="button">Save note</button></div><div id="shErr"></div>';
+  $("#sheet").hidden = false; $("#shx").onclick = closeSheet;
+  var err = function (e) { $("#shErr").innerHTML = '<div class="err">' + esc(e.message || e) + "</div>"; };
+  var st = $("#sendTxt"); if (st) st.onclick = async function () { var t = $("#txt").value.trim(); if (t.length < 2) return; st.disabled = true; try { await api("text", { lead_id: id, text: t }); await load(); } catch (e) { err(e); st.disabled = false; } };
+  var bb = $("#bookBtn"); if (bb) bb.onclick = async function () { var v = $("#bookAt").value; if (!v) return; bb.disabled = true; try { var r = await api("book", { lead_id: id, at: new Date(v).toISOString() }); FLASH = "Booked " + r.when + " on the Lynx calendar."; closeSheet(); await load(); } catch (e) { err(e); bb.disabled = false; } };
+  document.querySelectorAll("#shc [data-st]").forEach(function (b) { b.onclick = async function () { b.disabled = true; try { await api("status", { lead_id: id, status: b.dataset.st }); closeSheet(); await load(); } catch (e) { err(e); b.disabled = false; } }; });
+  $("#noteBtn").onclick = async function () { var t = $("#nt").value.trim(); if (t.length < 2) return; try { await api("note", { lead_id: id, text: t }); await load(); } catch (e) { err(e); } };
+}
+D.poll(load);
+})();
+</script>
+</body>
+</html>

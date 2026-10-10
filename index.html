@@ -238,7 +238,8 @@ const PAGES=[
   {key:"supps",label:"Supplements",file:"supps.html",roles:["owner","manager","office"]},
   {key:"billing",label:"Billing",file:"billing.html",roles:["owner","manager","office"]},
   {key:"comms",label:"Customers",file:"comms.html",roles:["owner","manager","office"]},
-  {key:"cashbid",label:"Cash Bids",file:"cashbid.html",roles:["owner","manager","office"]}
+  {key:"cashbid",label:"Cash Bids",file:"cashbid.html",roles:["owner","manager","office"]},
+  {key:"leads",label:"Leads",file:"leads.html",roles:["owner"]}
 ];
 function renderPage(key){const pg=PAGES.find(p=>p.key===key);if(!pg)return;const jq=(key==="cashbid"&&CBJOB)?"&job="+encodeURIComponent(CBJOB):"";if(key==="cashbid")CBJOB="";if($("#pf-"+key)&&!jq)return;$("#main").innerHTML='<iframe id="pf-'+key+'" src="'+pg.file+'?v='+Date.now()+jq+'" title="'+esc(pg.label)+'" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--paper)"></iframe>';}
 /* COC creator lives in coc.html; Production rows open it here with ?job=<Lynx job id>. */
