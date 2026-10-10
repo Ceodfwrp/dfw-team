@@ -86,7 +86,7 @@ function defaults() {
     rcv: "", deductible: "", suppAmt: "", upgrades: "", contract: "", commPreset: "rep", commRate: 10, payMethod: "check", mikeOvr: true, teamMgr: "auto", notes: "", color: "" };
 }
 function termsDefault() {
-  var t = { valid_days: 30, deposit_pct: 0, pay_terms: "completion", warranty_years: 5, payment: "Payment in full is due upon completion of the work.", financing: true, exclusions: "Price covers the scope listed above. Rotten or damaged decking beyond what is listed is replaced with homeowner approval at the per-sheet price shown. Hidden conditions found during tear-off are priced in writing before work continues.", notes: "" };
+  var t = { valid_days: 30, deposit_pct: 50, pay_terms: "deposit", warranty_years: 5, payment: "Payment in full is due upon completion of the work.", financing: true, exclusions: "Price covers the scope listed above. Rotten or damaged decking beyond what is listed is replaced with homeowner approval at the per-sheet price shown. Hidden conditions found during tear-off are priced in writing before work continues.", notes: "" };
   try { var s = JSON.parse(localStorage.getItem(LSK) || "null"); if (s && typeof s === "object") Object.assign(t, s); } catch (e) { /* ignore */ }
   return t;
 }
@@ -164,12 +164,14 @@ function buildInputs() {
 }
 function calc(inputs) {
   var x = Object.assign({}, inputs || IN); x.jobType = "retail"; x.contract = PRICE !== "" ? N(PRICE) : 0;
+  // Cash deals pay the rep a flat $500 when the job pays out — not the % plan. Priced as a fixed cost, no override.
+  x.commPreset = "none"; x.mikeOvr = false; x.teamMgr = "none"; x.extras = (x.extras || []).concat([{ label: "Rep pay — cash deal (flat)", amt: 500 }]);
   var c = compute(PB, x);
   var suggested = isFinite(c.priceAtTarget) ? round25(c.priceAtTarget) : 0;
   if (x.contract <= 0) { x.contract = suggested; c = compute(PB, x); }
   c.suggested = suggested; c.price = x.contract; return c;
 }
-function sheetPrice() { var a = compute(PB, Object.assign({}, IN, { jobType: "retail", contract: 0, deckSheets: N(IN.deckSheets) + 1 })), b = compute(PB, Object.assign({}, IN, { jobType: "retail", contract: 0 })); var d = a.priceAtTarget - b.priceAtTarget; return isFinite(d) && d > 0 ? Math.ceil(d / 5) * 5 : 0; }
+function sheetPrice() { var a = calc(Object.assign({}, IN, { deckSheets: N(IN.deckSheets) + 1 })), b = calc(); var d = a.priceAtTarget - b.priceAtTarget; return isFinite(d) && d > 0 ? Math.ceil(d / 5) * 5 : 0; }
 function autoScope() {
   var j = IN, L = [], add = function (g, t) { L.push({ group: g, label: t }); };
   var layers = Math.max(1, +j.layers || 1), sh = SHN(j.shingle);
@@ -265,7 +267,7 @@ function paintJob() {
     '<div class="m" style="margin:8px 0 4px">Override the price (blank = price at ' + esc(String(c.target)) + '% net after commission, rounded up to $25)</div><input type="number" id="price" step="25" min="0" value="' + esc(PRICE) + '" placeholder="' + esc(String(c.suggested)) + '">' +
     '<div style="margin:10px 0 4px"><span class="pill ' + esc(status.cls || "neutral") + '">' + esc(status.text || "") + (isFinite(c.netPct) ? " · " + c.netPct.toFixed(1) + "% net" : "") + "</span></div>" +
     '<div class="kv first"><span>Materials (ABC, taxed, delivered)</span><b>' + esc(fmt0(c.materials)) + '</b></div><div class="kv"><span>Labor — ' + esc(c.crewName || "") + "</span><b>" + esc(fmt0(c.labor)) + '</b></div>' + (c.trades ? '<div class="kv"><span>Trades (gutters, screens, solar…)</span><b>' + esc(fmt0(c.trades)) + "</b></div>" : "") + '<div class="kv"><span>Permit, inspections, report</span><b>' + esc(fmt0(c.fees)) + "</b></div>" + (c.extras ? '<div class="kv"><span>Extras</span><b>' + esc(fmt0(c.extras)) + "</b></div>" : "") +
-    '<div class="kv"><span><b>Hard cost</b></span><b>' + esc(fmt0(c.hard)) + '</b></div><div class="kv"><span>Commission at ' + esc(String(c.commRate)) + "%" + (IN.rep ? " (" + esc(IN.rep) + ")" : "") + "</span><b>" + esc(fmt0(c.commission)) + '</b></div><div class="kv"><span><b>Net after commission</b></span><b>' + esc(fmt0(c.net)) + "</b></div>" +
+    '<div class="kv"><span><b>Hard cost</b></span><b>' + esc(fmt0(c.hard)) + '</b></div><div class="kv"><span>Rep pay — flat $500 on cash deals (in hard cost)</span><b>$500</b></div><div class="kv"><span><b>Net after commission</b></span><b>' + esc(fmt0(c.net)) + "</b></div>" +
     '<div class="kv"><span>Price at ' + esc(String(c.target)) + "% target</span><b>" + esc(fmt0(c.suggested)) + "</b></div>" + (sheetPrice() ? '<div class="kv"><span>Extra decking, per sheet</span><b>' + esc(fmt0(sheetPrice())) + "</b></div>" : "") + "</div>";
   // actions
   var canFile = c.price > 0 && c.sq > 0 && SCOPE.length > 0;
@@ -298,13 +300,13 @@ function paintJob() {
 }
 var T = null; function schedule(ms) { clearTimeout(T); T = setTimeout(function () { var a = document.activeElement, id = a && a.id, pos = a && a.selectionStart; paintJob(); if (id && $("#" + id)) { var e = $("#" + id); e.focus(); try { if (pos != null && e.setSelectionRange) e.setSelectionRange(pos, pos); } catch (x) { /* ignore */ } } }, ms); }
 function addOption(kind) {
-  var base = compute(PB, Object.assign({}, IN, { jobType: "retail", contract: 0 })), alt = null, label = "";
+  var base = calc(), alt = null, label = "";
   if (kind === "class4") { var k = SHINGLES.find(function (s) { return s[2] === "ir" && s[3] === "live"; }) || SHINGLES.find(function (s) { return s[2] === "ir"; }); if (!k) return; alt = Object.assign({}, IN, { jobType: "retail", contract: 0, shingle: k[0], cap: "ir" }); label = "Upgrade to " + k[1].replace(/\s*\(Class 4\)/i, "") + " Class 4 impact-resistant shingles (may qualify for an insurance discount)"; }
   else if (kind === "ridgevent") { alt = Object.assign({}, IN, { jobType: "retail", contract: 0, ridgeVent: N(IN.ridges) }); label = "Add " + N(IN.ridges) + " lf of ridge vent"; }
   else if (kind === "gutters") { alt = Object.assign({}, IN, { jobType: "retail", contract: 0, gutterLf: N(IN.eaves) }); label = "Add " + N(IN.eaves) + " lf of new 5\" seamless gutters and downspouts"; }
   else if (kind === "guard") { alt = Object.assign({}, IN, { jobType: "retail", contract: 0, guardLf: N(IN.gutterLf) }); label = "Add " + N(IN.gutterLf) + " lf of leaf guard"; }
   else { OPTS.push({ label: "", price: "" }); paintJob(); return; }
-  var c2 = compute(PB, alt), delta = c2.priceAtTarget - base.priceAtTarget;
+  var c2 = calc(alt), delta = c2.priceAtTarget - base.priceAtTarget;
   OPTS.push({ label: label, price: isFinite(delta) && delta > 0 ? round25(delta) : "" }); paintJob();
 }
 function addPhotos(files) {
