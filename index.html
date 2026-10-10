@@ -217,10 +217,13 @@ async function renderCmd(){
   }
   const s=d.sync||{};
   h+=`<h3 style="margin:14px 0 2px">Data from Lynx</h3>`;
+  const acc=get("sync","accuracy_pct","latest");
   h+=cmdGrid(cmdTile("Jobs fully synced",cmdNum(s.jobs||0),"every section Lynx gives us")
     + cmdTile("Still syncing",cmdNum(s.queue_left||0),"tonight's queue")
     + cmdTile("Last update",cmdAgo(s.newest))
+    + (acc?cmdTile("Matches live Lynx",cmdNum(acc.value)+"%",cmdNum(v("sync","accuracy_jobs_checked","latest")||0)+" jobs re-read live · "+cmdNum(v("sync","accuracy_mismatches","latest")||0)+" mismatches · "+cmdAgo(acc.as_of)):"")
     + (s.globals||[]).map(g=>cmdTile(g.name.replace(/_/g," "),cmdNum(g.rows),cmdAgo(g.at))).join(""));
+  if(acc&&acc.text_value) h+=`<p class="sub" style="margin:-8px 0 14px">${esc(acc.text_value)}</p>`;
   const ag=d.agents||[];
   h+=`<h3 style="margin:14px 0 6px">Agents</h3>`;
   h+= ag.length ? `<div class="list">${ag.map(a=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><div><div class="t">${esc(a.agent)}</div><div class="m">${esc(a.summary||"")}</div></div><div style="text-align:right;white-space:nowrap"><span class="tag ${a.ok?"t-green":"t-red"}">${a.ok?"ok":"needs help"}</span><div class="m">${esc(cmdAgo(a.at))}</div></div></div></div>`).join("")}</div>`
