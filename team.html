@@ -66,6 +66,7 @@ function card(x, i, max) {
     '<div class="kpi"><div class="v">' + num(x.open_sold) + '</div><div class="l">sold, not closed · ' + esc(D.money(x.open_value)) + "</div></div></div>" +
     '<div class="own">Open now: <b>' + x.open_leads + "</b> leads · <b>" + x.open_prospects + "</b> prospects · <b>" + esc(D.money(x.owed_built)) + "</b> owed on built jobs" + (x.door_knocks ? " · " + x.door_knocks + " door knocks" : "") + (x.sold_insurance || x.sold_retail ? " · sold " + x.sold_insurance + " insurance / " + x.sold_retail + " retail" : "") + (x.lost ? " · " + x.lost + " lost" : "") + "</div>" +
     (owner && x.commission != null ? '<div class="own" style="margin-top:6px;color:var(--amber)">Commission earned ' + esc(D.money(x.commission)) + " on " + x.commission_lines + " payments · " + esc(D.money(x.commission_paid || 0)) + " paid (owner only)</div>" : "") +
+    (B.me.team ? '<div class="acts" style="margin:10px 0 0"><button class="btn ghost" type="button" data-pipe="' + esc(x.rep) + '" style="padding:6px 12px;font-size:13px">Open their pipeline</button></div>' : "") +
     "</div>";
 }
 function table(reps) {
@@ -96,6 +97,7 @@ function paint() {
   app.querySelectorAll("[data-days]").forEach(function (b) { b.onclick = function () { DAYS = +b.dataset.days; load(); }; });
   app.querySelectorAll("[data-view]").forEach(function (b) { b.onclick = function () { VIEW = b.dataset.view; paint(); }; });
   app.querySelectorAll("[data-sort]").forEach(function (t) { t.onclick = function () { SORT = t.dataset.sort; paint(); }; });
+  app.querySelectorAll("[data-pipe]").forEach(function (b) { b.onclick = function () { if (window.parent !== window) window.parent.postMessage({ type: "dfw-open-pipeline", rep: b.dataset.pipe }, "*"); else location.href = "pipeline.html?rep=" + encodeURIComponent(b.dataset.pipe); }; });
   window.scrollTo(0, y);
 }
 D.poll(load);

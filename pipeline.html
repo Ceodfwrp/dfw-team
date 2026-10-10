@@ -34,7 +34,7 @@
 var D = window.DESK, $ = function (s) { return document.querySelector(s); }, esc = D.esc;
 var API = "https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/pipeline-api/api/";
 var Q = (function () { var o = {}; location.search.replace(/^\?/, "").split("&").forEach(function (p) { if (!p) return; var kv = p.split("="); o[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1] || "").replace(/\+/g, " ")); }); return o; })();
-var B = null, ERR = "", STAGE = "", OWNER = Q.owner || "all", SCOPE = Q.scope === "mine" ? "mine" : "team", SEARCH = "", REP = "", LATE = false;
+var B = null, ERR = "", STAGE = "", OWNER = Q.owner || "all", SCOPE = Q.scope === "mine" ? "mine" : "team", SEARCH = "", REP = Q.rep || "", LATE = false;
 var GROUPS = [["Sales", ["new_lead", "inspection_scheduled", "prospect", "claim_needed", "adjuster_needed", "adjuster_scheduled", "awaiting_scope", "carrier_review", "denied", "appraisal", "claim_approved", "bid_requested", "bid_priced", "bid_sent"]], ["Waiting", ["blocked"]], ["Production", ["permit", "ready_to_schedule", "build_scheduled"]], ["Close-out", ["coc", "supplement", "depreciation", "invoice", "collect", "payment_plan", "trades", "closeout"]]];
 var token = function () { try { return localStorage.getItem("dfw_team_token"); } catch (e) { return null; } };
 async function api(action, body) {
