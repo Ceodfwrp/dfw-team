@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Certificate of Completion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1E2A38;--red:#EE0000;--red-ink:#C80000;--paper:#F3F4F6;--card:#fff;--ink:#111418;--muted:#5B6470;--line:#DADDE2;--blue:#2F6FB5;--blue-soft:#E3EDF8;--amber:#B97A00;--amber-soft:#FBF1DA;--green:#1F7A4D;--green-soft:#E0F2E8;--red-soft:#FDE6E6;
+--display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;--body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--paper:#0F1419;--card:#1A222C;--ink:#EEF1F4;--muted:#9AA4B0;--line:#2C3744;--red-ink:#FF5A5A;--red-soft:#3A1416;--blue:#7FB0E8;--blue-soft:#18293C;--amber:#E8B04A;--amber-soft:#382B12;--green:#5CC28E;--green-soft:#12301F}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 var(--body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:4px 2px 60px}
+h2{font:800 30px/1.05 var(--display);margin:4px 0 2px}
+h3{font:800 22px/1.05 var(--display);margin:0 0 8px}
+.sub{color:var(--muted);margin:0 0 12px;font-size:15px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:0 0 14px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input[type=text],input[type=date],input[type=search],textarea{font:inherit;color:inherit;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+textarea{min-height:72px;resize:vertical}
+.jobin{font:800 26px var(--display);letter-spacing:.02em;padding:12px 14px;max-width:260px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--red);color:#fff;border:0;border-radius:8px;padding:11px 16px;font:700 15px var(--body);cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.ghost{background:none;color:var(--red-ink);border:1px solid var(--red)}
+.btn.big{font-size:18px;padding:14px 22px;width:100%}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:1fr;gap:8px 14px}
+@media(min-width:640px){.grid{grid-template-columns:1fr 1fr}}
+.f label{display:block;font:700 13px var(--body);color:var(--muted);margin:0 0 3px;text-transform:uppercase;letter-spacing:.04em}
+.f .v{font-weight:600}
+.f .src{font-size:12px;color:var(--muted)}
+.chk{display:grid;gap:6px}
+.chk .r{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:8px;border:1px solid var(--line)}
+.chk .r.ok{background:var(--green-soft);border-color:transparent}.chk .r.warn{background:var(--amber-soft);border-color:transparent}.chk .r.bad{background:var(--red-soft);border-color:transparent}
+.chk b{font-weight:700}.chk small{display:block;color:var(--muted);font-size:13px}
+details.area{border-top:1px solid var(--line)}details.area:first-of-type{border-top:0}
+details.area>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 4px;font-weight:700}
+details.area>summary::-webkit-details-marker{display:none}
+details.area>summary .c{margin-left:auto;color:var(--muted);font-weight:600;font-size:14px;white-space:nowrap}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;padding:7px 4px 7px 8px;border-top:1px dashed var(--line)}
+.item input{width:20px;height:20px;margin-top:2px}
+.item .d{font-size:15px}.item .q{font-size:13px;color:var(--muted)}
+.item .amt{text-align:right;font-size:13px;color:var(--muted);white-space:nowrap}
+.item .amt b{display:block;color:var(--ink);font:700 15px var(--display)}
+.item.x{opacity:.55}
+.tag{display:inline-block;font:700 12px var(--body);padding:2px 9px;border-radius:999px;background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+.tag.g{background:var(--green-soft);color:var(--green);border-color:transparent}.tag.a{background:var(--amber-soft);color:var(--amber);border-color:transparent}.tag.r{background:var(--red-soft);color:var(--red-ink);border-color:transparent}.tag.b{background:var(--blue-soft);color:var(--blue);border-color:transparent}
+.money{font:800 34px/1 var(--display)}
+.moneybox{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:flex-end}
+.moneybox .l{font-size:13px;color:var(--muted)}
+.warn{background:var(--amber-soft);color:var(--amber);border-radius:8px;padding:10px 14px;margin:10px 0 0;font-size:14px}
+.err{background:var(--red-soft);color:var(--red-ink);border-radius:8px;padding:10px 14px;margin:10px 0 0;font-size:14px;font-weight:600}
+.okbox{background:var(--green-soft);color:var(--green);border-radius:8px;padding:10px 14px;margin:10px 0 0;font-size:14px}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:10px}
+.thumbs div{position:relative}
+.thumbs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid var(--line);display:block}
+.thumbs button{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.65);color:#fff;border:0;border-radius:999px;width:24px;height:24px;cursor:pointer;font-weight:700}
+.thumbs .up{position:absolute;left:4px;bottom:4px;font-size:11px;background:rgba(0,0,0,.6);color:#fff;padding:1px 6px;border-radius:999px}
+.list .j{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:10px 4px;border-top:1px solid var(--line);cursor:pointer;align-items:center}
+.list .j:first-child{border-top:0}
+.list .t{font-weight:700}.list .m{font-size:14px;color:var(--muted)}
+.fresh{font-size:13px;color:var(--muted);margin:0 0 6px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.steps span{font:700 13px var(--body);padding:4px 10px;border-radius:999px;background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+.steps span.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.note{font-size:13px;color:var(--muted);margin:8px 2px 0}
+.out a{word-break:break-all}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="panel">Loading…</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+"use strict";
+// COC creator for the office. Data: coc-api -> master_private.coc_job() (Lynx-synced facts, the approved scope line by line,
+// the Lynx worksheet's DEPRECIATION line, and per-line depreciation from the carrier estimate when it has been uploaded).
+var API = "https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/coc-api/api/";
+var LS = "dfw_team_token", TZ = "America/Chicago";
+var CO = { name: "DFW Roofing Pro LLC", addr: "3626 N Hall St, Suite 570, Dallas, TX 75219", phone: "972-979-1070", web: "www.dfwroofingpro.com", signer: "Blake Luby, CEO" };
+var Q = null, J = null, DONE = {}, PHOTOS = [], EXTRA = "", BUSY = false, ERR = "", RESULT = null, FIELDS = {}, PREVIEW = false, QSEARCH = "";
+var $ = function (s) { return document.querySelector(s); };
+var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+var token = function () { try { return localStorage.getItem(LS); } catch (e) { return null; } };
+var money = function (v) { return "$" + (Math.round(+v * 100) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+var dLong = function (iso) { if (!iso) return ""; var d = new Date(String(iso).slice(0, 10) + "T12:00:00Z"); return d.toLocaleDateString("en-US", { timeZone: "UTC", month: "long", day: "numeric", year: "numeric" }); };
+var dShort = function (iso) { if (!iso) return ""; var d = new Date(String(iso).slice(0, 10) + "T12:00:00Z"); return d.toLocaleDateString("en-US", { timeZone: "UTC", month: "numeric", day: "numeric", year: "numeric" }); };
+var stamp = function (s) { return s ? new Date(s).toLocaleString("en-US", { timeZone: TZ, month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—"; };
+var qty = function (n) { n = +n; return Math.abs(n - Math.round(n)) > 1e-9 ? n.toLocaleString("en-US", { maximumFractionDigits: 2 }) : Math.round(n).toLocaleString("en-US"); };
+var opId = function () { var a = new Uint8Array(12); crypto.getRandomValues(a); return Array.from(a).map(function (b) { return b.toString(16).padStart(2, "0"); }).join(""); };
+
+async function api(action, body) {
+  var tok = token(); if (!tok) throw new Error("signin");
+  var r = await fetch(API + action, { method: "POST", headers: { "content-type": "application/json", "authorization": "Bearer " + tok }, body: JSON.stringify(body || {}) });
+  var j = await r.json().catch(function () { return {}; });
+  if (r.status === 401) throw new Error("signin");
+  if (r.status === 403) throw new Error("forbidden");
+  if (!r.ok) throw new Error(j.detail || j.error || ("http_" + r.status));
+  return j;
+}
+function paramJob() { try { return new URLSearchParams(location.search).get("job") || ""; } catch (e) { return ""; } }
+
+/* ---------- derived ---------- */
+function items() { return (J && J.scope && J.scope.items) || []; }
+function activeItems() { return items().filter(function (i) { return !i.excluded; }); }
+function amountFor(it) { var A = J && J.amounts; if (!A || !A.lines) return null; return A.lines.find(function (l) { return l.matched_line_no === it.n; }) || null; }
+function tally() {
+  var act = activeItems(), done = act.filter(function (i) { return DONE[i.n]; }), notDone = act.filter(function (i) { return !DONE[i.n]; });
+  var all = act.length > 0 && notDone.length === 0;
+  var M = (J && J.money) || {}, A = J && J.amounts;
+  var wsLine = +M.depreciation_to_release || 0, wsHas = (M.depreciation_lines || []).length > 0;
+  var perLine = 0, missing = [], nonrec = 0;
+  if (A && A.lines) done.forEach(function (i) { var a = amountFor(i); if (!a) missing.push(i); else if (a.non_recoverable) nonrec += +a.deprec || 0; else perLine += +a.deprec || 0; });
+  var mode, release = null, why = "", blocked = "";
+  if (!act.length) { blocked = "No approved scope line items are on file for this job, so the completed work can't be listed from the scope."; mode = "none"; }
+  else if (all) {
+    if (wsHas) { mode = "worksheet"; release = wsLine; why = "All approved scope items completed → the Lynx worksheet DEPRECIATION line" + (M.depreciation_received > 0 ? " less " + money(M.depreciation_received) + " already received" : "") + "."; if (A && A.lines && !missing.length && Math.abs(perLine - wsLine) > 1) why += " The estimate's per-line total (" + money(perLine) + ") differs from the worksheet by " + money(Math.abs(perLine - wsLine)) + " — check the worksheet in Lynx."; }
+    else if (A && A.lines && !missing.length) { mode = "estimate"; release = perLine; why = "All items completed; no DEPRECIATION line on the Lynx worksheet, so this is the estimate's recoverable depreciation line by line."; }
+    else { mode = "none"; blocked = "The Lynx worksheet has no DEPRECIATION line for this job and no estimate has been uploaded, so the depreciation to release can't be stated. Add the line in Lynx or upload the carrier estimate below."; }
+  } else {
+    if (!A || !A.lines) { mode = "none"; blocked = "Only part of the scope was completed, so the release must be computed item by item. Upload the carrier's itemized estimate (RCV / depreciation / ACV columns) below and the exact amount for the completed items will be calculated."; }
+    else if (missing.length) { mode = "none"; blocked = missing.length + " completed item" + (missing.length === 1 ? "" : "s") + " could not be matched to a line in the uploaded estimate, so their depreciation is unknown: " + missing.slice(0, 3).map(function (i) { return i.description; }).join("; ") + (missing.length > 3 ? "…" : "") + ". Untick them, or upload the estimate that matches this scope."; }
+    else { mode = "estimate"; release = perLine; why = "Only the completed items' recoverable depreciation, line by line from " + (A.file || "the uploaded estimate") + "." + (nonrec > 0 ? " " + money(nonrec) + " of non-recoverable depreciation on completed items is not included." : ""); }
+  }
+  if (release != null) release = Math.round(release * 100) / 100;
+  return { act: act, done: done, notDone: notDone, all: all, mode: mode, release: release, why: why, blocked: blocked, perLine: perLine, wsLine: wsLine, wsHas: wsHas, missing: missing, nonrec: nonrec };
+}
+function checks() {
+  var out = [], C = (J.completion || {}), H = J.homeowner || {}, I = J.insurance || {}, T = tally();
+  if (C.status === "verified") out.push({ s: "ok", b: "Work completed " + dLong(C.build_date), m: "BUILD on the Lynx calendar" + (C.photos_on_build ? " + " + C.photos_on_build + " photos uploaded that day" : "") + (C.sources || []).filter(function (x) { return x.type === "roof_labor_paid" || x.type === "material_delivered"; }).map(function (x) { return x.type === "roof_labor_paid" ? " + roof labor paid" : " + material delivered"; }).join("") });
+  else if (C.status === "build_day_only") out.push({ s: "warn", b: "Build day " + dLong(C.build_date) + " — only the calendar says so", m: "No photos, delivery or labor payment found near that day in Lynx. Make sure the work is really done before sending." });
+  else if (C.status === "build_in_future") out.push({ s: "bad", b: "The build is scheduled for " + dLong(C.build_date), m: "A COC can't be issued before the work is done." });
+  else out.push({ s: "bad", b: "No BUILD day on the Lynx calendar", m: "Put the build on the calendar in Lynx (or confirm the completion date below)." });
+  out.push(H.display ? { s: (H.flags || []).some(function (f) { return /name_conflict|name_needs_review/.test(f); }) ? "warn" : "ok", b: "Homeowner: " + H.display, m: "From the Lynx contact" + (H.name_check && H.name_check !== "parsed_only" ? " · cross-checked (" + H.name_check.replace(/_/g, " ") + ")" : "") } : { s: "bad", b: "Homeowner name missing", m: "No contact on the Lynx job." });
+  out.push(I.carrier ? { s: "ok", b: "Carrier: " + I.carrier + (I.claim_number ? " · claim " + I.claim_number : ""), m: I.claim_number ? "From the Lynx insurance tab" : "Claim number missing in Lynx — type it below" } : { s: "warn", b: "No carrier on the Lynx insurance tab", m: "Type it below if this is an insurance job." });
+  if (T.blocked) out.push({ s: "bad", b: "Depreciation to release can't be stated yet", m: T.blocked });
+  else if (T.release != null) out.push({ s: "ok", b: "Recoverable depreciation to release: " + money(T.release), m: T.why });
+  return out;
+}
+
+/* ---------- photos ---------- */
+function resize(file) {
+  return new Promise(function (res, rej) {
+    var img = new Image(); var url = URL.createObjectURL(file);
+    img.onload = function () { var W = img.naturalWidth, H = img.naturalHeight, s = Math.min(1, 1600 / Math.max(W, H)); var c = document.createElement("canvas"); c.width = Math.round(W * s); c.height = Math.round(H * s); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); res(c.toDataURL("image/jpeg", 0.82)); };
+    img.onerror = function () { URL.revokeObjectURL(url); rej(new Error("That file isn't a photo the browser can read (" + file.name + ")")); };
+    img.src = url;
+  });
+}
+async function addPhotos(files) {
+  for (var k = 0; k < files.length && PHOTOS.length < 60; k++) {
+    var f = files[k]; var ph = { name: f.name, data: null, path: null, up: "resizing" }; PHOTOS.push(ph); paint();
+    try { ph.data = await resize(f); ph.up = "uploading"; paint(); var r = await api("photo_upload", { job_id: J.job.id, filename: f.name, data: ph.data }); ph.path = r.path; ph.up = "ok"; }
+    catch (e) { ph.up = "failed: " + e.message; }
+    paint();
+  }
+}
+
+/* ---------- PDF ---------- */
+function groupDone(list) { var g = {}; list.forEach(function (i) { (g[i.area || "Other"] = g[i.area || "Other"] || []).push(i); }); return g; }
+function buildPdf() {
+  var JsPDF = window.jspdf.jsPDF, doc = new JsPDF({ unit: "pt", format: "letter" }), W = 612, M = 54, y = 0;
+  var T = tally(), H = J.homeowner || {}, A = J.job.address || {}, I = J.insurance || {};
+  var ink = function () { doc.setTextColor(17, 20, 24); }, mute = function () { doc.setTextColor(91, 100, 112); };
+  var header = function () {
+    doc.setFillColor(0, 0, 0); doc.rect(0, 0, W, 86, "F"); doc.setFillColor(238, 0, 0); doc.rect(0, 86, W, 6, "F");
+    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.text("DFW ROOFING PRO", M, 40);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.text(CO.name + "  |  " + CO.addr, M, 58); doc.text(CO.phone + "  |  " + CO.web, M, 71);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text("JOB #" + J.job.number, W - M, 40, { align: "right" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.text("Certificate of Completion", W - M, 58, { align: "right" }); doc.text(dLong(new Date().toISOString()), W - M, 71, { align: "right" });
+  };
+  var footer = function (p) { doc.setFont("helvetica", "normal"); doc.setFontSize(8); mute(); doc.text(CO.name + "  |  " + CO.addr + "  |  " + CO.phone + "  |  " + CO.web, W / 2, 762, { align: "center" }); doc.text("Page " + p, W - M, 762, { align: "right" }); };
+  var page = 1; header();
+  var newPage = function () { footer(page); doc.addPage(); page++; header(); y = 112; };
+  var need = function (h) { if (y + h > 720) newPage(); };
+  ink(); doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.text("CERTIFICATE OF COMPLETION", W / 2, 128, { align: "center" });
+  y = 158;
+  var row = function (l, v) { if (!v) return; doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); mute(); doc.text(l.toUpperCase(), M, y); doc.setFont("helvetica", "normal"); doc.setFontSize(11.5); ink(); var L = doc.splitTextToSize(String(v), W - 2 * M - 150); doc.text(L, M + 150, y); y += Math.max(1, L.length) * 14 + 7; };
+  row("Homeowner", FIELDS.homeowner); row("Property address", FIELDS.address); row("Job number", "#" + J.job.number);
+  row("Insurance carrier", FIELDS.carrier); row("Claim number", FIELDS.claim); row("Policy number", FIELDS.policy); row("Date of loss", FIELDS.dol ? dLong(FIELDS.dol) : "");
+  row("Date work completed", dLong(FIELDS.completed_on)); row("Contractor", CO.name + " — " + CO.phone);
+  y += 2; doc.setDrawColor(218, 221, 226); doc.setLineWidth(1); doc.line(M, y, W - M, y); y += 20;
+  // work completed
+  doc.setFont("helvetica", "bold"); doc.setFontSize(12.5); ink(); doc.text("Work completed", M, y); y += 16;
+  var g = groupDone(T.done), areas = Object.keys(g);
+  if (T.all && J.scope && J.scope.work_completed) { doc.setFont("helvetica", "normal"); doc.setFontSize(10); var P = doc.splitTextToSize(J.scope.work_completed, W - 2 * M); need(P.length * 12.5 + 10); doc.text(P, M, y); y += P.length * 12.5 + 10; }
+  areas.forEach(function (ar) {
+    need(28); doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); ink(); doc.text(ar, M, y); y += 13;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+    g[ar].forEach(function (i) { var line = "•  " + i.description + " — " + qty(i.qty) + " " + i.unit; var L = doc.splitTextToSize(line, W - 2 * M - 10); need(L.length * 11.5 + 2); doc.text(L, M + 8, y); y += L.length * 11.5 + 2; });
+    y += 5;
+  });
+  if (EXTRA.trim()) { need(40); doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.text("Additional work performed", M, y); y += 13; doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); var E = doc.splitTextToSize(EXTRA.trim(), W - 2 * M - 10); need(E.length * 11.5); doc.text(E, M + 8, y); y += E.length * 11.5 + 8; }
+  if (T.notDone.length) { need(30); doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); mute(); doc.text("Scope items not performed (not included in this certificate)", M, y); y += 13; doc.setFont("helvetica", "normal"); doc.setFontSize(9); T.notDone.forEach(function (i) { var L = doc.splitTextToSize("•  " + i.description + " — " + qty(i.qty) + " " + i.unit, W - 2 * M - 10); need(L.length * 11); doc.text(L, M + 8, y); y += L.length * 11 + 1; }); y += 6; ink(); }
+  // depreciation
+  need(70); y += 4; doc.setFillColor(243, 244, 246); doc.rect(M, y - 4, W - 2 * M, 54, "F"); doc.setDrawColor(238, 0, 0); doc.setLineWidth(3); doc.line(M, y - 4, M, y + 50); doc.setLineWidth(1);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(9); mute(); doc.text("RECOVERABLE DEPRECIATION TO BE RELEASED", M + 14, y + 10);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(20); ink(); doc.text(money(T.release), M + 14, y + 34);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); mute(); var basis = T.mode === "worksheet" ? "Per the approved scope of work, all items completed" : "Per the completed items only, line by line from the approved estimate"; doc.text(doc.splitTextToSize(basis + (I.claim_number ? " · Claim " + I.claim_number : ""), 300), M + 200, y + 28);
+  y += 68;
+  var cert = CO.name + " certifies that the work described above has been completed at the property listed, in a workmanlike manner and in accordance with the approved scope of work. " + CO.name + " requests release of the recoverable depreciation withheld for the completed items in the amount shown above, payable per the policy.";
+  var conf = "By signing below, the homeowner confirms that the work described above has been completed to their satisfaction.";
+  need(90); doc.setFont("helvetica", "bold"); doc.setFontSize(12); ink(); doc.text("Certification", M, y); y += 15;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10); var C1 = doc.splitTextToSize(cert, W - 2 * M); doc.text(C1, M, y); y += C1.length * 12.5 + 8; var C2 = doc.splitTextToSize(conf, W - 2 * M); doc.text(C2, M, y); y += C2.length * 12.5 + 10;
+  need(110); y = Math.max(y + 24, 0);
+  var sig = function (x, label, name) { doc.setDrawColor(17, 20, 24); doc.line(x, y, x + 228, y); doc.setFont("helvetica", "bold"); doc.setFontSize(8); mute(); doc.text(label, x, y + 12); if (name) { doc.setFont("helvetica", "normal"); doc.setFontSize(10); ink(); doc.text(doc.splitTextToSize(name, 228), x, y + 25); } };
+  sig(M, "CONTRACTOR SIGNATURE", FIELDS.signer + ", " + CO.name); sig(W - M - 228, "HOMEOWNER SIGNATURE", FIELDS.homeowner); y += 60; sig(M, "DATE", ""); sig(W - M - 228, "DATE", "");
+  footer(page);
+  // photos
+  var ok = PHOTOS.filter(function (p) { return p.up === "ok" && p.data; });
+  if (ok.length) {
+    var per = 6, cw = (W - 2 * M - 12) / 2, ch = 190;
+    for (var k = 0; k < ok.length; k++) {
+      if (k % per === 0) { doc.addPage(); page++; header(); doc.setFont("helvetica", "bold"); doc.setFontSize(13); ink(); doc.text("Completed work photos — " + FIELDS.address, M, 122); doc.setFont("helvetica", "normal"); doc.setFontSize(9); mute(); doc.text("Job #" + J.job.number + " · " + ok.length + " photo" + (ok.length === 1 ? "" : "s") + " · completed " + dShort(FIELDS.completed_on), M, 136); footer(page); }
+      var col = k % 2, rowi = Math.floor((k % per) / 2), x = M + col * (cw + 12), yy = 150 + rowi * (ch + 14);
+      try { doc.addImage(ok[k].data, "JPEG", x, yy, cw, ch - 16, undefined, "FAST"); } catch (e) { /* skip a bad image */ }
+      doc.setFontSize(8); mute(); doc.text(String(k + 1) + ". " + ok[k].name.slice(0, 48), x, yy + ch - 4);
+    }
+  }
+  return doc;
+}
+
+/* ---------- actions ---------- */
+async function loadQueue() { try { Q = await api("queue"); } catch (e) { ERR = e.message; } paint(); }
+async function openJob(j) {
+  if (!j) return; BUSY = true; ERR = ""; RESULT = null; PREVIEW = false; paint();
+  try {
+    J = await api("job", { job: String(j).trim() }); DONE = {}; PHOTOS = []; EXTRA = "";
+    items().forEach(function (i) { DONE[i.n] = !i.excluded; });
+    var H = J.homeowner || {}, A = J.job.address || {}, I = J.insurance || {}, C = J.completion || {};
+    FIELDS = { homeowner: H.display || "", address: [A.street, [A.city, A.state].filter(Boolean).join(", ") + (A.zip ? " " + A.zip : "")].filter(Boolean).join(", "),
+      carrier: I.carrier || "", claim: I.claim_number || "", policy: I.policy_number || "", dol: I.date_of_loss || "", completed_on: C.build_date || "", signer: CO.signer };
+  } catch (e) { ERR = e.message === "job_not_found" ? "No Lynx job #" + j + " in the synced data." : e.message; J = null; }
+  BUSY = false; paint();
+}
+async function uploadEstimate(file) {
+  BUSY = true; ERR = ""; paint();
+  try {
+    var b64 = await new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(String(r.result).split(",")[1]); }; r.onerror = function () { rej(new Error("Couldn't read the file")); }; r.readAsDataURL(file); });
+    var r = await api("scope_upload", { job_id: J.job.id, filename: file.name, data: b64 });
+    J.amounts = r.amounts;
+    if (r.unmatched_scope > 0) ERR = "Estimate read: " + r.lines + " priced lines, " + r.matched + " matched to the approved scope. " + r.unmatched_scope + " scope line" + (r.unmatched_scope === 1 ? "" : "s") + " had no match — those show without a depreciation figure.";
+  } catch (e) { ERR = "Estimate upload: " + e.message; }
+  BUSY = false; paint();
+}
+async function fileIt() {
+  var T = tally(); if (T.release == null || !T.done.length) return;
+  BUSY = true; ERR = ""; paint();
+  try {
+    var pdf = buildPdf(); var b64 = pdf.output("datauristring").split(",")[1];
+    var itemsOut = activeItems().map(function (i) { var a = amountFor(i); return { n: i.n, area: i.area, description: i.description, qty: i.qty, unit: i.unit, done: !!DONE[i.n], deprec: a ? a.deprec : null, non_recoverable: a ? a.non_recoverable : null }; });
+    RESULT = await api("file", { job_id: J.job.id, op_id: opId(), pdf: b64, fields: Object.assign({}, FIELDS, { mode: T.mode, basis: T.why }), items: itemsOut, work_text: EXTRA, release: T.release, photos: PHOTOS.filter(function (p) { return p.path; }).map(function (p) { return p.path; }) });
+    RESULT.blob = pdf.output("blob");
+  } catch (e) { ERR = "Couldn't file the COC: " + e.message; }
+  BUSY = false; paint();
+}
+
+/* ---------- paint ---------- */
+function paint() {
+  var app = $("#app"), h = "";
+  if (ERR === "signin") { app.innerHTML = '<div class="err">Your sign-in has expired. Sign out of the team app and back in, then open COC again.</div>'; return; }
+  if (ERR === "forbidden") { app.innerHTML = '<div class="err">The COC creator is for the office and managers. Ask Blake if you need it.</div>'; return; }
+  h += '<h2>Certificate of Completion</h2><p class="sub">Type the Lynx job number, tick what was completed, add the finished photos, and the COC is written, saved and filed to the job in Lynx.</p>';
+  h += '<div class="panel"><div class="row"><input class="jobin" id="jobNum" type="search" inputmode="numeric" placeholder="Job #" value="' + esc(J ? J.job.number : paramJob()) + '"><button class="btn" id="goJob" type="button">Open</button>' + (J ? '<a class="btn ghost" href="' + esc(J.job.lynx) + '" target="_blank" rel="noopener">Open in Lynx</a>' : "") + "</div>";
+  if (!J && Q && Q.jobs) {
+    var list = Q.jobs.filter(function (x) { return !QSEARCH || (x.job_number + " " + (x.homeowner || "") + " " + (x.address || "")).toLowerCase().indexOf(QSEARCH.toLowerCase()) >= 0; });
+    h += '<p class="fresh" style="margin-top:12px">Built jobs that still need a COC · ' + list.length + "</p>" + '<div class="list">' + (list.map(function (x) {
+      var tag = x.status === "needs_updated" ? '<span class="tag a">Needs updated COC</span>' : x.status === "made" ? '<span class="tag g">COC made ' + esc(stamp(x.coc_made_at)) + "</span>" : x.status === "sent" ? '<span class="tag g">COC sent</span>' : '<span class="tag r">Needed</span>';
+      return '<div class="j" data-open="' + esc(x.job_number) + '"><div><div class="t">#' + esc(x.job_number) + " " + esc(x.homeowner || "") + '</div><div class="m">' + esc(x.address || "") + " · built " + esc(dShort(x.build_date)) + " · " + esc(x.days_since_build) + " days ago</div></div><div>" + tag + "</div></div>";
+    }).join("") || '<div class="m">Nothing is waiting for a COC.</div>') + "</div>";
+  }
+  h += "</div>";
+  if (ERR && ERR !== "signin") h += '<div class="err" style="margin:0 0 14px">' + esc(ERR) + "</div>";
+  if (BUSY && !J) h += '<div class="panel">Working…</div>';
+  if (J) {
+    var T = tally(), C = J.completion || {}, M = J.money || {}, A = J.amounts;
+    h += '<div class="steps"><span class="on">1 Facts</span><span class="on">2 What was completed</span><span class="on">3 Photos</span><span class="' + (T.release != null ? "on" : "") + '">4 Create &amp; file</span></div>';
+    // facts
+    h += '<div class="panel"><h3>' + esc(J.job.name || ("#" + J.job.number)) + '</h3><p class="fresh">' + esc(J.job.milestone) + " in Lynx · facts checked " + esc(stamp(J.homeowner && J.homeowner.facts_at)) + " · worksheet synced " + esc(stamp(M.worksheet_as_of)) + "</p>";
+    h += '<div class="chk">' + checks().map(function (c) { return '<div class="r ' + c.s + '"><div><b>' + esc(c.b) + "</b><small>" + esc(c.m) + "</small></div></div>"; }).join("") + "</div>";
+    var f = function (k, l, t, src) { return '<div class="f"><label for="f_' + k + '">' + l + '</label><input id="f_' + k + '" data-f="' + k + '" type="' + (t || "text") + '" value="' + esc(FIELDS[k] || "") + '">' + (src ? '<div class="src">' + esc(src) + "</div>" : "") + "</div>"; };
+    h += '<div class="grid" style="margin-top:12px">' + f("homeowner", "Homeowner", "text", "Lynx contact" + (J.homeowner && J.homeowner.lynx_contact_name && J.homeowner.lynx_contact_name !== FIELDS.homeowner ? " (cleaned from: " + J.homeowner.lynx_contact_name + ")" : "")) + f("address", "Property address", "text", "Lynx job address") +
+      f("carrier", "Insurance carrier", "text", "Lynx insurance tab") + f("claim", "Claim number", "text", "Lynx insurance tab") + f("policy", "Policy number", "text", J.insurance && J.insurance.policy_number ? "Lynx custom field" : "Not in Lynx — optional") + f("dol", "Date of loss", "date", J.insurance && J.insurance.date_of_loss ? "Lynx insurance tab" : "Not in Lynx — optional") +
+      f("completed_on", "Date work completed", "date", C.build_date ? "BUILD on the Lynx calendar" : "No BUILD on the calendar") + f("signer", "Signed for DFW Roofing Pro by", "text", "") + "</div></div>";
+    // scope
+    var g = {}; items().forEach(function (i) { (g[i.area || "Other"] = g[i.area || "Other"] || []).push(i); });
+    h += '<div class="panel"><h3>What was completed</h3><p class="fresh">Approved scope: ' + esc(J.scope && J.scope.file || "no scope document on file") + (J.scope && J.scope.received_at ? " · received " + esc(stamp(J.scope.received_at)) : "") + " · " + T.act.length + " items" + (items().length - T.act.length ? " (" + (items().length - T.act.length) + " excluded by the carrier)" : "") + '</p><div class="row" style="margin:0 0 8px"><button class="btn ghost" type="button" id="allOn">All completed</button><button class="btn ghost" type="button" id="allOff">None</button><span class="tag ' + (T.all ? "g" : "a") + '">' + T.done.length + " of " + T.act.length + " completed</span></div>";
+    h += Object.keys(g).map(function (ar) {
+      var L = g[ar], n = L.filter(function (i) { return !i.excluded && DONE[i.n]; }).length, tot = L.filter(function (i) { return !i.excluded; }).length;
+      return '<details class="area" open><summary><input type="checkbox" data-area="' + esc(ar) + '" ' + (n === tot && tot > 0 ? "checked" : "") + ' aria-label="Whole area"> ' + esc(ar) + '<span class="c">' + n + "/" + tot + "</span></summary>" + L.map(function (i) {
+        var a = amountFor(i);
+        return '<label class="item' + (i.excluded ? " x" : "") + '"><input type="checkbox" data-n="' + i.n + '" ' + (DONE[i.n] ? "checked" : "") + (i.excluded ? " disabled" : "") + '><div><div class="d">' + esc(i.description) + '</div><div class="q">' + esc(qty(i.qty)) + " " + esc(i.unit) + (i.excluded ? " · excluded from the award" : "") + '</div></div><div class="amt">' + (a ? (a.non_recoverable ? "non-recoverable" : "depreciation") + "<b>" + esc(money(a.deprec)) + "</b>" : (A && A.lines ? '<span class="tag a">no line match</span>' : "")) + "</div></label>";
+      }).join("") + "</details>";
+    }).join("");
+    h += '<div class="f" style="margin-top:12px"><label for="extra">Anything else the crew did (optional)</label><textarea id="extra" placeholder="Example: replaced 4 sheets of decking found rotten under the old shingles.">' + esc(EXTRA) + "</textarea></div></div>";
+    // money
+    h += '<div class="panel"><h3>Recoverable depreciation to release</h3>';
+    if (T.release != null) h += '<div class="moneybox"><div><div class="money">' + esc(money(T.release)) + '</div><div class="l">' + esc(T.why) + "</div></div></div>";
+    else h += '<div class="err" style="margin:0">' + esc(T.blocked) + "</div>";
+    h += '<div class="note">Lynx worksheet: ' + ((M.depreciation_lines || []).map(function (l) { return esc(l.name) + " " + esc(money(l.amount)); }).join(", ") || "no DEPRECIATION line") + (M.depreciation_received > 0 ? " · received so far " + esc(money(M.depreciation_received)) : "") + (A && A.lines ? " · estimate on file: " + esc(A.file) + " (" + A.matched + " of " + A.n + " lines matched, recoverable " + esc(money(A.deprec_total)) + (A.nonrec_total > 0 ? ", non-recoverable " + esc(money(A.nonrec_total)) : "") + ")" : " · no itemized estimate uploaded yet") + "</div>";
+    h += '<div class="row" style="margin-top:10px"><label class="btn ghost">' + (A && A.lines ? "Replace the itemized estimate (PDF)" : "Upload the carrier’s itemized estimate (PDF)") + '<input type="file" id="estFile" accept="application/pdf" hidden></label><span class="note" style="margin:0">Needed only when part of the scope was completed, or when the worksheet has no DEPRECIATION line. The RCV never appears on the COC.</span></div></div>';
+    // photos
+    h += '<div class="panel"><h3>Completed work photos</h3><p class="fresh">Roof, accessories, cleanup. They go on the last pages of the COC. ' + PHOTOS.filter(function (p) { return p.up === "ok"; }).length + " ready.</p>" +
+      '<div class="row"><label class="btn ghost">Add photos<input type="file" id="photoFiles" accept="image/*" multiple hidden></label><label class="btn ghost">Take a photo<input type="file" id="photoCam" accept="image/*" capture="environment" hidden></label></div>' +
+      (PHOTOS.length ? '<div class="thumbs">' + PHOTOS.map(function (p, k) { return "<div>" + (p.data ? '<img src="' + p.data + '" alt="">' : '<div style="aspect-ratio:1;background:var(--paper);border-radius:8px"></div>') + '<button type="button" data-rm="' + k + '" aria-label="Remove">×</button><span class="up">' + esc(p.up === "ok" ? "saved" : p.up) + "</span></div>"; }).join("") + "</div>" : "") + "</div>";
+    // file
+    h += '<div class="panel">';
+    if (RESULT) {
+      var up = RESULT.lynx && (RESULT.lynx.status === 200 || RESULT.lynx.status === 201 || RESULT.lynx.status === 202);
+      h += '<div class="okbox"><b>COC created' + (up ? " and filed to the job’s COC folder in Lynx" : "") + ".</b>" + (RESULT.lynx && !up ? " Lynx did not accept the upload (http " + esc(RESULT.lynx.status) + "); the PDF is saved here, so download it and add it to the job by hand." : "") + (RESULT.note_status === 201 || RESULT.note_status === 200 ? " A note was posted on the job." : "") + "</div>" +
+        '<div class="row out" style="margin-top:10px">' + (RESULT.pdf_url ? '<a class="btn" href="' + esc(RESULT.pdf_url) + '" target="_blank" rel="noopener">Open the COC PDF</a>' : "") + '<button class="btn ghost" type="button" id="dl">Download PDF</button><a class="btn ghost" href="' + esc(J.job.lynx) + '" target="_blank" rel="noopener">Open the job in Lynx</a></div>' +
+        '<p class="note">Next: get the homeowner’s signature, then send the signed COC to ' + esc(FIELDS.carrier || "the carrier") + (FIELDS.claim ? " with claim " + esc(FIELDS.claim) : "") + ' to release ' + esc(money(RESULT.depreciation_release != null ? RESULT.depreciation_release : T.release)) + ". When it’s sent, add “COC SENT m/d” to the job name in Lynx.</p>";
+    } else {
+      h += '<button class="btn big" id="fileIt" type="button" ' + (T.release == null || !T.done.length || BUSY || PHOTOS.some(function (p) { return p.up === "resizing" || p.up === "uploading"; }) ? "disabled" : "") + ">" + (BUSY ? "Working…" : "Create COC PDF and file it in Lynx") + "</button>" +
+        '<p class="note">One tap writes the certificate (no RCV figure, only the depreciation above), adds the photo pages, saves it here, uploads it to the job’s COC folder in Lynx and posts a note on the job. Nothing is emailed to the carrier or homeowner.</p>' +
+        '<div class="row" style="margin-top:8px"><button class="btn ghost" type="button" id="preview" ' + (T.release == null || !T.done.length ? "disabled" : "") + ">Preview the PDF first</button></div>";
+    }
+    h += "</div>";
+  }
+  app.innerHTML = h;
+  // wiring
+  var go = $("#goJob"), jn = $("#jobNum"); if (go) go.onclick = function () { openJob(jn.value.replace(/^#/, "")); };
+  if (jn) jn.onkeydown = function (e) { if (e.key === "Enter") openJob(jn.value.replace(/^#/, "")); };
+  if (jn && !J) jn.oninput = function () { QSEARCH = jn.value; var l = app.querySelector(".list"); if (l) { /* light filter without full repaint */ } paint(); jn.focus(); var v = jn.value; jn.setSelectionRange(v.length, v.length); };
+  app.querySelectorAll("[data-open]").forEach(function (el) { el.onclick = function () { openJob(el.dataset.open); }; });
+  if (!J) return;
+  app.querySelectorAll("[data-f]").forEach(function (el) { el.oninput = function () { FIELDS[el.dataset.f] = el.value; }; el.onchange = function () { FIELDS[el.dataset.f] = el.value; if (el.dataset.f === "completed_on") paint(); }; });
+  app.querySelectorAll("input[data-n]").forEach(function (el) { el.onchange = function () { DONE[+el.dataset.n] = el.checked; paint(); }; });
+  app.querySelectorAll("input[data-area]").forEach(function (el) { el.onclick = function (e) { e.stopPropagation(); }; el.onchange = function () { items().forEach(function (i) { if ((i.area || "Other") === el.dataset.area && !i.excluded) DONE[i.n] = el.checked; }); paint(); }; });
+  var on = $("#allOn"), off = $("#allOff"); if (on) on.onclick = function () { activeItems().forEach(function (i) { DONE[i.n] = true; }); paint(); }; if (off) off.onclick = function () { activeItems().forEach(function (i) { DONE[i.n] = false; }); paint(); };
+  var ex = $("#extra"); if (ex) ex.oninput = function () { EXTRA = ex.value; };
+  var ef = $("#estFile"); if (ef) ef.onchange = function () { if (ef.files[0]) uploadEstimate(ef.files[0]); };
+  var pf = $("#photoFiles"); if (pf) pf.onchange = function () { addPhotos(Array.from(pf.files)); };
+  var pc = $("#photoCam"); if (pc) pc.onchange = function () { addPhotos(Array.from(pc.files)); };
+  app.querySelectorAll("[data-rm]").forEach(function (b) { b.onclick = function () { PHOTOS.splice(+b.dataset.rm, 1); paint(); }; });
+  var fi = $("#fileIt"); if (fi) fi.onclick = fileIt;
+  var pv = $("#preview"); if (pv) pv.onclick = function () { try { var d = buildPdf(); var url = URL.createObjectURL(d.output("blob")); window.open(url, "_blank"); } catch (e) { ERR = "Preview failed: " + e.message; paint(); } };
+  var dl = $("#dl"); if (dl) dl.onclick = function () { if (!RESULT || !RESULT.blob) return; var a = document.createElement("a"); a.href = URL.createObjectURL(RESULT.blob); a.download = "COC-" + J.job.number + ".pdf"; document.body.appendChild(a); a.click(); a.remove(); };
+}
+
+loadQueue();
+var pj = paramJob(); if (pj) openJob(pj);
+})();
+</script>
+</body>
+</html>

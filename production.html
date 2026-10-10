@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Production</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1E2A38;--red:#EE0000;--red-ink:#C80000;--paper:#F3F4F6;--card:#fff;--ink:#111418;--muted:#5B6470;--line:#DADDE2;--blue:#2F6FB5;--blue-soft:#E3EDF8;--amber:#B97A00;--amber-soft:#FBF1DA;--green:#1F7A4D;--green-soft:#E0F2E8;--red-soft:#FDE6E6;
+--display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;--body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--paper:#0F1419;--card:#1A222C;--ink:#EEF1F4;--muted:#9AA4B0;--line:#2C3744;--red-ink:#FF5A5A;--red-soft:#3A1416;--blue:#7FB0E8;--blue-soft:#18293C;--amber:#E8B04A;--amber-soft:#382B12;--green:#5CC28E;--green-soft:#12301F}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 var(--body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:4px 2px 40px}
+h2{font:800 30px/1.05 var(--display);margin:4px 0 4px}
+h3{font:800 24px/1.05 var(--display);margin:0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+h3 .n{font:700 15px var(--body);color:var(--muted)}
+.sub{color:var(--muted);margin:0 0 6px;font-size:15px}
+.fresh{font-size:13px;color:var(--muted);margin:0 0 10px}
+.fresh b{color:var(--ink);font-weight:600}
+.warn{background:var(--amber-soft);color:var(--amber);border-radius:8px;padding:10px 14px;margin:0 0 14px;font-size:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.sec{margin:0 0 22px}
+.sech{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin:0 0 8px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--muted);margin:2px 0 0}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:0 0 18px}
+@media(min-width:640px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:left;cursor:pointer;color:var(--ink);font:inherit}
+.stat .v{font:800 30px/1 var(--display)}.stat .l{font-size:13px;color:var(--muted);margin-top:2px}
+.stat.hot{border-left:4px solid var(--red)}
+/* two columns on wide screens; on phones the sections flow in the order given by .o1 … .o5 */
+.cols{display:flex;flex-direction:column}
+.cols>.col{display:contents}
+.o1{order:1}.o2{order:2}.o3{order:3}.o4{order:4}.o5{order:5}
+@media(min-width:980px){.cols{display:grid;grid-template-columns:1fr 1fr;gap:0 22px}.cols>.col{display:block;min-width:0}}
+/* week */
+.weeknav{display:flex;gap:6px;align-items:center}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font:600 14px var(--body);cursor:pointer}
+.chip[disabled]{opacity:.4;cursor:default}
+.day{display:grid;grid-template-columns:74px 1fr;border-top:1px solid var(--line)}
+.day:first-child{border-top:0}
+.day .dl{padding:12px 0 12px 14px;font:800 18px/1.05 var(--display);color:var(--muted)}
+.day .dl small{display:block;font:600 13px var(--body);margin-top:2px}
+.day.today{box-shadow:inset 4px 0 0 var(--red)}.day.today .dl{color:var(--ink)}
+.day.past .dl{opacity:.75}
+.day .none{padding:12px 14px 12px 0;color:var(--muted);font-size:14px;align-self:center}
+.day .items{min-width:0}
+.day .items .row{border-top:1px dashed var(--line)}.day .items .row:first-child{border-top:0}
+/* rows */
+.row{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:11px 14px;border-top:1px solid var(--line);color:var(--ink);text-decoration:none;align-items:center}
+.row:first-child{border-top:0}
+a.row:hover,.row a.jl:hover{background:var(--paper)}
+.row .t{font-weight:700;overflow-wrap:anywhere}.row .t .num{color:var(--muted);font-weight:600}
+.row .m{font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.row .s{font-size:14px;color:var(--ink);overflow-wrap:anywhere}
+.row .r{text-align:right;white-space:nowrap}
+.row .big{font:800 22px/1 var(--display)}.row .sm{font-size:13px;color:var(--muted)}
+.row a.jl{color:inherit;text-decoration:none;display:block;margin:-11px -6px -11px -14px;padding:11px 6px 11px 14px;min-width:0}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.tag{display:inline-block;font:700 12px var(--body);padding:2px 9px;border-radius:999px;background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+.tag.g{background:var(--green-soft);color:var(--green);border-color:transparent}
+.tag.a{background:var(--amber-soft);color:var(--amber);border-color:transparent}
+.tag.b{background:var(--blue-soft);color:var(--blue);border-color:transparent}
+.tag.r{background:var(--red-soft);color:var(--red-ink);border-color:transparent}
+.btn{display:inline-flex;align-items:center;justify-content:center;background:var(--red);color:#fff;border:0;border-radius:8px;padding:10px 14px;font:700 15px var(--body);cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.ghost{background:none;color:var(--red-ink);border:1px solid var(--red)}
+.more{display:block;width:100%;background:none;border:0;border-top:1px solid var(--line);padding:11px 14px;font:700 15px var(--body);color:var(--blue);cursor:pointer;text-align:left}
+details.grp{border-top:1px solid var(--line)}details.grp:first-child{border-top:0}
+details.grp>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;justify-content:space-between;gap:10px;font-weight:700;align-items:baseline}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary::after{content:"+";color:var(--muted);font-weight:700;margin-left:6px}
+details.grp[open]>summary::after{content:"–"}
+details.grp>summary .c{margin-left:auto;color:var(--muted);font-weight:600}
+details.grp>summary small{display:block;font:500 13px var(--body);color:var(--muted)}
+details.grp .row{background:var(--paper)}
+details.grp .row:first-of-type{border-top:1px solid var(--line)}
+.empty{padding:16px 14px;color:var(--muted)}
+.err{background:var(--red-soft);color:var(--red-ink);border-radius:8px;padding:12px 14px;margin:0 0 14px}
+.note{font-size:13px;color:var(--muted);margin:8px 2px 0}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">Loading production…</div></div>
+<script>
+(function(){
+"use strict";
+// Production board for the office. Read-only. Data: production-api -> master_private.production_board() (Lynx-synced tables only).
+var API = "https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/production-api/api/";
+var LS = "dfw_team_token";
+var TZ = "America/Chicago";
+var FIVE = 5 * 60 * 1000;
+var D = null, LOADED_AT = 0, WEEK = 0, SHOW_ALL_CLEAR = false, OPEN = { "j:Completed": true }, ERR = "", LOADING = false;
+var $ = function (s) { return document.querySelector(s); };
+var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+var token = function () { try { return localStorage.getItem(LS); } catch (e) { return null; } };
+var money = function (v) { return v == null || v === "" || isNaN(+v) ? "" : "$" + Math.round(+v).toLocaleString("en-US"); };
+var clock = function (s) { return s ? new Date(s).toLocaleTimeString("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" }) : ""; };
+var stamp = function (s) { return s ? new Date(s).toLocaleString("en-US", { timeZone: TZ, weekday: "short", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }) : "not yet"; };
+var hoursAgo = function (s) { return s ? (Date.now() - new Date(s).getTime()) / 3600000 : Infinity; };
+var plural = function (n, w) { return n + " " + w + (n === 1 ? "" : "s"); };
+// Calendar dates come back as Central days ("2026-10-12"). Format them without any time-zone shift.
+var dObj = function (iso) { return new Date(iso + "T12:00:00Z"); };
+var dFmt = function (iso, o) { return dObj(iso).toLocaleDateString("en-US", Object.assign({ timeZone: "UTC" }, o)); };
+var addDays = function (iso, n) { var x = dObj(iso); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+var monday = function (iso) { var w = dObj(iso).getUTCDay(); return addDays(iso, -((w + 6) % 7)); };
+var centralDay = function (s) { return new Date(s).toLocaleDateString("en-CA", { timeZone: TZ }); };
+var daysNum = function (v) { return v == null || v === "" || isNaN(+v) ? null : +v; };
+
+async function load() {
+  if (LOADING) return; LOADING = true;
+  var tok = token();
+  if (!tok) { ERR = "signin"; LOADING = false; return paint(); }
+  try {
+    var r = await fetch(API + "board", { method: "POST", headers: { "content-type": "application/json", "authorization": "Bearer " + tok }, body: "{}" });
+    var j = await r.json().catch(function () { return {}; });
+    if (r.status === 401) { ERR = "signin"; LOADING = false; return paint(); }
+    if (r.status === 403) { ERR = "forbidden"; LOADING = false; return paint(); }
+    if (!r.ok || !j || !j.today) throw new Error(j && (j.detail || j.error) || ("http_" + r.status));
+    D = j; ERR = ""; LOADED_AT = Date.now();
+  } catch (e) { ERR = D ? "stale" : "down"; }
+  LOADING = false;
+  paint();
+}
+
+function openCoc(jobId) {
+  if (window.parent && window.parent !== window) { window.parent.postMessage({ type: "dfw-open-coc", job: jobId }, location.origin); }
+  else { location.href = "coc.html?job=" + encodeURIComponent(jobId); }
+}
+
+function jobTitle(x) { return (x.job_number ? '<span class="num">#' + esc(x.job_number) + "</span> " : "") + esc(x.customer || "Job"); }
+function linkRow(x, inner, right, extra) {
+  var a = !!x.lynx;
+  var open = a ? '<a class="row" href="' + esc(x.lynx) + '" target="_blank" rel="noopener">' : '<div class="row">';
+  return open + "<div>" + inner + "</div>" + (right ? '<div class="r">' + right + "</div>" : "<div></div>") + (extra || "") + (a ? "</a>" : "</div>");
+}
+function daysRight(n, label, sub) {
+  return '<div class="big">' + (n == null ? "—" : esc(n) + "d") + '</div><div class="sm">' + esc(sub != null ? sub : label) + "</div>";
+}
+
+/* ---------- builds: this week by day, then the next 30 days ---------- */
+function buildItem(b) {
+  var chips = [];
+  if (b.coc_sent) chips.push('<span class="tag g">COC sent</span>');
+  else if (b.past) chips.push('<span class="tag">Built</span>');
+  if (b.delivery_at) chips.push('<span class="tag b">Delivery ' + esc(dFmt(centralDay(b.delivery_at), { weekday: "short" })) + " " + esc(clock(b.delivery_at)) + "</span>");
+  if ((b.people || []).length) chips.push('<span class="tag">' + esc(b.people.join(" · ")) + "</span>");
+  var inner = '<div class="t">' + jobTitle(b) + '</div><div class="m">' + esc(b.address || "No address in Lynx") + "</div>" + (b.tags ? '<div class="m">' + esc(b.tags) + "</div>" : "") + (chips.length ? '<div class="tags">' + chips.join("") + "</div>" : "");
+  return linkRow(b, inner, "");
+}
+function weekHtml() {
+  var today = D.today, start = addDays(monday(today), WEEK * 7), end = addDays(start, 6);
+  var lo = D.window.from, hi = D.window.to;
+  var label = WEEK === 0 ? "This week" : WEEK === 1 ? "Next week" : WEEK === -1 ? "Last week" : "Week of " + dFmt(start, { month: "short", day: "numeric" });
+  var byDay = {}; (D.builds || []).forEach(function (b) { (byDay[b.date] = byDay[b.date] || []).push(b); });
+  var days = [];
+  for (var i = 0; i < 7; i++) {
+    var d = addDays(start, i), list = byDay[d] || [];
+    var cls = "day" + (d === today ? " today" : "") + (d < today ? " past" : "");
+    days.push('<div class="' + cls + '"><div class="dl">' + esc(dFmt(d, { weekday: "short" })) + "<small>" + esc(dFmt(d, { month: "numeric", day: "numeric" })) + (d === today ? " · today" : "") + "</small></div>" +
+      (list.length ? '<div class="items">' + list.map(buildItem).join("") + "</div>" : '<div class="none">' + (d < lo || d > hi ? "Outside the synced window" : "No build") + "</div>") + "</div>");
+  }
+  var n = (D.builds || []).filter(function (b) { return b.date >= start && b.date <= end; }).length;
+  return '<div class="sec" id="s-week"><div class="sech"><div><h3>' + esc(label) + ' <span class="n">' + plural(n, "build") + '</span></h3><p class="hint">' + esc(dFmt(start, { month: "short", day: "numeric" })) + " – " + esc(dFmt(end, { month: "short", day: "numeric" })) + " · BUILD days on the Lynx calendars, one line per job</p></div>" +
+    '<div class="weeknav"><button class="chip" data-wk="-1" ' + (WEEK <= -2 ? "disabled" : "") + ' aria-label="Earlier week">‹</button><button class="chip" data-wk="0" ' + (WEEK === 0 ? "disabled" : "") + '>Today</button><button class="chip" data-wk="1" ' + (WEEK >= 4 ? "disabled" : "") + ' aria-label="Later week">›</button></div></div>' +
+    '<div class="panel">' + days.join("") + "</div></div>";
+}
+function next30Html() {
+  var thisSun = addDays(monday(D.today), 6), shownEnd = addDays(addDays(monday(D.today), WEEK * 7), 6);
+  var cut = shownEnd > thisSun ? shownEnd : thisSun;
+  var list = (D.builds || []).filter(function (b) { return b.date > cut; });
+  var rows = list.map(function (b) {
+    var inner = '<div class="t">' + jobTitle(b) + '</div><div class="m">' + esc(b.address || "No address in Lynx") + "</div>" + (b.tags ? '<div class="m">' + esc(b.tags) + "</div>" : "") + ((b.people || []).length ? '<div class="tags"><span class="tag">' + esc(b.people.join(" · ")) + "</span></div>" : "");
+    return linkRow(b, inner, '<div class="big">' + esc(dFmt(b.date, { weekday: "short" })) + '</div><div class="sm">' + esc(dFmt(b.date, { month: "numeric", day: "numeric" })) + "</div>");
+  }).join("");
+  return '<div class="sec" id="s-next30"><div class="sech"><div><h3>Next 30 days <span class="n">' + plural(list.length, "build") + '</span></h3><p class="hint">Builds on the calendar after ' + esc(dFmt(cut, { weekday: "short", month: "numeric", day: "numeric" })) + ", through " + esc(dFmt(D.window.to, { month: "short", day: "numeric" })) + "</p></div></div>" +
+    '<div class="panel">' + (rows || '<div class="empty">Nothing else is on the build calendar yet.</div>') + "</div></div>";
+}
+
+/* ---------- jobs in progress, by stage ---------- */
+var STAGE_INFO = { Approved: "Sold, not built yet", Completed: "Built, not invoiced yet", Invoiced: "Invoiced, waiting on money" };
+function jipHtml() {
+  var all = D.jobs_in_progress || [];
+  var html = ["Approved", "Completed", "Invoiced"].map(function (st) {
+    var list = all.filter(function (j) { return j.stage === st; });
+    var rows = list.map(function (j) {
+      var extra = (j.blockers || []).slice(1).map(function (b) { return '<span class="tag a">' + esc(b) + "</span>"; }).join("");
+      var inner = '<div class="t">' + jobTitle(j) + '</div><div class="s">' + esc(j.next_step || "") + "</div>" + (j.tags ? '<div class="m">' + esc(j.tags) + "</div>" : "") + (extra ? '<div class="tags">' + extra + "</div>" : "");
+      return linkRow(j, inner, daysRight(daysNum(j.days_in_stage), "", "in stage"));
+    }).join("");
+    return '<details class="grp" data-j="' + st + '"' + (OPEN["j:" + st] ? " open" : "") + "><summary><span>" + esc(st) + "<small>" + esc(STAGE_INFO[st]) + '</small></span><span class="c">' + list.length + "</span></summary>" + (rows || '<div class="empty">No jobs at ' + esc(st) + " right now.</div>") + "</details>";
+  }).join("");
+  return '<div class="sec o1" id="s-jip"><div class="sech"><div><h3>Jobs in progress <span class="n">' + plural(all.length, "job") + '</span></h3><p class="hint">Every open job from Approved to Invoiced, with its next step and how long it has sat in that stage. Longest first.</p></div></div>' +
+    '<div class="panel">' + (all.length ? html : '<div class="empty">No jobs are in progress right now.</div>') + "</div></div>";
+}
+
+/* ---------- built, needs COC ---------- */
+function cocHtml() {
+  var list = D.needs_coc || [];
+  var rows = list.map(function (c) {
+    var days = daysNum(c.days_since_build);
+    var inner = '<div class="t">' + jobTitle(c) + '</div><div class="m">Built ' + esc(dFmt(c.build_date, { weekday: "short", month: "numeric", day: "numeric" })) + (days == null ? "" : " · " + plural(days, "day") + " ago") + (c.tags ? " · " + esc(c.tags) : "") + "</div>" + (c.updated_coc ? '<div class="tags"><span class="tag a">Needs updated COC</span></div>' : "");
+    return '<div class="row"><a class="jl" ' + (c.lynx ? 'href="' + esc(c.lynx) + '" target="_blank" rel="noopener"' : "") + ">" + inner + "</a>" +
+      '<div class="r"><button class="btn" type="button" data-coc="' + esc(c.job_id) + '">Make COC</button></div></div>';
+  }).join("");
+  return '<div class="sec o2" id="s-coc"><div class="sech"><div><h3>Built, needs COC <span class="n">' + list.length + '</span></h3><p class="hint">BUILD day has passed, the job isn\'t invoiced, and the Lynx job name doesn\'t say COC SENT.</p></div></div>' +
+    '<div class="panel">' + (rows || '<div class="empty">Every finished build has its COC.</div>') + "</div></div>";
+}
+
+/* ---------- clear to schedule (oldest sold first) ---------- */
+function clearHtml() {
+  var list = (D.sold_not_built || []).filter(function (s) { return s.status === "clear"; })
+    .sort(function (a, b) { return (daysNum(b.days_since_sold) || 0) - (daysNum(a.days_since_sold) || 0); });
+  var shown = SHOW_ALL_CLEAR ? list : list.slice(0, 8);
+  var rows = shown.map(function (s) {
+    var inner = '<div class="t">' + jobTitle(s) + '</div><div class="m">' + esc(s.address || "No address in Lynx") + "</div>" + (s.tags ? '<div class="m">' + esc(s.tags) + "</div>" : "") + (s.sold_on ? '<div class="m">Sold ' + esc(dFmt(s.sold_on, { month: "short", day: "numeric" })) + (s.work_type ? " · " + esc(s.work_type) : "") + "</div>" : "");
+    return linkRow(s, inner, daysRight(daysNum(s.days_since_sold), "", money(s.contract) || "since sold"));
+  }).join("");
+  return '<div class="sec o3" id="s-clear"><div class="sech"><div><h3>Clear to schedule <span class="n">' + plural(list.length, "job") + '</span></h3><p class="hint">Approved in Lynx, nothing blocking it in the job name, no BUILD on the calendar. Oldest sold first · days since sold · contract.</p></div></div>' +
+    '<div class="panel">' + (rows || '<div class="empty">Nothing is waiting to be scheduled.</div>') +
+    (list.length > 8 ? '<button class="more" id="moreClear" type="button">' + (SHOW_ALL_CLEAR ? "Show fewer" : "Show all " + list.length) + "</button>" : "") + "</div></div>";
+}
+
+/* ---------- waiting on, grouped by blocker ---------- */
+function waitingHtml() {
+  var list = (D.sold_not_built || []).filter(function (s) { return s.status === "waiting"; });
+  var groups = {};
+  list.forEach(function (s) { var k = (s.blockers && s.blockers[0]) || s.blocker || "Something else"; (groups[k] = groups[k] || []).push(s); });
+  var keys = Object.keys(groups).sort(function (a, b) { return groups[b].length - groups[a].length || (a < b ? -1 : 1); });
+  var html = keys.map(function (k) {
+    var rows = groups[k].sort(function (a, b) { return (daysNum(b.days_since_sold) || 0) - (daysNum(a.days_since_sold) || 0); }).map(function (s) {
+      var extra = (s.blockers || []).slice(1).map(function (b) { return '<span class="tag a">' + esc(b) + "</span>"; }).join("");
+      var inner = '<div class="t">' + jobTitle(s) + '</div><div class="m">' + esc(s.tags || s.address || "") + "</div>" + (extra ? '<div class="tags">' + extra + "</div>" : "");
+      return linkRow(s, inner, daysRight(daysNum(s.days_since_sold), "", money(s.contract) || "since sold"));
+    }).join("");
+    return '<details class="grp" data-g="' + esc(k) + '"' + (OPEN["w:" + k] ? " open" : "") + "><summary><span>" + esc(k) + '</span><span class="c">' + groups[k].length + "</span></summary>" + rows + "</details>";
+  }).join("");
+  return '<div class="sec o4" id="s-wait"><div class="sech"><div><h3>Waiting on <span class="n">' + plural(list.length, "sold job") + '</span></h3><p class="hint">Read from the tags in the Lynx job name. Fix the name in Lynx and the job moves on its own.</p></div></div>' +
+    '<div class="panel">' + (html || '<div class="empty">No sold job is flagged as waiting on anything.</div>') + "</div></div>";
+}
+
+/* ---------- adjuster: appointments next 14 days + the claims desk ---------- */
+var DESK_ORDER = ["NEEDS_CLAIM_INFO", "NEEDS_ADJ_APPT", "APPT_SET", "NEEDS_SCOPE", "SCOPE_FILED"];
+var DESK_LABEL = { NEEDS_CLAIM_INFO: "Needs claim info", NEEDS_ADJ_APPT: "Needs adjuster appointment", APPT_SET: "Adjuster appointment set", NEEDS_SCOPE: "Waiting on scope", SCOPE_FILED: "Scope filed" };
+function adjusterHtml() {
+  var A = D.adjuster || {};
+  var ap = A.appointments || [];
+  var rows = ap.map(function (a) {
+    var d = a.date || centralDay(a.starts_at);
+    var inner = '<div class="t">' + jobTitle(a) + '</div><div class="m">' + esc(a.title || "Adjuster") + (a.address ? " · " + esc(a.address) : "") + "</div>" + ((a.people || []).length ? '<div class="tags"><span class="tag">' + esc(a.people.join(" · ")) + "</span></div>" : "");
+    var right = '<div class="big">' + esc(dFmt(d, { weekday: "short" })) + " " + esc(dFmt(d, { month: "numeric", day: "numeric" })) + '</div><div class="sm">' + (a.all_day ? "All day" : esc(clock(a.starts_at))) + "</div>";
+    return linkRow(a, inner, right);
+  }).join("");
+  var files = A.files || [];
+  var desk = DESK_ORDER.map(function (st) {
+    var fs = files.filter(function (f) { return f.stage === st; }); if (!fs.length) return "";
+    var label = fs[0].stage_label || DESK_LABEL[st] || st;
+    var rr = fs.map(function (f) {
+      var since = f.stage_changed_at ? Math.max(0, Math.round((Date.now() - new Date(f.stage_changed_at)) / 86400000)) : null;
+      var inner = '<div class="t">' + jobTitle(f) + '</div><div class="m">' + esc([f.carrier, f.adjuster ? "Adj. " + f.adjuster : "", f.rep ? "Rep " + f.rep : ""].filter(Boolean).join(" · ") || "No carrier on file yet") + "</div>" + (f.appt_at ? '<div class="m">Appointment ' + esc(stamp(f.appt_at)) + "</div>" : "");
+      return linkRow(f, inner, since == null ? "" : daysRight(since, "", "in stage"));
+    }).join("");
+    return '<details class="grp"' + (OPEN["d:" + st] ? " open" : "") + ' data-d="' + st + '"><summary><span>' + esc(label) + '</span><span class="c">' + fs.length + "</span></summary>" + rr + "</details>";
+  }).join("");
+  var checked = A.last_checked_at || (D.fresh && D.fresh.desk_at);
+  return '<div class="sec o5" id="s-adj"><div class="sech"><div><h3>Adjuster <span class="n">' + plural(ap.length, "appointment") + ' in the next 14 days</span></h3><p class="hint">From the Lynx calendars, one line per job.</p></div></div>' +
+    '<div class="panel">' + (rows || '<div class="empty">No adjuster appointments on the calendar for the next 14 days.</div>') + "</div>" +
+    '<div class="sech" style="margin-top:14px"><div><h3 style="font-size:20px">Claims desk <span class="n">' + plural(files.length, "open claim") + '</span></h3><p class="hint">Where each claim stands before it sells. Desk last checked <b>' + esc(stamp(checked)) + "</b>" + (hoursAgo(checked) > 36 ? " — that's a while ago" : "") + ".</p></div></div>" +
+    '<div class="panel">' + (desk || '<div class="empty">The claims desk has no open claims right now.</div>') + "</div></div>";
+}
+
+/* ---------- page ---------- */
+function paint() {
+  var app = $("#app");
+  if (!D) {
+    if (ERR === "signin") app.innerHTML = '<div class="err">Your sign-in has expired. Sign out of the team app and sign back in, then open Production again.</div>';
+    else if (ERR === "forbidden") app.innerHTML = '<div class="err">Production is for the office and managers. Ask Blake if you need it.</div>';
+    else app.innerHTML = '<div class="err">Couldn\'t reach the production data. It will try again in 5 minutes. <button class="btn ghost" id="retry" type="button">Try now</button></div>';
+    var rt = $("#retry"); if (rt) rt.onclick = function () { app.innerHTML = '<div class="empty">Loading production…</div>'; load(); };
+    return;
+  }
+  var y = window.scrollY;
+  var f = D.fresh || {}, c = D.counts || {};
+  var wk0 = monday(D.today), wk6 = addDays(wk0, 6);
+  var thisWeek = (D.builds || []).filter(function (b) { return b.date >= wk0 && b.date <= wk6; });
+  var left = thisWeek.filter(function (b) { return b.date >= D.today; }).length;
+  var clear = daysNum(c.clear) || 0, waiting = daysNum(c.waiting) || 0, coc = daysNum(c.needs_coc) || 0;
+  var stat = function (id, v, l, hot) { return '<button class="stat' + (hot ? " hot" : "") + '" type="button" data-go="' + id + '"><div class="v">' + v + '</div><div class="l">' + l + "</div></button>"; };
+  var warn = "";
+  if (hoursAgo(f.appts_at) > 3) warn = "The Lynx calendars haven't synced since " + stamp(f.appts_at) + ". Build days may be behind.";
+  else if (hoursAgo(f.jobs_at) > 6) warn = "Lynx jobs haven't synced since " + stamp(f.jobs_at) + ". Stages and tags may be behind.";
+  app.innerHTML =
+    '<h2>Production</h2><p class="sub">Builds, sold jobs and claims, straight from Lynx. Tap any job to open it in Lynx.</p>' +
+    '<p class="fresh">Updated <b>' + esc(clock(new Date(LOADED_AT).toISOString())) + " Central</b> · calendars synced " + esc(stamp(f.appts_at)) + " · jobs " + esc(stamp(f.jobs_at)) + " · claims desk " + esc(stamp(f.desk_at)) + (ERR === "stale" ? ' · <span style="color:var(--red-ink)">couldn\'t refresh just now, showing the last copy</span>' : "") + "</p>" +
+    (warn ? '<div class="warn">' + esc(warn) + "</div>" : "") +
+    '<div class="stats">' + stat("s-week", thisWeek.length, "builds this week" + (left ? " · " + left + " to go" : ""), false) + stat("s-clear", clear, "clear to schedule", clear > 0) + stat("s-wait", waiting, "waiting on something", false) + stat("s-coc", coc, "built, need COC", coc > 0) + "</div>" +
+    weekHtml() + next30Html() +
+    '<div class="cols"><div class="col">' + jipHtml() + adjusterHtml() + '</div><div class="col">' + cocHtml() + clearHtml() + waitingHtml() + "</div></div>" +
+    '<p class="note">Read-only. Everything here comes from Lynx: the calendars sync every hour, jobs and contract amounts as Lynx updates them. Change it in Lynx and this page catches up on its own. Refreshes every 5 minutes.</p>';
+  app.querySelectorAll("[data-wk]").forEach(function (b) { b.onclick = function () { var v = +b.dataset.wk; WEEK = v === 0 ? 0 : Math.max(-2, Math.min(4, WEEK + v)); paint(); }; });
+  app.querySelectorAll("[data-go]").forEach(function (b) { b.onclick = function () { var el = document.getElementById(b.dataset.go); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }; });
+  app.querySelectorAll("[data-coc]").forEach(function (b) { b.onclick = function (e) { e.preventDefault(); e.stopPropagation(); openCoc(b.dataset.coc); }; });
+  app.querySelectorAll("details[data-g]").forEach(function (d) { d.addEventListener("toggle", function () { OPEN["w:" + d.dataset.g] = d.open; }); });
+  app.querySelectorAll("details[data-d]").forEach(function (d) { d.addEventListener("toggle", function () { OPEN["d:" + d.dataset.d] = d.open; }); });
+  app.querySelectorAll("details[data-j]").forEach(function (d) { d.addEventListener("toggle", function () { OPEN["j:" + d.dataset.j] = d.open; }); });
+  var mc = $("#moreClear"); if (mc) mc.onclick = function () { SHOW_ALL_CLEAR = !SHOW_ALL_CLEAR; paint(); };
+  window.scrollTo(0, y);
+}
+
+// Refresh every 5 minutes while the page is on screen, and as soon as it comes back if it went stale.
+setInterval(function () { if (document.visibilityState === "visible") load(); }, FIVE);
+document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && Date.now() - LOADED_AT > FIVE) load(); });
+load();
+})();
+</script>
+</body>
+</html>
