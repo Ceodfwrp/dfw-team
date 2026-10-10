@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Billing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="desk.css">
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">Loading billing…</div></div>
+<script src="desk.js"></script>
+<script>
+(function(){
+"use strict";
+var D = window.DESK, $ = function (s) { return document.querySelector(s); }, esc = D.esc;
+var B = null, ERR = "", VIEW = "collect", Q = "";
+async function load() { try { B = await D.api("billing"); ERR = ""; } catch (e) { ERR = e.message; } paint(); }
+function jobRow(j) {
+  var tags = [];
+  if (j.coc_sent) tags.push('<span class="tag g">COC sent ' + esc(j.coc_sent) + "</span>"); else if (j.coc_made_at) tags.push('<span class="tag b">COC made ' + esc(D.day(j.coc_made_at)) + "</span>");
+  if (+j.depreciation_outstanding > 0.5) tags.push('<span class="tag a">Depreciation ' + esc(D.money(j.depreciation_outstanding)) + "</span>");
+  if (+j.supplement_outstanding > 0.5) tags.push('<span class="tag a">Supplement ' + esc(D.money(j.supplement_outstanding)) + "</span>");
+  if (+j.acv_outstanding > 0.5) tags.push('<span class="tag">ACV ' + esc(D.money(j.acv_outstanding)) + "</span>");
+  if (+j.mortgage_held > 0) tags.push('<span class="tag r">Mortgage holds ' + esc(D.money(j.mortgage_held)) + "</span>");
+  if (j.lynx_mismatch) tags.push('<span class="tag r">Lynx balance doesn’t add up</span>');
+  if (j.allocation_review && +j.unallocated_received > 0) tags.push('<span class="tag">' + esc(D.money(j.unallocated_received)) + " received, not tied to a line</span>");
+  var mc = (j.mortgage_checks || []).map(function (c) { return esc(D.money(c.amount)) + " " + esc((c.where || c.status || "").replace(/_/g, " ")) + (c.company ? " at " + esc(c.company) : "") + (c.next ? " · " + esc(c.next) : ""); }).join("<br>");
+  var inner = '<div class="t">' + D.title(j) + '</div><div class="s">' + esc(j.next_step) + '</div><div class="m">' + esc(j.address) + (j.rep ? " · " + esc(j.rep) : "") + " · " + esc(j.milestone) + (j.build_date ? " · built " + esc(D.dOnly(j.build_date)) : " · not built") + (j.last_payment_at ? " · last payment " + esc(D.dOnly(j.last_payment_at)) : " · no payment yet") + "</div>" +
+    (tags.length ? '<div class="tags">' + tags.join("") + "</div>" : "") + (mc ? '<div class="m">' + mc + "</div>" : "");
+  var right = '<div class="big">' + esc(D.cents(j.owed)) + '</div><div class="sm">owed · ' + esc(D.money(j.received)) + " of " + esc(D.money(j.worksheet_total || j.contract)) + " in</div>" + (j.days_since_build != null ? '<div class="sm">' + D.plural(j.days_since_build, "day") + " since build</div>" : "");
+  return D.row(j.lynx, inner, right);
+}
+function paint() {
+  var app = $("#app");
+  if (!B) { app.innerHTML = D.errorBox(ERR); var r = app.querySelector("[data-retry]"); if (r) r.onclick = load; return; }
+  var y = window.scrollY, T = B.totals || {}, A = B.aging || {}, jobs = B.jobs || [];
+  var built = jobs.filter(function (j) { return j.bucket !== "not_built"; }), notBuilt = jobs.filter(function (j) { return j.bucket === "not_built"; });
+  var q = Q.trim().toLowerCase(), match = function (j) { return !q || (j.job_number + " " + j.customer + " " + j.address + " " + (j.rep || "")).toLowerCase().indexOf(q) >= 0; };
+  var list = (VIEW === "collect" ? built : VIEW === "depr" ? built.filter(function (j) { return +j.depreciation_outstanding > 0.5; }) : VIEW === "mort" ? jobs.filter(function (j) { return +j.mortgage_held > 0; }) : VIEW === "wrong" ? jobs.filter(function (j) { return j.lynx_mismatch; }) : notBuilt).filter(match);
+  var bucket = function (k) { var b = A[k] || { n: 0, owed: 0 }; return '<div class="stat' + (k === "90+" && b.n ? " hot" : "") + '"><div class="v">' + esc(D.money(b.owed)) + '</div><div class="l">' + esc(k) + " days since build · " + D.plural(b.n, "job") + "</div></div>"; };
+  var h = '<h2>Billing &amp; collections</h2><p class="sub">What each built job still owes, straight from the job’s Lynx worksheet and payments, and the next step to collect it.</p>' +
+    '<p class="fresh">Updated <b>' + esc(D.stamp(B.at)) + "</b> Central · Lynx financials " + esc(D.stamp(B.fresh && B.fresh.financials_at)) + " · mortgage desk " + esc(D.stamp(B.fresh && B.fresh.mortgage_at)) + "</p>" +
+    '<div class="stats"><div class="stat hot"><div class="v">' + esc(D.money(T.built_owed)) + '</div><div class="l">owed on built jobs · ' + built.length + '</div></div>' +
+    '<div class="stat"><div class="v">' + esc(D.money(T.depreciation_outstanding)) + '</div><div class="l">depreciation not yet released</div></div>' +
+    '<div class="stat"><div class="v">' + esc(D.money(T.mortgage_held)) + '</div><div class="l">held by mortgage companies</div></div>' +
+    '<div class="stat"><div class="v">' + esc(D.money(T.supplement_outstanding)) + '</div><div class="l">supplements outstanding</div></div></div>' +
+    '<div class="stats">' + bucket("0-30") + bucket("31-60") + bucket("61-90") + bucket("90+") + "</div>" +
+    '<div class="chips">' + [["collect", "Collect now · " + built.length], ["depr", "Depreciation · " + built.filter(function (j) { return +j.depreciation_outstanding > 0.5; }).length], ["mort", "Mortgage checks · " + jobs.filter(function (j) { return +j.mortgage_held > 0; }).length], ["wrong", "Lynx balance off · " + jobs.filter(function (j) { return j.lynx_mismatch; }).length], ["nb", "Sold, not built · " + notBuilt.length]].map(function (c) { return '<button class="chip" data-v="' + c[0] + '" aria-pressed="' + (VIEW === c[0]) + '">' + esc(c[1]) + "</button>"; }).join("") + "</div>" +
+    '<input type="search" id="q" placeholder="Search job #, name, street, rep" value="' + esc(Q) + '" style="margin:0 0 10px">' +
+    '<div class="panel">' + (list.map(jobRow).join("") || '<div class="empty">Nothing here.</div>') + "</div>";
+  if (VIEW === "collect") h += '<p class="note">Oldest build first. “Owed” is the job’s balance due in Lynx: worksheet total (contract plus supplements plus depreciation) minus payments received. Sold-but-not-built jobs are under their own tab because their money isn’t due yet.</p>';
+  var RP = B.recent_payments || [];
+  if (RP.length) h += '<div class="sec" style="margin-top:22px"><div class="sech"><div><h3>Payments in the last 14 days</h3></div></div><div class="panel">' + RP.map(function (r) { return (r.payments || []).map(function (p) { return D.row(null, '<div class="t">#' + esc(r.job_number) + " " + esc(r.customer) + '</div><div class="m">' + esc(D.stamp(p.at)) + (p.from ? " · " + esc(p.from) : "") + (p.notes ? " · " + esc(p.notes) : "") + "</div>", '<div class="big">' + esc(D.cents(p.amount)) + "</div>"); }).join(""); }).join("") + "</div></div>";
+  h += '<p class="note">Read-only. Nothing here is from the books or the bank; it is the per-job money in Lynx. Refreshes every 5 minutes.</p>';
+  app.innerHTML = h;
+  app.querySelectorAll("[data-v]").forEach(function (b) { b.onclick = function () { VIEW = b.dataset.v; paint(); }; });
+  var qi = $("#q"); if (qi) qi.oninput = function () { Q = qi.value; paint(); var e = $("#q"); e.focus(); e.setSelectionRange(Q.length, Q.length); };
+  window.scrollTo(0, y);
+}
+D.poll(load);
+})();
+</script>
+</body>
+</html>

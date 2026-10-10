@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Customers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="desk.css">
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">Loading customers…</div></div>
+<div id="sheet" hidden role="dialog" aria-modal="true"><div class="sh" id="sheetBody"></div></div>
+<script src="desk.js"></script>
+<script>
+(function(){
+"use strict";
+var D = window.DESK, $ = function (s) { return document.querySelector(s); }, esc = D.esc;
+var C = null, ERR = "", JOB = null, JERR = "", Q = "";
+async function load() { try { C = await D.api("comms"); ERR = ""; } catch (e) { ERR = e.message; } paint(); }
+function contactBtns(x) {
+  var out = [];
+  if (x.phone && D.tel(x.phone)) { out.push('<a class="btn ghost" href="tel:' + esc(D.tel(x.phone)) + '">Call ' + esc(D.phone(x.phone)) + "</a>"); out.push('<a class="btn ghost" href="sms:' + esc(D.tel(x.phone)) + '">Text</a>'); }
+  if (x.email) out.push('<a class="btn ghost" href="mailto:' + esc(x.email) + '">Email</a>');
+  return out.join("");
+}
+function jobLine(x, right) {
+  var inner = '<div class="t">' + D.title(x) + '</div><div class="m">' + esc(x.address || "") + (x.rep ? " · " + esc(x.rep) : "") + (x.milestone ? " · " + esc(x.milestone) : "") + "</div>" +
+    '<div class="m">Last contact ' + (x.last_contact_at ? esc(D.stamp(x.last_contact_at)) + (x.last_by ? " by " + esc(x.last_by) : "") : "none on file") + "</div>";
+  return '<div class="row" data-job="' + esc(x.job_id) + '" style="cursor:pointer"><div>' + inner + "</div>" + (right ? '<div class="r">' + right + "</div>" : "<div></div>") + "</div>";
+}
+function paint() {
+  var app = $("#app");
+  if (!C) { app.innerHTML = D.errorBox(ERR); var r = app.querySelector("[data-retry]"); if (r) r.onclick = load; return; }
+  var y = window.scrollY, K = C.counts || {};
+  var q = Q.trim().toLowerCase(), match = function (x) { return !q || (x.job_number + " " + x.customer + " " + (x.address || "") + " " + (x.rep || "")).toLowerCase().indexOf(q) >= 0; };
+  var builds = (C.builds_to_confirm || []).filter(match), quiet = (C.gone_quiet || []).filter(match), recent = (C.recent || []).filter(match);
+  var h = '<h2>Customers</h2><p class="sub">Who needs a call today, who is going quiet, and the latest contact on every active job. Tap a job for its timeline and the homeowner’s number.</p>' +
+    '<p class="fresh">Updated <b>' + esc(D.stamp(C.at)) + "</b> Central · Lynx activity " + esc(D.stamp(C.fresh && C.fresh.history_at)) + "</p>" +
+    '<div class="warn">' + esc(C.note) + "</div>" +
+    '<div class="stats"><div class="stat hot"><div class="v">' + (K.builds_to_confirm || 0) + '</div><div class="l">builds in the next 7 days to confirm</div></div><div class="stat' + (K.quiet ? " hot" : "") + '"><div class="v">' + (K.quiet || 0) + '</div><div class="l">sold or built jobs quiet 7+ days</div></div><div class="stat"><div class="v">' + (K.active_7d || 0) + '</div><div class="l">jobs with contact this week</div></div></div>' +
+    '<input type="search" id="q" placeholder="Search job #, name, street, rep" value="' + esc(Q) + '" style="margin:0 0 14px">';
+  h += '<div class="sec"><div class="sech"><div><h3>Builds to confirm <span class="n">' + builds.length + '</span></h3><p class="hint">Next 7 days. Make sure the homeowner knows the day, the color is locked and the driveway is clear.</p></div></div><div class="panel">' +
+    (builds.map(function (x) { return jobLine(x, '<div class="big">' + esc(D.day(x.build_at)) + '</div><div class="sm">' + (x.contacted_since_booked ? '<span class="tag g">contacted since booked</span>' : '<span class="tag r">not contacted since booked</span>') + "</div>"); }).join("") || '<div class="empty">No builds in the next 7 days.</div>') + "</div></div>";
+  h += '<div class="sec"><div class="sech"><div><h3>Going quiet <span class="n">' + quiet.length + '</span></h3><p class="hint">Sold, built or invoiced jobs with no text, email or note from our side in 7+ days. Built and invoiced first.</p></div></div><div class="panel">' +
+    (quiet.map(function (x) { return jobLine(x, '<div class="big">' + (x.days_quiet == null ? "—" : esc(x.days_quiet) + "d") + '</div><div class="sm">quiet</div>'); }).join("") || '<div class="empty">Every sold job has been touched in the last week.</div>') + "</div></div>";
+  h += '<div class="sec"><div class="sech"><div><h3>Latest contact <span class="n">' + recent.length + ' jobs this week</span></h3><p class="hint">Most recent first.</p></div></div><div class="panel">' +
+    (recent.map(function (x) { var last = [x.last_text_at ? "text " + D.day(x.last_text_at) : "", x.last_email_at ? "email " + D.day(x.last_email_at) : "", x.last_note_at ? "note " + D.day(x.last_note_at) : ""].filter(Boolean).join(" · "); return jobLine({ job_id: x.job_id, job_number: x.job_number, customer: x.customer, rep: x.rep, milestone: x.milestone, last_contact_at: x.last_text_at || x.last_email_at || x.last_note_at, last_by: x.last_by }, '<div class="sm">' + esc(last) + "</div>"); }).join("") || '<div class="empty">No contact logged this week.</div>') + "</div></div>";
+  h += '<p class="note">Refreshes every 5 minutes. Calls you log here are posted to the Lynx job as a note.</p>';
+  app.innerHTML = h;
+  app.querySelectorAll("[data-job]").forEach(function (el) { el.onclick = function () { openJob(el.dataset.job); }; });
+  var qi = $("#q"); if (qi) qi.oninput = function () { Q = qi.value; paint(); var e = $("#q"); e.focus(); e.setSelectionRange(Q.length, Q.length); };
+  window.scrollTo(0, y);
+}
+async function openJob(id) {
+  JOB = { loading: true, id: id }; JERR = ""; paintSheet();
+  try { JOB = await D.api("job", { job_id: id }); } catch (e) { JERR = e.message; JOB = { id: id }; }
+  paintSheet();
+}
+function closeSheet() { $("#sheet").hidden = true; document.documentElement.style.overflow = ""; JOB = null; }
+function paintSheet() {
+  var sh = $("#sheet"), b = $("#sheetBody"); sh.hidden = false; document.documentElement.style.overflow = "hidden";
+  if (!JOB || JOB.loading) { b.innerHTML = '<div class="sh-head"><h3>Loading…</h3><button class="sh-x" id="sx" aria-label="Close">×</button></div>'; $("#sx").onclick = closeSheet; return; }
+  var j = JOB.job || {}, cu = JOB.customer, tl = JOB.timeline || [], notes = JOB.notes || [], logged = JOB.logged || [];
+  var acts = [];
+  if (cu) { (cu.phones || []).forEach(function (p) { if (D.tel(p.number)) { acts.push('<a class="btn ghost" href="tel:' + esc(D.tel(p.number)) + '">Call ' + esc(D.phone(p.number)) + (p.type ? " (" + esc(p.type) + ")" : "") + "</a>"); if (!p.smsOptOut) acts.push('<a class="btn ghost" href="sms:' + esc(D.tel(p.number)) + '">Text</a>'); } }); (cu.emails || []).forEach(function (e) { acts.push('<a class="btn ghost" href="mailto:' + esc(e.address) + '">' + esc(e.address) + "</a>"); }); }
+  var h = '<div class="sh-head"><div><h3>#' + esc(j.num) + " " + esc(String(j.name || "").replace(/^\s*\d+\s*:\s*/, "")) + '</h3><div class="m" style="color:var(--muted);font-size:14px">' + esc(j.milestone || "") + (cu && cu.name ? " · " + esc(cu.name) : "") + "</div></div>" + '<button class="sh-x" id="sx" aria-label="Close">×</button></div>' +
+    (JERR ? '<div class="err">' + esc(JERR) + "</div>" : "") +
+    '<div class="acts">' + (acts.join("") || '<span class="note">No phone or email on the Lynx contact.</span>') + '<a class="btn" href="' + esc(j.lynx) + '" target="_blank" rel="noopener">Open in Lynx</a></div>' +
+    '<div class="panel" style="padding:12px;margin:0 0 12px"><b>Log a call or conversation</b><textarea id="logtxt" placeholder="Example: Spoke with Mrs. Yanez, confirmed Monday build, she will move the cars." style="margin:8px 0"></textarea><button class="btn" id="logbtn" type="button">Post to the Lynx job</button><span class="note" id="logmsg" style="margin-left:10px"></span></div>';
+  if (notes.length) h += '<div class="sec"><div class="sech"><div><h3 style="font-size:18px">Notes from Lynx</h3></div></div><div class="panel tl">' + notes.map(function (n) { return '<div class="row"><div class="when">' + esc(D.stamp(n.posted_at)) + '</div><div><div class="m">' + esc(n.author || "") + '</div><div class="s">' + esc(n.body) + "</div></div></div>"; }).join("") + "</div></div>";
+  if (logged.length) h += '<div class="sec"><div class="sech"><div><h3 style="font-size:18px">Logged from this app</h3></div></div><div class="panel tl">' + logged.map(function (n) { return '<div class="row"><div class="when">' + esc(D.stamp(n.created_at)) + '</div><div class="s">' + esc(n.text) + "</div></div>"; }).join("") + "</div></div>";
+  h += '<div class="sec"><div class="sech"><div><h3 style="font-size:18px">Activity <span class="n">' + tl.length + '</span></h3><p class="hint">Texts, emails, notes, appointments and milestones as Lynx logged them.</p></div></div><div class="panel tl">' + (tl.map(function (t) { return '<div class="row"><div class="when">' + esc(D.stamp(t.at)) + '</div><div><div class="s">' + esc(t.action) + '</div><div class="m">' + esc(t.by_name || "") + "</div></div></div>"; }).join("") || '<div class="empty">No activity on file.</div>') + "</div></div>";
+  b.innerHTML = h;
+  $("#sx").onclick = closeSheet;
+  $("#logbtn").onclick = async function () {
+    var t = $("#logtxt").value.trim(), m = $("#logmsg"), btn = $("#logbtn"); if (t.length < 3) { m.textContent = "Type what happened first."; return; }
+    btn.disabled = true; m.textContent = "Posting…";
+    try { await D.api("log_call", { job_id: j.id, op_id: D.opId(), text: t }); m.textContent = "Posted to the job."; $("#logtxt").value = ""; openJob(j.id); }
+    catch (e) { m.textContent = "Couldn’t post (" + e.message + ")."; btn.disabled = false; }
+  };
+}
+$("#sheet").addEventListener("click", function (e) { if (e.target.id === "sheet") closeSheet(); });
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("#sheet").hidden) closeSheet(); });
+D.poll(load);
+})();
+</script>
+</body>
+</html>

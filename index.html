@@ -232,7 +232,10 @@ function renderHC(){if($("#hcf")&&!HCJOB)return;const jq=HCJOB?"&job="+encodeURI
 /* Office pages live in their own files and load in an iframe (same sign-in token). Add a page here and it gets a tab. */
 const PAGES=[
   {key:"prod",label:"Production",file:"production.html",roles:["owner","manager","office"]},
-  {key:"coc",label:"COC",file:"coc.html",roles:["owner","manager","office"]}
+  {key:"coc",label:"COC",file:"coc.html",roles:["owner","manager","office"]},
+  {key:"supps",label:"Supplements",file:"supps.html",roles:["owner","manager","office"]},
+  {key:"billing",label:"Billing",file:"billing.html",roles:["owner","manager","office"]},
+  {key:"comms",label:"Customers",file:"comms.html",roles:["owner","manager","office"]}
 ];
 function renderPage(key){const pg=PAGES.find(p=>p.key===key);if(!pg)return;if($("#pf-"+key))return;$("#main").innerHTML='<iframe id="pf-'+key+'" src="'+pg.file+'?v='+Date.now()+'" title="'+esc(pg.label)+'" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--paper)"></iframe>';}
 /* COC creator lives in coc.html; Production rows open it here with ?job=<Lynx job id>. */

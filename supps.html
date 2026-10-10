@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Supplements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="desk.css">
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">Loading supplements…</div></div>
+<script src="desk.js"></script>
+<script>
+(function(){
+"use strict";
+var D = window.DESK, $ = function (s) { return document.querySelector(s); }, esc = D.esc;
+var S = null, ERR = "", OPEN = { SUPP_AT_CARRIER: true, PHOTOS_DONE_NO_SUPP: true, INSTALLED_NO_SUPP: true };
+var GROUPS = [
+  ["SUPP_AT_CARRIER", "At the carrier", "Requested and waiting on the insurance company. Oldest first; these are the calls to make."],
+  ["PHOTOS_DONE_NO_SUPP", "Photos done, nothing filed", "Ready to write."],
+  ["INSTALLED_NO_SUPP", "Built, no supplement filed", "Roof is on. Check for missed scope before the file closes."],
+  ["SUPP_SUBMITTED_RECENT", "Submitted recently", "Sent in the last few weeks; give the carrier its turnaround."],
+  ["NO_PHOTOS_NO_SUPP", "No photos, no supplement yet", "Needs photos before a supplement can be written."],
+  ["PHOTOS_SCHEDULED", "Photos scheduled", "On the calendar."],
+  ["SUPP_PAID", "Paid", "Collected from the carrier."]];
+async function load() { try { S = await D.api("supps"); ERR = ""; } catch (e) { ERR = e.message; } paint(); }
+function paint() {
+  var app = $("#app");
+  if (!S) { app.innerHTML = D.errorBox(ERR); var r = app.querySelector("[data-retry]"); if (r) r.onclick = load; return; }
+  var y = window.scrollY, T = S.totals || {}, C = S.counts || {}, jobs = S.jobs || [];
+  var by = function (k) { return jobs.filter(function (j) { return j.gap === k; }); };
+  var sum = function (L, f) { return L.reduce(function (a, j) { return a + (+j[f] || 0); }, 0); };
+  var h = '<h2>Supplements</h2><p class="sub">Every open supplement, what the carrier still owes, and the built roofs with nothing filed. Tap a job to open it in Lynx.</p>' +
+    '<p class="fresh">Updated <b>' + esc(D.stamp(S.at)) + '</b> Central · money from the Lynx worksheets ' + esc(D.stamp(S.fresh && S.fresh.exposure_at)) + ' · carrier inbox ' + esc(D.stamp(S.fresh && S.fresh.inbox_at)) + "</p>" +
+    '<div class="stats"><div class="stat hot"><div class="v">' + esc(D.money(T.at_carrier)) + '</div><div class="l">at the carrier · ' + D.plural(C.SUPP_AT_CARRIER || 0, "supplement") + '</div></div>' +
+    '<div class="stat"><div class="v">' + esc(D.money(T.submitted_recent)) + '</div><div class="l">submitted recently · ' + (C.SUPP_SUBMITTED_RECENT || 0) + '</div></div>' +
+    '<div class="stat hot"><div class="v">' + ((C.INSTALLED_NO_SUPP || 0) + (C.PHOTOS_DONE_NO_SUPP || 0)) + '</div><div class="l">built or photographed, nothing filed</div></div>' +
+    '<div class="stat"><div class="v">' + esc(D.money(T.paid)) + '</div><div class="l">paid of ' + esc(D.money(T.paid_requested)) + ' requested</div></div></div>';
+  h += '<div class="panel">' + GROUPS.map(function (g) {
+    var k = g[0], L = by(k); if (!L.length) return "";
+    var rows = L.map(function (j) {
+      var right = '<div class="big">' + esc(D.money(j.supp_expected)) + '</div><div class="sm">' + (+j.supp_received ? esc(D.money(j.supp_received)) + " paid" : (k === "SUPP_AT_CARRIER" ? "waiting" : "requested")) + "</div>";
+      var inner = '<div class="t">' + D.title(j) + '</div><div class="m">' + esc([j.street, j.city].filter(Boolean).join(", ")) + (j.rep ? " · " + esc(j.rep) : "") + " · " + esc(j.milestone) + " " + esc(D.dOnly(j.milestone_date)) + (j.days != null ? " · " + D.plural(j.days, "day") + " in stage" : "") + "</div>" +
+        '<div class="tags">' + (+j.balance_due > 0 ? '<span class="tag a">' + esc(D.money(j.balance_due)) + " still owed on the job</span>" : "") + (j.last_carrier_email ? '<span class="tag b">Carrier email ' + esc(D.day(j.last_carrier_email)) + "</span>" : "") + (j.build_at ? '<span class="tag">Built ' + esc(D.day(j.build_at)) + "</span>" : "") + (j.last_photo ? '<span class="tag">Photos ' + esc(D.day(j.last_photo)) + "</span>" : "") + "</div>";
+      return D.row(j.lynx, inner, right);
+    }).join("");
+    return '<details class="grp" data-g="' + k + '"' + (OPEN[k] ? " open" : "") + "><summary><span>" + esc(g[1]) + "<small>" + esc(g[2]) + '</small></span><span class="c">' + L.length + " · " + esc(D.money(sum(L, "supp_expected"))) + "</span></summary>" + rows + "</details>";
+  }).join("") + "</div>";
+  var IB = S.inbox || [];
+  h += '<div class="sec" style="margin-top:22px"><div class="sech"><div><h3>From the carriers <span class="n">' + IB.length + ' latest emails</span></h3><p class="hint">The supplements mailbox. Emails that couldn’t be matched to a job need a job number.</p></div></div><div class="panel">' +
+    (IB.map(function (i) { return D.row(null, '<div class="t">' + esc(i.subject || "(no subject)") + '</div><div class="m">' + esc(i.from) + " · " + esc(D.stamp(i.at)) + (i.job_number ? " · job #" + esc(i.job_number) : "") + "</div>", (i.job_number ? "" : '<span class="tag r">no job match</span>') + (i.has_pdf ? ' <span class="tag b">PDF</span>' : "")); }).join("") || '<div class="empty">No carrier emails yet.</div>') + "</div></div>";
+  h += '<p class="note">Read-only. Statuses come from the Lynx worksheet lines (SUPPLEMENT …), payments, photos and the supplements mailbox. Change it in Lynx and this page catches up. Refreshes every 5 minutes.</p>';
+  app.innerHTML = h;
+  app.querySelectorAll("details[data-g]").forEach(function (d) { d.addEventListener("toggle", function () { OPEN[d.dataset.g] = d.open; }); });
+  window.scrollTo(0, y);
+}
+D.poll(load);
+})();
+</script>
+</body>
+</html>
