@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="desk.css">
+<style>
+.flow{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:thin}
+.flow .st{flex:0 0 auto;min-width:112px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;cursor:pointer;text-align:left;color:var(--ink);font:inherit}
+.flow .st[aria-pressed=true]{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+.flow .st .v{font:800 24px/1 var(--display)}.flow .st .l{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.2}
+.flow .st .late{font:700 11px var(--body);color:var(--red-ink)}
+.flow .sep{flex:0 0 auto;align-self:center;color:var(--muted);font-size:12px;padding:0 2px}
+.grp{font:800 20px/1.1 var(--display);margin:18px 0 6px;display:flex;align-items:baseline;gap:8px}
+.grp .n{font:700 14px var(--body);color:var(--muted)}
+.row .step{font-size:14px;color:var(--ink);font-weight:600}
+.row.late .step{color:var(--red-ink)}
+.own{display:inline-block;font:700 11px var(--body);padding:2px 8px;border-radius:999px;background:var(--paper);border:1px solid var(--line);color:var(--muted);margin-left:6px;vertical-align:middle}
+.own.rep{background:var(--blue-soft);color:var(--blue);border-color:transparent}
+.own.office{background:var(--green-soft);color:var(--green);border-color:transparent}
+.lateTag{color:var(--red-ink);font-weight:700;font-size:12px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+.toolbar input[type=search]{flex:1;min-width:200px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">Loading the pipeline…</div></div>
+<script src="desk.js"></script>
+<script>
+(function(){
+"use strict";
+var D = window.DESK, $ = function (s) { return document.querySelector(s); }, esc = D.esc;
+var API = "https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/pipeline-api/api/";
+var Q = (function () { var o = {}; location.search.replace(/^\?/, "").split("&").forEach(function (p) { if (!p) return; var kv = p.split("="); o[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1] || "").replace(/\+/g, " ")); }); return o; })();
+var B = null, ERR = "", STAGE = "", OWNER = Q.owner || "all", SCOPE = Q.scope === "mine" ? "mine" : "team", SEARCH = "", REP = "", LATE = false;
+var GROUPS = [["Sales", ["new_lead", "inspection_scheduled", "prospect", "claim_needed", "adjuster_needed", "adjuster_scheduled", "awaiting_scope", "claim_approved", "bid_requested", "bid_priced", "bid_sent"]], ["Production", ["blocked", "permit", "ready_to_schedule", "build_scheduled"]], ["Close-out", ["coc", "supplement", "depreciation", "invoice", "collect", "payment_plan", "trades", "closeout"]]];
+var token = function () { try { return localStorage.getItem("dfw_team_token"); } catch (e) { return null; } };
+async function api(action, body) {
+  var tok = token(); if (!tok) throw new Error("signin");
+  var r = await fetch(API + action, { method: "POST", headers: { "content-type": "application/json", "authorization": "Bearer " + tok }, body: JSON.stringify(body || {}) });
+  var j = await r.json().catch(function () { return {}; });
+  if (r.status === 401) throw new Error("signin"); if (r.status === 403) throw new Error("forbidden");
+  if (!r.ok) throw new Error(j.detail || j.error || ("http_" + r.status)); return j;
+}
+async function load() { try { B = await api("board", { scope: SCOPE }); ERR = ""; if (B && B.me && !B.me.team) SCOPE = "mine"; } catch (e) { ERR = e.message; } paint(); }
+function when(x) { if (x.when_at) return D.stamp(x.when_at); return null; }
+function row(x) {
+  var tags = [];
+  if (x.late) tags.push('<span class="tag r">' + D.plural(x.days_in_stage, "day") + " in stage</span>"); else if (x.days_in_stage > 0) tags.push('<span class="tag">' + D.plural(x.days_in_stage, "day") + "</span>");
+  if (x.photos != null && x.milestone !== "Lead") tags.push('<span class="tag' + (x.photos < 3 ? " a" : "") + '">' + x.photos + " photos</span>");
+  if (x.carrier) tags.push('<span class="tag b">' + esc(x.carrier) + (x.claim_number ? " · " + esc(x.claim_number) : "") + "</span>");
+  if (+x.contract > 0) tags.push('<span class="tag g">' + esc(D.money(x.contract)) + " contract</span>");
+  if (+x.balance > 0.5 && (x.milestone === "Completed" || x.milestone === "Invoiced")) tags.push('<span class="tag a">' + esc(D.money(x.balance)) + " owed</span>");
+  if (x.permit_status === "NEEDS_PERMIT") tags.push('<span class="tag r">permit</span>');
+  if (x.lead_source && x.milestone === "Lead") tags.push('<span class="tag">' + esc(x.lead_source) + "</span>");
+  if (x.last_contact_at) tags.push('<span class="tag">last contact ' + esc(D.ago(x.last_contact_at)) + "</span>");
+  var inner = '<div class="t">' + D.title(x) + '<span class="own ' + esc(x.owner) + '">' + (x.owner === "rep" ? esc((x.rep || "rep").split(",")[0]) : "office") + "</span></div>" +
+    '<div class="step">' + esc(x.step) + "</div>" +
+    '<div class="m">' + esc(x.address || "") + " · " + esc(x.milestone) + (x.work_type ? " · " + esc(x.work_type) : "") + (x.rep && x.owner !== "rep" ? " · " + esc(x.rep) : "") + "</div>" +
+    (tags.length ? '<div class="tags">' + tags.join("") + "</div>" : "");
+  var right = when(x) ? '<div class="big" style="font-size:16px">' + esc(when(x)) + "</div>" : (x.late ? '<div class="lateTag">LATE</div>' : "");
+  return '<a class="row' + (x.late ? " late" : "") + '" href="' + esc(x.lynx) + '" target="_blank" rel="noopener" data-job="' + esc(x.job_id) + '"><div>' + inner + "</div>" + '<div class="r">' + right + "</div></a>";
+}
+function paint() {
+  var app = $("#app");
+  if (!B) { app.innerHTML = D.errorBox(ERR); var r = app.querySelector("[data-retry]"); if (r) r.onclick = load; return; }
+  var y = window.scrollY, K = B.counts || {}, items = B.items || [], stages = B.stages || [], me = B.me || {};
+  var reps = {}; items.forEach(function (x) { (x.rep || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean).forEach(function (r) { reps[r] = (reps[r] || 0) + 1; }); });
+  var q = SEARCH.trim().toLowerCase();
+  var list = items.filter(function (x) { return (!STAGE || x.stage === STAGE) && (OWNER === "all" || x.owner === OWNER) && (!REP || (x.rep || "").indexOf(REP) >= 0) && (!LATE || x.late) && (!q || (x.job_number + " " + x.customer + " " + (x.address || "") + " " + (x.rep || "") + " " + (x.carrier || "")).toLowerCase().indexOf(q) >= 0); });
+  var h = '<h2>' + (SCOPE === "mine" ? "My pipeline" : "Pipeline") + ' <span style="font:700 15px var(--body);color:var(--muted)">lead → close</span></h2>' +
+    '<p class="sub">Every open job at the stage it is really at — read from Lynx (appointments, photos, claim file, worksheet, payments), not from what someone typed — with the next step and who owns it.</p>' +
+    (B.note ? '<div class="warn">' + esc(B.note) + "</div>" : "") +
+    '<p class="fresh">Updated <b>' + esc(D.stamp(B.at)) + "</b> Central · Lynx jobs " + esc(D.stamp(B.fresh && B.fresh.jobs_at)) + " · activity " + esc(D.stamp(B.fresh && B.fresh.history_at)) + " · claim files " + esc(D.stamp(B.fresh && B.fresh.adjuster_at)) + "</p>" +
+    '<div class="stats"><div class="stat"><div class="v">' + (K.open || 0) + '</div><div class="l">open jobs · ' + (K.leads || 0) + " leads · " + (K.prospects || 0) + " prospects · " + (K.sold || 0) + ' sold</div></div>' +
+    '<div class="stat' + (K.late ? " hot" : "") + '"><div class="v">' + (K.late || 0) + '</div><div class="l">past the time they should take</div></div>' +
+    '<div class="stat"><div class="v">' + (K.rep || 0) + ' <span style="font-size:16px;color:var(--muted)">/ ' + (K.office || 0) + '</span></div><div class="l">next step on a rep / on the office</div></div>' +
+    '<div class="stat"><div class="v">' + esc(D.money(K.sold_value || 0)) + '</div><div class="l">sold, not closed · ' + esc(D.money(K.balance_open || 0)) + " still owed</div></div></div>";
+  h += '<div class="flow">' + GROUPS.map(function (g, gi) {
+    return (gi ? '<span class="sep">→</span>' : "") + g[1].map(function (k) { var s = stages.find(function (z) { return z.key === k; }) || { label: k, n: 0, late: 0 }; if (!s.n && STAGE !== k) return ""; return '<button class="st" data-stage="' + esc(k) + '" aria-pressed="' + (STAGE === k) + '"><div class="v">' + s.n + '</div><div class="l">' + esc(s.label) + "</div>" + (s.late ? '<div class="late">' + s.late + " late</div>" : "") + "</button>"; }).join("");
+  }).join("") + "</div>";
+  h += '<div class="toolbar">' + (me.team ? '<div class="chips" style="margin:0"><button class="chip" data-scope="team" aria-pressed="' + (SCOPE === "team") + '">Whole team</button><button class="chip" data-scope="mine" aria-pressed="' + (SCOPE === "mine") + '">Mine</button></div>' : "") +
+    '<div class="chips" style="margin:0"><button class="chip" data-owner="all" aria-pressed="' + (OWNER === "all") + '">Everyone</button><button class="chip" data-owner="rep" aria-pressed="' + (OWNER === "rep") + '">On the reps</button><button class="chip" data-owner="office" aria-pressed="' + (OWNER === "office") + '">On the office</button><button class="chip" id="lateBtn" aria-pressed="' + LATE + '">Late only</button></div>' +
+    (SCOPE === "team" ? '<select id="rep" style="font:inherit;color:inherit;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px"><option value="">All reps</option>' + Object.keys(reps).sort().map(function (r) { return '<option value="' + esc(r) + '"' + (REP === r ? " selected" : "") + ">" + esc(r) + " · " + reps[r] + "</option>"; }).join("") + "</select>" : "") +
+    '<input type="search" id="q" placeholder="Search job #, name, street, rep, carrier" value="' + esc(SEARCH) + '"></div>';
+  if (STAGE) { var st = stages.find(function (z) { return z.key === STAGE; }); h += '<div class="grp">' + esc(st ? st.label : STAGE) + '<span class="n">' + list.length + '</span><button class="btn ghost" id="clearStage" type="button" style="margin-left:auto;padding:4px 10px;font-size:13px">Show all stages</button></div><div class="panel">' + (list.map(row).join("") || '<div class="empty">Nothing here.</div>') + "</div>"; }
+  else {
+    GROUPS.forEach(function (g) {
+      g[1].forEach(function (k) {
+        var L = list.filter(function (x) { return x.stage === k; }); if (!L.length) return;
+        var st = stages.find(function (z) { return z.key === k; }) || { label: k };
+        h += '<div class="grp">' + esc(st.label) + '<span class="n">' + L.length + (st.late ? " · " + st.late + " late" : "") + "</span></div><div class=\"panel\">" + L.map(row).join("") + "</div>";
+      });
+    });
+    if (!list.length) h += '<div class="empty">Nothing matches.</div>';
+  }
+  h += '<p class="note">Stages: new lead → inspection → claim filed → adjuster meeting → scope → approved/contract (or cash bid for retail) → sold: colors/HOA/money → permit → build → COC → supplement/depreciation → collect → paid → closed. Tap a job to open it in Lynx. Refreshes every 5 minutes.</p>';
+  app.innerHTML = h;
+  app.querySelectorAll("[data-stage]").forEach(function (b) { b.onclick = function () { STAGE = STAGE === b.dataset.stage ? "" : b.dataset.stage; paint(); }; });
+  app.querySelectorAll("[data-owner]").forEach(function (b) { b.onclick = function () { OWNER = b.dataset.owner; paint(); }; });
+  app.querySelectorAll("[data-scope]").forEach(function (b) { b.onclick = function () { SCOPE = b.dataset.scope; REP = ""; load(); }; });
+  var lb = $("#lateBtn"); if (lb) lb.onclick = function () { LATE = !LATE; paint(); };
+  var cs = $("#clearStage"); if (cs) cs.onclick = function () { STAGE = ""; paint(); };
+  var rs = $("#rep"); if (rs) rs.onchange = function () { REP = rs.value; paint(); };
+  var qi = $("#q"); if (qi) qi.oninput = function () { SEARCH = qi.value; paint(); var e = $("#q"); e.focus(); e.setSelectionRange(SEARCH.length, SEARCH.length); };
+  app.querySelectorAll("[data-job]").forEach(function (a) { a.onclick = function (e) { if (window.parent !== window) { e.preventDefault(); window.parent.postMessage({ type: "dfw-open-job", job: a.dataset.job, lynx: a.href }, "*"); } }; });
+  window.scrollTo(0, y);
+}
+D.poll(load);
+})();
+</script>
+</body>
+</html>

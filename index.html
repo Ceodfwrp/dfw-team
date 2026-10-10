@@ -111,11 +111,12 @@ async function boot(){
   }catch(e){if(e.message!=="signed_out")$("#main").innerHTML=`<div class="empty">Couldn't load. Pull to refresh or try again.</div>`}
 }
 function tabs(){const t=$("#tabs");t.hidden=false;
-  const PT=canProd()?PAGES.filter(p=>p.roles.includes(ME.role)).map(p=>[p.key,p.label]):[]; const office=ME&&ME.role==="office";
-  t.innerHTML=[...(office?PT:[]),["jobs","My Jobs"],["day","My Day"],["lead","New Lead"],["carriers","Carriers"],["colors","Colors"],...(HC?[["hardcost","Hard Cost"]]:[]),...(office?[]:PT),...(ME&&ME.team?[["subs","Subs"]]:[]),...(ME&&["owner","office"].includes(ME.role)?[["conn","Connections"]]:[]),...(ME&&ME.team?[["cmd","Command"]]:[])].map(([k,l])=>`<button data-t="${k}" aria-selected="${TAB===k}">${l}</button>`).join("");
+  const PT=PAGES.filter(p=>canPage(p)&&!p.all).map(p=>[p.key,p.label]); const PA=PAGES.filter(p=>p.all).map(p=>[p.key,p.label]); const office=ME&&ME.role==="office";
+  t.innerHTML=[...PA,...(office?PT:[]),["jobs","My Jobs"],["day","My Day"],["lead","New Lead"],["carriers","Carriers"],["colors","Colors"],...(HC?[["hardcost","Hard Cost"]]:[]),...(office?[]:PT),...(ME&&ME.team?[["subs","Subs"]]:[]),...(ME&&["owner","office"].includes(ME.role)?[["conn","Connections"]]:[]),...(ME&&ME.team?[["cmd","Command"]]:[])].map(([k,l])=>`<button data-t="${k}" aria-selected="${TAB===k}">${l}</button>`).join("");
   t.querySelectorAll("button").forEach(b=>b.onclick=()=>{TAB=b.dataset.t;tabs();render()});}
 async function load(){ $("#main").innerHTML=`<div class="empty">Loading…</div>`; HOME=await api("home",{scope:SCOPE}); render(); }
-function render(){const pg=PAGES.find(p=>p.key===TAB);if(pg&&!(canProd()&&pg.roles.includes(ME.role)))TAB="jobs";$("#main").style.maxWidth=(TAB==="hardcost"||PAGES.some(p=>p.key===TAB))?"none":"";const fn=({jobs:renderJobs,day:renderDay,lead:renderLead,carriers:renderCarriers,colors:renderColors,hardcost:renderHC,subs:renderSubs,conn:renderConn,cmd:renderCmd,coc:renderCOC})[TAB];if(fn)fn();else if(PAGES.some(p=>p.key===TAB))renderPage(TAB);else renderJobs();}
+function canPage(p){return !!(ME&&(p.all||(canProd()&&p.roles.includes(ME.role))));}
+function render(){const pg=PAGES.find(p=>p.key===TAB);if(pg&&!canPage(pg))TAB="jobs";$("#main").style.maxWidth=(TAB==="hardcost"||PAGES.some(p=>p.key===TAB))?"none":"";const fn=({jobs:renderJobs,day:renderDay,lead:renderLead,carriers:renderCarriers,colors:renderColors,hardcost:renderHC,subs:renderSubs,conn:renderConn,cmd:renderCmd,coc:renderCOC})[TAB];if(fn)fn();else if(PAGES.some(p=>p.key===TAB))renderPage(TAB);else renderJobs();}
 
 /* ===== Subs hub: text crews and vendors from the company line, send labor POs, keep every thread here ===== */
 const SUBSAPI="https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/subs-hub/api/";
@@ -231,6 +232,7 @@ function renderHC(){if($("#hcf")&&!HCJOB)return;const jq=HCJOB?"&job="+encodeURI
 /* ===== Production (owner/manager/office): builds, sold-not-built, claims desk, COC hand-off. Read-only page in an iframe. ===== */
 /* Office pages live in their own files and load in an iframe (same sign-in token). Add a page here and it gets a tab. */
 const PAGES=[
+  {key:"pipe",label:"Pipeline",file:"pipeline.html",roles:["owner","manager","office","rep","sales"],all:true},
   {key:"prod",label:"Production",file:"production.html",roles:["owner","manager","office"]},
   {key:"coc",label:"COC",file:"coc.html",roles:["owner","manager","office"]},
   {key:"supps",label:"Supplements",file:"supps.html",roles:["owner","manager","office"]},
@@ -243,7 +245,8 @@ function renderPage(key){const pg=PAGES.find(p=>p.key===key);if(!pg)return;const
 function openCashBidRequest(num){ if(canProd()){ CBJOB=num; TAB="cashbid"; tabs(); render(); const f=$("#pf-cashbid"); if(f) f.contentWindow.postMessage({type:"dfw-open-cashbid",job:num},"*"); return; } TAB="cbreq"; tabs(); $("#main").style.maxWidth=""; $("#main").innerHTML='<iframe id="cbrf" src="cashbid.html?mode=request&job='+encodeURIComponent(num)+'&v='+Date.now()+'" title="Request a cash bid" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--paper)"></iframe>'; window.scrollTo(0,0); }
 function renderCOC(){if($("#cocf")&&!COCJOB)return;const jq=COCJOB?"&job="+encodeURIComponent(COCJOB):"";COCJOB="";$("#main").innerHTML='<iframe id="cocf" src="coc.html?v='+Date.now()+jq+'" title="COC" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--card)"></iframe>';}
 window.addEventListener("message",e=>{if(e.origin!==location.origin)return;const d=e.data||{};
-  if(d.type==="dfw-open-coc"&&canProd()){const j=String(d.job||"");if(!/^[0-9a-f-]{36}$/i.test(j))return;COCJOB=j;TAB="coc";tabs();render();window.scrollTo(0,0);}});
+  if(d.type==="dfw-open-coc"&&canProd()){const j=String(d.job||"");if(!/^[0-9a-f-]{36}$/i.test(j))return;COCJOB=j;TAB="coc";tabs();render();window.scrollTo(0,0);}
+  if(d.type==="dfw-open-job"){const j=String(d.job||"");if(!/^[0-9a-f-]{36}$/i.test(j))return;openJob(j).catch(()=>{ if(d.lynx) window.open(String(d.lynx),"_blank","noopener"); });}});
 function scopeChips(){return ME.team?`<div class="tools"><button class="chip" data-sc="mine" aria-pressed="${SCOPE==="mine"}">Mine</button><button class="chip" data-sc="team" aria-pressed="${SCOPE==="team"}">Whole team</button></div>`:""}
 function bindScope(){document.querySelectorAll("[data-sc]").forEach(b=>b.onclick=async()=>{SCOPE=b.dataset.sc;await load()})}
 function freshLine(){const f=HOME&&HOME.fresh||{};return `<p class="fresh">Lynx jobs as of ${when(f.jobs_at)} · appointments as of ${when(f.appts_at)}</p>`}
