@@ -64,7 +64,7 @@ const API="https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/portal-api/api/
 const LS="dfw_team_token";
 let TOKEN=null; try{TOKEN=localStorage.getItem(LS)}catch(e){}
 let ME=null, HOME=null, TAB="jobs", STAGE="", Q="", SCOPE="mine";
-let HC=false, HCJOB="", COCJOB="";
+let HC=false, HCJOB="", COCJOB="", CBJOB="";
 const PROD_ROLES=["owner","manager","office"]; const canProd=()=>!!(ME&&PROD_ROLES.includes(ME.role)); const HCR="https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/hc-relay/api/";
 const STAGES=["Lead","Prospect","Approved","Completed","Invoiced"];
 const $=s=>document.querySelector(s);
@@ -235,10 +235,12 @@ const PAGES=[
   {key:"coc",label:"COC",file:"coc.html",roles:["owner","manager","office"]},
   {key:"supps",label:"Supplements",file:"supps.html",roles:["owner","manager","office"]},
   {key:"billing",label:"Billing",file:"billing.html",roles:["owner","manager","office"]},
-  {key:"comms",label:"Customers",file:"comms.html",roles:["owner","manager","office"]}
+  {key:"comms",label:"Customers",file:"comms.html",roles:["owner","manager","office"]},
+  {key:"cashbid",label:"Cash Bids",file:"cashbid.html",roles:["owner","manager","office"]}
 ];
-function renderPage(key){const pg=PAGES.find(p=>p.key===key);if(!pg)return;if($("#pf-"+key))return;$("#main").innerHTML='<iframe id="pf-'+key+'" src="'+pg.file+'?v='+Date.now()+'" title="'+esc(pg.label)+'" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--paper)"></iframe>';}
+function renderPage(key){const pg=PAGES.find(p=>p.key===key);if(!pg)return;const jq=(key==="cashbid"&&CBJOB)?"&job="+encodeURIComponent(CBJOB):"";if(key==="cashbid")CBJOB="";if($("#pf-"+key)&&!jq)return;$("#main").innerHTML='<iframe id="pf-'+key+'" src="'+pg.file+'?v='+Date.now()+jq+'" title="'+esc(pg.label)+'" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--paper)"></iframe>';}
 /* COC creator lives in coc.html; Production rows open it here with ?job=<Lynx job id>. */
+function openCashBidRequest(num){ if(canProd()){ CBJOB=num; TAB="cashbid"; tabs(); render(); const f=$("#pf-cashbid"); if(f) f.contentWindow.postMessage({type:"dfw-open-cashbid",job:num},"*"); return; } TAB="cbreq"; tabs(); $("#main").style.maxWidth=""; $("#main").innerHTML='<iframe id="cbrf" src="cashbid.html?mode=request&job='+encodeURIComponent(num)+'&v='+Date.now()+'" title="Request a cash bid" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--paper)"></iframe>'; window.scrollTo(0,0); }
 function renderCOC(){if($("#cocf")&&!COCJOB)return;const jq=COCJOB?"&job="+encodeURIComponent(COCJOB):"";COCJOB="";$("#main").innerHTML='<iframe id="cocf" src="coc.html?v='+Date.now()+jq+'" title="COC" style="display:block;width:100%;height:calc(100vh - 140px);min-height:640px;border:0;border-radius:10px;background:var(--card)"></iframe>';}
 window.addEventListener("message",e=>{if(e.origin!==location.origin)return;const d=e.data||{};
   if(d.type==="dfw-open-coc"&&canProd()){const j=String(d.job||"");if(!/^[0-9a-f-]{36}$/i.test(j))return;COCJOB=j;TAB="coc";tabs();render();window.scrollTo(0,0);}});
@@ -422,13 +424,13 @@ async function openJob(id){
       <div class="panel facts">${a?`<div><span>Address</span><a href="${maps(a)}" target="_blank" rel="noopener">${esc(a)}</a></div>`:""}
         <div><span>Rep</span>${esc((d.reps||[]).filter(r=>r.type!=="Additional"&&r.name).map(r=>r.name).join(", ")||"—")}</div>
         ${j.leadSource?`<div><span>Lead source</span>${esc(j.leadSource)}</div>`:""}<div><span>Created</span>${when(j.created)}</div><div><span>Updated</span>${when(j.updated)}</div></div>
-      <div class="btns">${a?`<a class="btn ghost" href="${maps(a)}" target="_blank" rel="noopener">Directions</a>`:""}<a class="btn" href="${esc(j.lynx)}" target="_blank" rel="noopener">Open in Lynx</a>${HC&&j.num?`<button class="btn ghost" id="hcGo" type="button">Hard Cost this job</button>`:""}</div>
+      <div class="btns">${a?`<a class="btn ghost" href="${maps(a)}" target="_blank" rel="noopener">Directions</a>`:""}<a class="btn" href="${esc(j.lynx)}" target="_blank" rel="noopener">Open in Lynx</a>${HC&&j.num?`<button class="btn ghost" id="hcGo" type="button">Hard Cost this job</button>`:""}${j.num?`<button class="btn ghost" id="cbGo" type="button">Request a cash bid</button>`:""}</div>
       ${custBlock(d,j,a)}
       ${insBlock(d,j,a)}
       ${(d.appts||[]).length?`<h4>Appointments</h4><div class="panel"><ul class="list">${d.appts.map(x=>`<li class="row" style="cursor:default"><div><div class="t">${esc(x.title||"Appointment")}</div><div class="m">${esc(x.calendar_name||"")}${x.is_adjuster?" · Adjuster":""}</div></div><div class="r">${when(x.starts_at)}</div></li>`).join("")}</ul></div>`:""}
       <h4>Post a note to Lynx</h4><div class="panel" style="padding:12px"><textarea id="nt" placeholder="What happened, what's next, and @who needs to act"></textarea><div class="btns"><button class="btn" id="ns">Post to Lynx</button></div><div id="nr"></div></div>
       <h4>Notes</h4><div class="panel">${notes.length?notes.map(n=>`<div class="nt"><b>${esc(n.by||"")} · ${when(n.at)}</b>${esc(n.body)}</div>`).join(""):`<div class="empty">No notes captured yet. Lynx has the full history.</div>`}</div>`;
-    $("#cx").onclick=closeJob; bindContacts(bd); let op=null; { const hg=$("#hcGo"); if(hg) hg.onclick=()=>{ closeJob(); HCJOB=String(j.num); TAB="hardcost"; tabs(); render(); }; }
+    $("#cx").onclick=closeJob; bindContacts(bd); let op=null; { const hg=$("#hcGo"); if(hg) hg.onclick=()=>{ closeJob(); HCJOB=String(j.num); TAB="hardcost"; tabs(); render(); }; const cg=$("#cbGo"); if(cg) cg.onclick=()=>{ closeJob(); openCashBidRequest(String(j.num)); }; }
     $("#ns").onclick=async()=>{const t=$("#nt").value.trim();if(t.length<3){toast("Write a note first");return}
       if(!op)op=opId();const b=$("#ns");b.disabled=true;b.textContent="Posting…";
       try{await api("job_note",{job_id:id,text:t,op_id:op});op=null;$("#nt").value="";$("#nr").innerHTML=`<div class="ok">Posted to Lynx.</div>`;}
@@ -438,7 +440,7 @@ async function openJob(id){
 function closeJob(){$("#sheet").hidden=true;document.documentElement.style.overflow=""}
 $("#sheet").addEventListener("click",e=>{if(e.target.id==="sheet")closeJob()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#sheet").hidden)closeJob()});
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&ME&&!["lead","hardcost"].includes(TAB)&&!PAGES.some(p=>p.key===TAB))load().catch(()=>{})});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&ME&&!["lead","hardcost","cbreq"].includes(TAB)&&!PAGES.some(p=>p.key===TAB))load().catch(()=>{})});
 boot();
 })();
 </script>

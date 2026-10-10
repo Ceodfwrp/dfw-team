@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cash Bids</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="desk.css">
+<style>
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 10px}
+@media(min-width:720px){.grid{grid-template-columns:repeat(4,1fr)}}
+.f label{display:block;font:600 12px var(--body);color:var(--muted);margin:0 0 3px}
+.f input,.f select{width:100%;font:inherit;color:inherit;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.f input[type=checkbox]{width:auto;margin-right:6px}
+.f .u{color:var(--muted);font-weight:500}
+.two{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:980px){.two{grid-template-columns:1.2fr .8fr;align-items:start}}
+.price{background:var(--navy);color:#fff;border-radius:12px;padding:14px 16px}
+.price .big{font:800 40px/1 var(--display)}
+.price .m{color:#C7CFDA;font-size:13px}
+.price input{font:800 26px var(--display);width:100%;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 10px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px solid rgba(255,255,255,.12);font-size:14px}
+.kv.first{border-top:0}
+.pill{display:inline-block;font:700 12px var(--body);padding:3px 10px;border-radius:999px}
+.pill.good{background:var(--green-soft);color:var(--green)}.pill.warn{background:var(--amber-soft);color:var(--amber)}.pill.bad{background:var(--red-soft);color:var(--red-ink)}.pill.neutral{background:var(--paper);color:var(--muted)}
+.line{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:7px 12px;border-top:1px solid var(--line)}
+.line:first-child{border-top:0}
+.line input[type=text]{width:100%;font:inherit;color:inherit;background:transparent;border:0;border-bottom:1px dashed transparent;padding:2px 0}
+.line input[type=text]:focus{outline:0;border-bottom-color:var(--line)}
+.line .x{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px}
+.line .grp{font:700 11px var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.opt{display:grid;grid-template-columns:1fr 110px auto;gap:8px;align-items:center;padding:7px 12px;border-top:1px solid var(--line)}
+.opt input{font:inherit;color:inherit;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%}
+.photos{display:flex;flex-wrap:wrap;gap:8px}.photos img{width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.req{background:var(--blue-soft);color:var(--ink);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:14px}
+.ok{background:var(--green-soft);color:var(--green);border-radius:8px;padding:10px 12px;margin:10px 0}
+.srcs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0}
+.sumline{display:flex;justify-content:space-between;font-size:14px;padding:4px 0}
+textarea.t{min-height:64px}
+.modeReq .wrap{max-width:720px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="empty">Loading cash bids…</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="hcengine.js"></script>
+<script src="desk.js"></script>
+<script>
+(function(){
+"use strict";
+var D = window.DESK, $ = function (s) { return document.querySelector(s); }, esc = D.esc;
+var CB = "https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/cashbid-api/api/";
+var HC = "https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/hc-relay/api/";
+var LSK = "dfw_cashbid_terms_v1";
+var CO = { name: "DFW Roofing Pro LLC", addr1: "3626 N Hall St, Suite 570", addr2: "Dallas, TX 75219", phone: "972-979-1070", web: "www.dfwroofingpro.com", email: "invoicing@dfwroofingpro.com" };
+var Q = (function () { var o = {}; location.search.replace(/^\?/, "").split("&").forEach(function (p) { if (!p) return; var kv = p.split("="); o[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1] || "").replace(/\+/g, " ")); }); return o; })();
+var MODE = Q.mode === "request" ? "request" : "desk";
+var token = function () { try { return localStorage.getItem("dfw_team_token"); } catch (e) { return null; } };
+async function api(base, action, body) {
+  var tok = token(); if (!tok) throw new Error("signin");
+  var r = await fetch(base + action, { method: "POST", headers: { "content-type": "application/json", "authorization": "Bearer " + tok }, body: JSON.stringify(body || {}) });
+  var j = await r.json().catch(function () { return {}; });
+  if (r.status === 401) throw new Error("signin"); if (r.status === 403) throw new Error("forbidden");
+  if (!r.ok) throw new Error(j.detail || j.error || ("http_" + r.status)); return j;
+}
+var cb = function (a, b) { return api(CB, a, b); }, hc = function (a, b) { return api(HC, a, b); };
+var round25 = function (v) { return Math.ceil((+v || 0) / 25) * 25; };
+var fmt0 = function (v) { return D.money(v); };
+var N = function (x) { return n(x); };
+var SHN = function (k) { var s = SHINGLES.find(function (x) { return x[0] === k; }); return s ? s[1] : k; };
+var isC4 = function (k) { var s = SHINGLES.find(function (x) { return x[0] === k; }); return !!s && s[2] === "ir"; };
+
+// ---------- state ----------
+var QUEUE = null, QERR = "", VIEW = "queue", FILTER = "requested", SEARCH = "";
+var PB = Object.assign({}, PB_DEF), PBAT = null;
+var J = null, H = null, JERR = "", LOADING = false;
+var IN = null, SCOPE = [], OPTS = [], TERMS = null, PRICE = "", PHOTOS = [], NOTE = "", FILED = null, BUSY = "", MSG = "";
+var REQ = { job: "", found: null, what: "full_roof", shingle: "", color: "", extras: [], notes: "", needed_by: "", budget: "", photos: [], busy: false, done: null, err: "" };
+
+function defaults() {
+  return { jobType: "retail", customer: "", address: "", city: "", rep: "", sq: "", waste: N(PB.waste_default) || 10, pitch: "low", stories: 1, layers: 1, shingle: "sh_cambridge", cap: "3tab", crew: "thr", tyler: false,
+    eaves: "", rakes: "", ridges: "", hips: "", valleys: "", wall: "", valleyMetal: false, ridgeVent: "", woodLf: "",
+    boots: "", boxvents: "", versacaps: "", turbines: "", powervents: "", ventCancel: "", chimneys: "", skylights: "", deckSheets: "", tripCharges: "",
+    panels: 0, gutterLf: "", guardLf: "", blasterLf: "", screens: "", stainSqft: "", garageDoors: "", garageIns: false, paintAmt: "", otherTrade: "",
+    permit: "", inspections: 0, reinspections: "", measure: true, supplements: "", appraisal: false, dumpster: "", extras: [],
+    rcv: "", deductible: "", suppAmt: "", upgrades: "", contract: "", commPreset: "rep", commRate: 10, payMethod: "check", mikeOvr: true, teamMgr: "auto", notes: "", color: "" };
+}
+function termsDefault() {
+  var t = { valid_days: 30, deposit_pct: 50, warranty_years: 5, payment: "Balance is due upon completion of the work.", financing: true, exclusions: "Price covers the scope listed above. Rotten or damaged decking beyond what is listed is replaced with homeowner approval at the per-sheet price shown. Hidden conditions found during tear-off are priced in writing before work continues.", notes: "" };
+  try { var s = JSON.parse(localStorage.getItem(LSK) || "null"); if (s && typeof s === "object") Object.assign(t, s); } catch (e) { /* ignore */ }
+  return t;
+}
+function repKey(names) {
+  var keys = Object.keys(REPS), al = { michael: "mike" };
+  for (var i = 0; i < (names || []).length; i++) {
+    var w = String(names[i]).toLowerCase().trim().split(/\s+/); if (!w[0]) continue;
+    var f = al[w[0]] || w[0], l = w[w.length - 1];
+    var k = keys.find(function (k) { var kw = k.toLowerCase().split(/\s+/); var kf = al[kw[0]] || kw[0]; return kw[kw.length - 1] === l && (kf === f || kf[0] === f[0]); });
+    if (k) return k;
+  }
+  return "";
+}
+
+// ---------- queue ----------
+async function loadQueue() { try { QUEUE = await cb("queue"); QERR = ""; } catch (e) { QERR = e.message; } if (VIEW === "queue") paintQueue(); }
+async function loadPB() { try { var d = await hc("hc_load"); if (d.pricebook && d.pricebook.items) { PB = Object.assign({}, PB_DEF, d.pricebook.items); PBAT = d.pricebook.updated_at || null; } } catch (e) { /* defaults */ } }
+function srcTag(it) { return it.source === "lynx_name" ? '<span class="tag b">rep flagged it in Lynx</span>' : it.source === "request" ? '<span class="tag b">requested in the app</span>' : it.source === "retail" ? '<span class="tag">retail job</span>' : '<span class="tag">bid on file</span>'; }
+function paintQueue() {
+  VIEW = "queue"; var app = $("#app");
+  if (!QUEUE) { app.innerHTML = D.errorBox(QERR); var r = app.querySelector("[data-retry]"); if (r) r.onclick = loadQueue; return; }
+  var y = window.scrollY, K = QUEUE.counts || {}, items = QUEUE.items || [], B30 = QUEUE.bids_30d || {};
+  var q = SEARCH.trim().toLowerCase(), match = function (x) { return !q || (x.job_number + " " + x.customer + " " + (x.address || "") + " " + (x.rep || "")).toLowerCase().indexOf(q) >= 0; };
+  var list = items.filter(function (x) { return FILTER === "all" || (FILTER === "requested" ? x.status === "requested" : FILTER === "priced" ? x.status === "priced" : x.status === "sent" || x.status === "sent_outside"); }).filter(match);
+  var h = '<h2>Cash bids</h2><p class="sub">Every job a rep has asked for a cash bid on — flagged in the Lynx job name or requested here — priced with your rate card, filed to the job, and sent back to the rep.</p>' +
+    '<p class="fresh">Updated <b>' + esc(D.stamp(QUEUE.at)) + '</b> Central · jobs from Lynx ' + esc(D.stamp(QUEUE.fresh && QUEUE.fresh.jobs_at)) + (PBAT ? ' · price book ' + esc(D.stamp(PBAT)) : "") + "</p>" +
+    '<div class="stats"><div class="stat' + (K.requested ? " hot" : "") + '"><div class="v">' + (K.requested || 0) + '</div><div class="l">waiting for a bid' + (K.oldest_days ? " · oldest " + K.oldest_days + "d" : "") + '</div></div>' +
+    '<div class="stat"><div class="v">' + (K.priced || 0) + '</div><div class="l">priced, not sent to the rep</div></div>' +
+    '<div class="stat"><div class="v">' + (K.sent || 0) + '</div><div class="l">sent</div></div>' +
+    '<div class="stat"><div class="v">' + esc(fmt0(B30.total || 0)) + '</div><div class="l">bid in the last 30 days · ' + (B30.n || 0) + '</div></div></div>' +
+    '<div class="chips">' + [["requested", "Waiting · " + (K.requested || 0)], ["priced", "Priced · " + (K.priced || 0)], ["sent", "Sent · " + (K.sent || 0)], ["all", "All · " + items.length]].map(function (c) { return '<button class="chip" data-f="' + c[0] + '" aria-pressed="' + (FILTER === c[0]) + '">' + esc(c[1]) + "</button>"; }).join("") + "</div>" +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px"><input type="search" id="q" placeholder="Search job #, name, street, rep" value="' + esc(SEARCH) + '" style="flex:1;min-width:200px">' +
+    '<form id="openf" style="display:flex;gap:6px"><input type="text" id="openjob" inputmode="numeric" placeholder="Job #" style="width:110px;font:inherit;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px"><button class="btn" type="submit">Bid it</button></form></div>' +
+    '<div class="panel">' + (list.map(function (it) {
+      var right = it.bid ? '<div class="big">' + esc(fmt0(it.bid.price)) + '</div><div class="sm">' + esc(it.bid.bid_no) + (it.bid.sent_at ? " · sent " + esc(D.day(it.bid.sent_at)) : " · not sent") + "</div>" : '<div class="big">' + (it.days_waiting || 0) + 'd</div><div class="sm">waiting</div>';
+      var sub = esc(it.address || "") + (it.rep ? " · " + esc(it.rep) : "") + " · " + esc(it.milestone || "") + (it.work_type ? " · " + esc(it.work_type) : "");
+      var rq = it.request && it.request.details ? '<div class="s">Rep asked for: ' + esc(String(it.request.details.what || "").replace(/_/g, " ")) + (it.request.details.shingle ? " · " + esc(it.request.details.shingle) : "") + (it.request.details.notes ? " · " + esc(it.request.details.notes).slice(0, 140) : "") + "</div>" : "";
+      return '<div class="row" data-open="' + esc(it.job_id) + '" style="cursor:pointer"><div><div class="t">' + D.title(it) + '</div><div class="m">' + sub + "</div>" + rq + '<div class="srcs">' + srcTag(it) + (it.status === "sent_outside" ? '<span class="tag g">job name says SENT</span>' : "") + "</div></div>" + '<div class="r">' + right + "</div></div>";
+    }).join("") || '<div class="empty">Nothing here.</div>') + "</div>" +
+    '<p class="note">A job lands here when its Lynx name contains “CASH BID”, when a rep taps “Request a cash bid” on the job in this app, or when the work type is Retail. Refreshes every 5 minutes.</p>';
+  app.innerHTML = h;
+  app.querySelectorAll("[data-f]").forEach(function (b) { b.onclick = function () { FILTER = b.dataset.f; paintQueue(); }; });
+  app.querySelectorAll("[data-open]").forEach(function (el) { el.onclick = function () { openJob(el.dataset.open); }; });
+  var qi = $("#q"); if (qi) qi.oninput = function () { SEARCH = qi.value; paintQueue(); var e = $("#q"); e.focus(); e.setSelectionRange(SEARCH.length, SEARCH.length); };
+  $("#openf").onsubmit = function (e) { e.preventDefault(); var v = $("#openjob").value.trim(); if (v) openJob(v); };
+  window.scrollTo(0, y);
+}
+
+// ---------- builder ----------
+async function openJob(ref) {
+  VIEW = "job"; LOADING = true; J = null; H = null; JERR = ""; FILED = null; MSG = ""; PHOTOS = []; OPTS = []; PRICE = ""; NOTE = "";
+  paintJob();
+  try {
+    var jr = await cb("job", { job: ref }); J = jr;
+    try { H = await hc("hc_pull", { job_number: jr.job.num }); } catch (e) { H = null; }
+  } catch (e) { JERR = e.message === "job_not_found" ? "No Lynx job with that number." : e.message; }
+  LOADING = false;
+  if (J) { IN = buildInputs(); TERMS = termsDefault(); SCOPE = autoScope(); }
+  paintJob();
+}
+function buildInputs() {
+  var j = defaults(), job = J.job, rd = (H && H.read) || {}, cad = (H && H.cad) || J.cad || null;
+  j.customer = (J.customer && J.customer.name) || job.name || ""; j.address = [job.street, job.city].filter(Boolean).join(", ");
+  var ck = Object.keys(CITIES).find(function (c) { return c.toLowerCase() === String(job.city || "").toLowerCase(); }); j.city = ck || (job.city ? "Other" : "");
+  j.rep = repKey((job.reps || []).map(function (r) { return r.name; })) || "";
+  var fill = function (k, v) { if (v == null || v === "") return; j[k] = typeof v === "number" ? String(v) : v; };
+  ["sq", "eaves", "rakes", "ridges", "hips", "valleys", "wall", "boots", "boxvents", "turbines", "powervents", "chimneys", "skylights", "deckSheets", "ridgeVent", "woodLf", "ventCancel", "versacaps", "gutterLf", "screens", "garageDoors"].forEach(function (k) { fill(k, rd[k]); });
+  if (rd.pitch) j.pitch = rd.pitch; if (+rd.stories > 0) j.stories = +rd.stories; if (+rd.layers > 0) j.layers = +rd.layers;
+  if (rd.shingle && PB[rd.shingle] != null) j.shingle = rd.shingle; if (rd.cap && ["3tab", "hr", "ir"].includes(rd.cap)) j.cap = rd.cap;
+  if (rd.valleyMetal) j.valleyMetal = true;
+  if (cad && !(+rd.stories > 0) && +cad.stories > 0) j.stories = Math.min(3, Math.round(+cad.stories));
+  // the rep's request, if any, picks the shingle/color
+  var rq = (J.requests || [])[0]; if (rq && rq.details) { var d = rq.details; if (d.shingle) { var sk = SHINGLES.find(function (s) { return s[1].toLowerCase().indexOf(String(d.shingle).toLowerCase()) >= 0 || s[0] === d.shingle; }); if (sk) j.shingle = sk[0]; } if (d.color) j.color = d.color; }
+  return j;
+}
+function calc(inputs) {
+  var x = Object.assign({}, inputs || IN); x.jobType = "retail"; x.contract = PRICE !== "" ? N(PRICE) : 0;
+  var c = compute(PB, x);
+  var suggested = isFinite(c.priceAtTarget) ? round25(c.priceAtTarget) : 0;
+  if (x.contract <= 0) { x.contract = suggested; c = compute(PB, x); }
+  c.suggested = suggested; c.price = x.contract; return c;
+}
+function sheetPrice() { var a = compute(PB, Object.assign({}, IN, { jobType: "retail", contract: 0, deckSheets: N(IN.deckSheets) + 1 })), b = compute(PB, Object.assign({}, IN, { jobType: "retail", contract: 0 })); var d = a.priceAtTarget - b.priceAtTarget; return isFinite(d) && d > 0 ? Math.ceil(d / 5) * 5 : 0; }
+function autoScope() {
+  var j = IN, L = [], add = function (g, t) { L.push({ group: g, label: t }); };
+  var layers = Math.max(1, +j.layers || 1), sh = SHN(j.shingle);
+  if (N(j.sq) > 0) {
+    add("Roof", "Remove the existing roofing (" + layers + " layer" + (layers > 1 ? "s" : "") + ") down to the decking and haul away all debris");
+    add("Roof", "Inspect the roof decking and re-nail loose decking" + (N(j.deckSheets) > 0 ? "; replace " + N(j.deckSheets) + " sheet" + (N(j.deckSheets) > 1 ? "s" : "") + " of damaged decking (included)" : ""));
+    add("Roof", "Install synthetic underlayment over the entire roof deck");
+    add("Roof", "Install ice & water shield in all valleys and around roof penetrations");
+    add("Roof", "Install new " + sh + (isC4(j.shingle) ? " Class 4 impact-resistant" : "") + " shingles — color: " + (j.color || "homeowner’s choice"));
+    add("Roof", "Install new starter shingles at all eaves and rakes");
+    add("Roof", "Install new " + (j.cap === "ir" ? "Class 4 impact-resistant" : j.cap === "hr" ? "12\" high-profile" : "matching") + " hip & ridge cap shingles");
+    add("Roof", "Install new painted metal drip edge at all eaves and rakes");
+    if (N(j.valleys) > 0 && j.valleyMetal) add("Roof", "Install new metal valleys (" + N(j.valleys) + " lf)");
+    if (N(j.wall) > 0) add("Roof", "Install new step and counter flashing at walls (" + N(j.wall) + " lf)");
+    if (N(j.woodLf) > 0) add("Roof", "Replace " + N(j.woodLf) + " lf of rotten fascia / wood");
+  }
+  if (N(j.boots) > 0) add("Vents & flashing", "Replace " + N(j.boots) + " pipe boot" + (N(j.boots) > 1 ? "s" : ""));
+  if (N(j.boxvents) > 0) add("Vents & flashing", "Replace " + N(j.boxvents) + " box vent" + (N(j.boxvents) > 1 ? "s" : "") + " with new painted vents");
+  if (N(j.turbines) > 0) add("Vents & flashing", "Replace " + N(j.turbines) + " turbine" + (N(j.turbines) > 1 ? "s" : ""));
+  if (N(j.powervents) > 0) add("Vents & flashing", "Replace " + N(j.powervents) + " power vent" + (N(j.powervents) > 1 ? "s" : ""));
+  if (N(j.versacaps) > 0) add("Vents & flashing", "Install " + N(j.versacaps) + " new versa cap" + (N(j.versacaps) > 1 ? "s" : "") + " on furnace / water-heater flues");
+  if (N(j.ridgeVent) > 0) add("Vents & flashing", "Install " + N(j.ridgeVent) + " lf of ridge vent");
+  if (N(j.ventCancel) > 0) add("Vents & flashing", "Remove " + N(j.ventCancel) + " unused vent" + (N(j.ventCancel) > 1 ? "s" : "") + " and deck over");
+  if (N(j.chimneys) > 0) add("Vents & flashing", "Re-flash " + N(j.chimneys) + " chimney" + (N(j.chimneys) > 1 ? "s" : "") + " with new step and counter flashing");
+  if (N(j.skylights) > 0) add("Vents & flashing", "Replace " + N(j.skylights) + " skylight" + (N(j.skylights) > 1 ? "s" : "") + " (24x24) and flash");
+  if (N(j.panels) > 0) add("Additional work", "Detach and reset " + N(j.panels) + " solar panels");
+  if (N(j.gutterLf) > 0) add("Additional work", "Install " + N(j.gutterLf) + " lf of new 5\" seamless gutters and downspouts");
+  if (N(j.guardLf) > 0) add("Additional work", "Install " + N(j.guardLf) + " lf of leaf guard");
+  if (N(j.blasterLf) > 0) add("Additional work", "Install " + N(j.blasterLf) + " lf of micro-mesh gutter guard");
+  if (N(j.screens) > 0) add("Additional work", "Replace " + N(j.screens) + " window screen" + (N(j.screens) > 1 ? "s" : ""));
+  if (N(j.stainSqft) > 0) add("Additional work", "Wash and stain " + N(j.stainSqft) + " sq ft of fence");
+  if (N(j.garageDoors) > 0) add("Additional work", "Install " + N(j.garageDoors) + " new 16x7 garage door" + (N(j.garageDoors) > 1 ? "s" : "") + (j.garageIns ? " with insulation" : ""));
+  if (N(j.paintAmt) > 0) add("Additional work", "Interior paint / drywall repair as discussed");
+  (j.extras || []).forEach(function (e) { if (e.label) add("Additional work", e.label); });
+  if (N(j.sq) > 0) {
+    if (j.city && j.city !== "Other" || N(j.permit) > 0) add("Site & permits", "Pull the city building permit and schedule the required inspections");
+    add("Site & permits", "Protect landscaping, pool and A/C; magnetic sweep of the yard and driveway; haul away all debris");
+    add("Site & permits", "Final walk-through with the homeowner");
+  }
+  return L;
+}
+function paintJob() {
+  VIEW = "job"; var app = $("#app");
+  var head = '<p><button class="btn ghost" id="back" type="button">← Cash bids</button></p>';
+  if (LOADING) { app.innerHTML = head + '<div class="empty">Loading the job…</div>'; $("#back").onclick = function () { VIEW = "queue"; paintQueue(); }; return; }
+  if (!J) { app.innerHTML = head + '<div class="err">' + esc(JERR || "Couldn’t load that job.") + "</div>"; $("#back").onclick = function () { VIEW = "queue"; paintQueue(); }; return; }
+  var y = window.scrollY, job = J.job, c = calc(), rq = (J.requests || [])[0], bids = J.bids || [], rep = (job.reps || [])[0] || {};
+  var perSq = c.sq > 0 ? c.price / c.sq : 0, status = c.status || {};
+  var h = head + '<h2>#' + esc(job.num) + " " + esc((J.customer && J.customer.name) || job.name) + '</h2><p class="sub">' + esc([job.street, job.city, job.state, job.zip].filter(Boolean).join(", ")) + (rep.name ? " · rep " + esc(rep.name) : "") + " · " + esc(job.milestone || "") + ' · <a href="' + esc(job.lynx) + '" target="_blank" rel="noopener">Open in Lynx</a></p>';
+  if (rq) { var rd = rq.details || {}; h += '<div class="req"><b>The rep asked for:</b> ' + esc(String(rd.what || "a bid").replace(/_/g, " ")) + (rd.shingle ? " · " + esc(rd.shingle) : "") + (rd.color ? " · " + esc(rd.color) : "") + ((rd.extras || []).length ? " · also: " + esc(rd.extras.join(", ")) : "") + (rd.needed_by ? " · needed by " + esc(rd.needed_by) : "") + (rd.homeowner_budget ? " · homeowner budget " + esc(rd.homeowner_budget) : "") + (rd.notes ? '<div style="margin-top:4px">' + esc(rd.notes) + "</div>" : "") + '<div class="m" style="color:var(--muted);font-size:13px;margin-top:4px">' + esc(rq.by || "") + " · " + esc(D.stamp(rq.at)) + "</div>" + ((rq.photo_urls || []).length ? '<div class="photos" style="margin-top:8px">' + rq.photo_urls.filter(Boolean).map(function (u) { return '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt="photo from the rep"></a>'; }).join("") + "</div>" : "") + "</div>"; }
+  if (bids.length) h += '<div class="panel" style="margin:0 0 12px">' + bids.map(function (b) { return D.row(b.pdf_url || null, '<div class="t">' + esc(b.bid_no) + " · " + esc(fmt0(b.price)) + '</div><div class="m">' + esc(D.stamp(b.at)) + " by " + esc(b.by || "") + (b.sent_at ? " · sent to " + esc(b.sent_to || "") + " " + esc(D.day(b.sent_at)) : " · not sent") + "</div>", b.pdf_url ? '<span class="tag b">open PDF</span>' : ""); }).join("") + "</div>";
+  var srcs = []; if (H && H.read && H.read.readAt) srcs.push("measurements read from Lynx " + D.dOnly(H.read.readAt)); if ((H && H.cad) || J.cad) { var cd = (H && H.cad) || J.cad; srcs.push("county record: " + (cd.stories ? cd.stories + "-story" : "") + (cd.living_sf ? " · " + cd.living_sf + " sq ft living" : "") + (cd.roof_type ? " · " + String(cd.roof_type).toLowerCase() + " roof" : "")); } if (J.photos_on_job) srcs.push(J.photos_on_job + " photos on the Lynx job");
+  h += '<div class="two"><div>';
+  h += '<div class="sec"><div class="sech"><div><h3>Measurements &amp; scope inputs</h3><p class="hint">' + (srcs.length ? esc(srcs.join(" · ")) : "Nothing measured yet — enter the squares and lengths from the Roofr report.") + "</p></div></div>";
+  var F = function (k, label, type, opts, unit) {
+    var v = IN[k]; var id = "f_" + k;
+    if (type === "sel") return '<div class="f"><label for="' + id + '">' + esc(label) + "</label><select id=\"" + id + '" data-k="' + k + '">' + opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(v) === String(o[0]) ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join("") + "</select></div>";
+    if (type === "chk") return '<div class="f" style="align-self:end"><label><input type="checkbox" id="' + id + '" data-k="' + k + '"' + (v ? " checked" : "") + ">" + esc(label) + "</label></div>";
+    return '<div class="f"><label for="' + id + '">' + esc(label) + (unit ? ' <span class="u">' + esc(unit) + "</span>" : "") + '</label><input id="' + id + '" data-k="' + k + '" type="' + (type === "num" ? "number" : "text") + '" inputmode="decimal" value="' + esc(v == null ? "" : v) + '"' + (type === "num" ? ' step="any" min="0"' : "") + "></div>";
+  };
+  var shOpts = SHINGLES.map(function (s) { return [s[0], s[1] + (s[3] === "list" ? " (list)" : "")]; });
+  h += '<div class="panel" style="padding:12px"><div class="grid">' +
+    F("sq", "Squares (measured)", "num", null, "sq") + F("waste", "Waste", "sel", [[10, "10%"], [12, "12%"], [15, "15% hips & valleys"], [20, "20% cut-up"]]) + F("pitch", "Pitch", "sel", [["low", "Up to 7/12"], ["steep1", "8/12 – 11/12"], ["steep2", "12/12 and up"]]) + F("stories", "Stories", "sel", [[1, "1"], [2, "2"], [3, "3"]]) +
+    F("layers", "Layers to tear off", "sel", [[1, "1"], [2, "2"], [3, "3"], [4, "4"]]) + F("shingle", "Shingle", "sel", shOpts) + F("color", "Color", "text") + F("cap", "Hip & ridge", "sel", [["3tab", "Cut 3-tab"], ["hr", "IKO 12\" hip & ridge"], ["ir", "Class 4 hip & ridge"]]) +
+    F("crew", "Crew", "sel", Object.keys(CREWS).map(function (k) { return [k, CREWS[k].name]; })) + F("city", "City (permit)", "sel", [["", "—"]].concat(Object.keys(CITIES).sort().map(function (c) { return [c, c]; })).concat([["Other", "Other"]])) +
+    F("rep", "Sales rep (commission)", "sel", [["", "—"]].concat(Object.keys(REPS).map(function (r) { return [r, r]; }))) + F("deckSheets", "Decking sheets included", "num", null, "sheets") +
+    '</div><div class="grid" style="margin-top:10px">' + F("eaves", "Eaves", "num", null, "lf") + F("rakes", "Rakes", "num", null, "lf") + F("ridges", "Ridges", "num", null, "lf") + F("hips", "Hips", "num", null, "lf") + F("valleys", "Valleys", "num", null, "lf") + F("wall", "Wall flashing", "num", null, "lf") + F("ridgeVent", "Ridge vent", "num", null, "lf") + F("woodLf", "Wood repair", "num", null, "lf") + F("valleyMetal", "Metal valleys", "chk") + "</div>" +
+    '<div class="grid" style="margin-top:10px">' + F("boots", "Pipe boots", "num", null, "ea") + F("boxvents", "Box vents", "num", null, "ea") + F("turbines", "Turbines", "num", null, "ea") + F("powervents", "Power vents", "num", null, "ea") + F("versacaps", "Versa caps", "num", null, "ea") + F("ventCancel", "Vents to cancel", "num", null, "ea") + F("chimneys", "Chimneys", "num", null, "ea") + F("skylights", "Skylights", "num", null, "ea") + "</div>" +
+    '<div class="grid" style="margin-top:10px">' + F("panels", "Solar panels", "num", null, "ea") + F("gutterLf", "Gutters + downspouts", "num", null, "lf") + F("guardLf", "Leaf guard", "num", null, "lf") + F("screens", "Window screens", "num", null, "ea") + F("stainSqft", "Fence stain", "num", null, "sq ft") + F("garageDoors", "Garage doors 16x7", "num", null, "ea") + F("paintAmt", "Paint / interior (our cost)", "num", null, "$") + F("permit", "Permit (blank = city rate)", "num", null, "$") + "</div>" +
+    '<div style="margin-top:10px"><b style="font-size:14px">Anything else to price</b> <span class="note">(label + our cost)</span>' + (IN.extras || []).map(function (e, i) { return '<div class="opt"><input type="text" data-ex="' + i + '" data-f="label" placeholder="What" value="' + esc(e.label || "") + '"><input type="number" data-ex="' + i + '" data-f="amt" placeholder="$ cost" value="' + esc(e.amt || "") + '"><button class="x" data-exdel="' + i + '" type="button" aria-label="Remove">×</button></div>'; }).join("") + '<div style="padding:8px 0 0"><button class="btn ghost" id="addExtra" type="button">+ Add a line</button> <button class="btn ghost" id="rescope" type="button">Rebuild the scope from these inputs</button></div></div></div></div>';
+  // scope
+  h += '<div class="sec"><div class="sech"><div><h3>Scope of work <span class="n">' + SCOPE.length + ' lines</span></h3><p class="hint">What prints on the bid. Edit any line; it does not change the price.</p></div></div><div class="panel">' +
+    (SCOPE.map(function (s, i) { return '<div class="line"><span class="grp">' + esc(s.group) + '</span><input type="text" data-sc="' + i + '" value="' + esc(s.label) + '"><button class="x" data-scdel="' + i + '" type="button" aria-label="Remove">×</button></div>'; }).join("") || '<div class="empty">Enter the squares above, then rebuild the scope.</div>') + '<div style="padding:8px 12px"><button class="btn ghost" id="addScope" type="button">+ Add a line</button></div></div></div>';
+  // options
+  h += '<div class="sec"><div class="sech"><div><h3>Options priced separately</h3><p class="hint">Upgrades the homeowner can add. Each one is priced at the same target margin.</p></div></div><div class="panel">' +
+    (OPTS.map(function (o, i) { return '<div class="opt"><input type="text" data-op="' + i + '" data-f="label" value="' + esc(o.label) + '"><input type="number" data-op="' + i + '" data-f="price" value="' + esc(o.price) + '"><button class="x" data-opdel="' + i + '" type="button" aria-label="Remove">×</button></div>'; }).join("") || '<div class="empty">No options yet.</div>') +
+    '<div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap">' + (!isC4(IN.shingle) ? '<button class="btn ghost" data-addopt="class4" type="button">+ Class 4 upgrade</button>' : "") + (N(IN.ridgeVent) <= 0 && N(IN.ridges) > 0 ? '<button class="btn ghost" data-addopt="ridgevent" type="button">+ Ridge vent</button>' : "") + (N(IN.gutterLf) <= 0 && N(IN.eaves) > 0 ? '<button class="btn ghost" data-addopt="gutters" type="button">+ Gutters</button>' : "") + (N(IN.guardLf) <= 0 && N(IN.gutterLf) > 0 ? '<button class="btn ghost" data-addopt="guard" type="button">+ Leaf guard</button>' : "") + '<button class="btn ghost" data-addopt="custom" type="button">+ Custom option</button></div></div></div>';
+  // terms
+  h += '<div class="sec"><div class="sech"><div><h3>Terms</h3><p class="hint">Saved on this device for the next bid.</p></div></div><div class="panel" style="padding:12px"><div class="grid">' +
+    '<div class="f"><label>Price good for <span class="u">days</span></label><input type="number" data-t="valid_days" value="' + esc(TERMS.valid_days) + '"></div>' +
+    '<div class="f"><label>Deposit at signing <span class="u">%</span></label><input type="number" data-t="deposit_pct" value="' + esc(TERMS.deposit_pct) + '"></div>' +
+    '<div class="f"><label>Workmanship warranty <span class="u">years</span></label><input type="number" data-t="warranty_years" value="' + esc(TERMS.warranty_years) + '"></div>' +
+    '<div class="f" style="align-self:end"><label><input type="checkbox" data-t="financing"' + (TERMS.financing ? " checked" : "") + ">Show Sunlight financing</label></div></div>" +
+    '<div class="f" style="margin-top:8px"><label>Payment</label><input type="text" data-t="payment" value="' + esc(TERMS.payment) + '"></div>' +
+    '<div class="f" style="margin-top:8px"><label>Exclusions &amp; conditions</label><textarea class="t" data-t="exclusions">' + esc(TERMS.exclusions) + "</textarea></div>" +
+    '<div class="f" style="margin-top:8px"><label>Note to the homeowner (optional)</label><textarea class="t" data-t="notes" placeholder="Example: Includes the garage and the detached shed.">' + esc(TERMS.notes) + "</textarea></div></div></div>";
+  // photos
+  h += '<div class="sec"><div class="sech"><div><h3>Photos on the bid <span class="n">' + PHOTOS.length + '</span></h3><p class="hint">Optional. Roof and damage photos print on the last page.</p></div></div><div class="panel" style="padding:12px"><input type="file" id="ph" accept="image/*" multiple><div class="photos" style="margin-top:8px">' + PHOTOS.map(function (p) { return '<img src="' + esc(p.data) + '" alt="">'; }).join("") + "</div></div></div>";
+  h += "</div><div>"; // right column
+  // price card
+  h += '<div class="price"><div class="m">Bid price · ' + esc(c.sq ? c.sq.toFixed(1) + " sq · " + fmt0(perSq) + "/sq" : "no squares yet") + '</div><div class="big">' + esc(fmt0(c.price)) + "</div>" +
+    '<div class="m" style="margin:8px 0 4px">Override the price (blank = price at ' + esc(String(c.target)) + '% net after commission, rounded up to $25)</div><input type="number" id="price" step="25" min="0" value="' + esc(PRICE) + '" placeholder="' + esc(String(c.suggested)) + '">' +
+    '<div style="margin:10px 0 4px"><span class="pill ' + esc(status.cls || "neutral") + '">' + esc(status.text || "") + (isFinite(c.netPct) ? " · " + c.netPct.toFixed(1) + "% net" : "") + "</span></div>" +
+    '<div class="kv first"><span>Materials (ABC, taxed, delivered)</span><b>' + esc(fmt0(c.materials)) + '</b></div><div class="kv"><span>Labor — ' + esc(c.crewName || "") + "</span><b>" + esc(fmt0(c.labor)) + '</b></div>' + (c.trades ? '<div class="kv"><span>Trades (gutters, screens, solar…)</span><b>' + esc(fmt0(c.trades)) + "</b></div>" : "") + '<div class="kv"><span>Permit, inspections, report</span><b>' + esc(fmt0(c.fees)) + "</b></div>" + (c.extras ? '<div class="kv"><span>Extras</span><b>' + esc(fmt0(c.extras)) + "</b></div>" : "") +
+    '<div class="kv"><span><b>Hard cost</b></span><b>' + esc(fmt0(c.hard)) + '</b></div><div class="kv"><span>Commission at ' + esc(String(c.commRate)) + "%" + (IN.rep ? " (" + esc(IN.rep) + ")" : "") + "</span><b>" + esc(fmt0(c.commission)) + '</b></div><div class="kv"><span><b>Net after commission</b></span><b>' + esc(fmt0(c.net)) + "</b></div>" +
+    '<div class="kv"><span>Price at ' + esc(String(c.target)) + "% target</span><b>" + esc(fmt0(c.suggested)) + "</b></div>" + (sheetPrice() ? '<div class="kv"><span>Extra decking, per sheet</span><b>' + esc(fmt0(sheetPrice())) + "</b></div>" : "") + "</div>";
+  // actions
+  var canFile = c.price > 0 && c.sq > 0 && SCOPE.length > 0;
+  h += '<div class="panel" style="padding:12px;margin-top:12px">' + (MSG ? '<div class="' + (/fail|couldn/i.test(MSG) ? "err" : "ok") + '">' + esc(MSG) + "</div>" : "") +
+    (FILED ? '<div class="ok"><b>' + esc(FILED.bid_no) + "</b> filed" + (FILED.lynx && (FILED.lynx.status === 200 || FILED.lynx.status === 201 || FILED.lynx.status === 202) ? " to the Lynx CASH BIDS folder" : " in the DFW app (Lynx upload failed — http " + esc(String(FILED.lynx && FILED.lynx.status)) + ")") + '. <a href="' + esc(FILED.pdf_url || "#") + '" target="_blank" rel="noopener">Open the PDF</a></div>' +
+      '<div class="f" style="margin:8px 0"><label>Send to the rep (email)</label><input type="text" id="sendto" value="' + esc(rep.email || "") + '" placeholder="rep@dfwroofingpro.com"></div><div class="f"><label>Message (optional)</label><textarea class="t" id="sendmsg" placeholder="Example: Priced with Cambridge AR; Class 4 is an option on page 1."></textarea></div><div style="margin-top:8px"><button class="btn" id="send" type="button"' + (BUSY ? " disabled" : "") + '>Email the bid to the rep</button></div>' :
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="file" type="button"' + (!canFile || BUSY ? " disabled" : "") + '>Create the bid PDF and file it in Lynx</button><button class="btn ghost" id="preview" type="button"' + (!canFile || BUSY ? " disabled" : "") + '>Preview PDF</button></div>' + (!canFile ? '<p class="note">Needs squares, a price and at least one scope line.</p>' : "")) +
+    '<p class="note">Filing posts one note on the Lynx job and drops the PDF in its CASH BIDS folder. Sending emails the PDF to the rep only — the rep presents it to the homeowner.</p></div>';
+  h += "</div></div>";
+  app.innerHTML = h;
+  $("#back").onclick = function () { VIEW = "queue"; loadQueue(); paintQueue(); };
+  app.querySelectorAll("[data-k]").forEach(function (el) { el.onchange = el.oninput = function () { var k = el.dataset.k; IN[k] = el.type === "checkbox" ? el.checked : el.value; if (el.type === "number" || el.tagName === "SELECT" || el.type === "checkbox" || k === "color") schedule(el.tagName === "SELECT" || el.type === "checkbox" ? 0 : 500); }; });
+  app.querySelectorAll("[data-ex]").forEach(function (el) { el.oninput = function () { IN.extras[+el.dataset.ex][el.dataset.f] = el.value; schedule(600); }; });
+  app.querySelectorAll("[data-exdel]").forEach(function (b) { b.onclick = function () { IN.extras.splice(+b.dataset.exdel, 1); paintJob(); }; });
+  $("#addExtra").onclick = function () { IN.extras.push({ label: "", amt: "" }); paintJob(); };
+  $("#rescope").onclick = function () { SCOPE = autoScope(); paintJob(); };
+  app.querySelectorAll("[data-sc]").forEach(function (el) { el.oninput = function () { SCOPE[+el.dataset.sc].label = el.value; }; });
+  app.querySelectorAll("[data-scdel]").forEach(function (b) { b.onclick = function () { SCOPE.splice(+b.dataset.scdel, 1); paintJob(); }; });
+  $("#addScope").onclick = function () { SCOPE.push({ group: "Additional work", label: "" }); paintJob(); var L = app.querySelectorAll("[data-sc]"); if (L.length) L[L.length - 1].focus(); };
+  app.querySelectorAll("[data-op]").forEach(function (el) { el.oninput = function () { OPTS[+el.dataset.op][el.dataset.f] = el.dataset.f === "price" ? el.value : el.value; }; });
+  app.querySelectorAll("[data-opdel]").forEach(function (b) { b.onclick = function () { OPTS.splice(+b.dataset.opdel, 1); paintJob(); }; });
+  app.querySelectorAll("[data-addopt]").forEach(function (b) { b.onclick = function () { addOption(b.dataset.addopt); }; });
+  app.querySelectorAll("[data-t]").forEach(function (el) { el.onchange = el.oninput = function () { TERMS[el.dataset.t] = el.type === "checkbox" ? el.checked : el.value; try { localStorage.setItem(LSK, JSON.stringify(TERMS)); } catch (e) { /* ignore */ } }; });
+  $("#price").oninput = function () { PRICE = $("#price").value; schedule(500); };
+  $("#ph").onchange = function () { addPhotos($("#ph").files); };
+  if ($("#file")) $("#file").onclick = function () { fileBid(false); };
+  if ($("#preview")) $("#preview").onclick = function () { var doc = buildPdf(c); window.open(doc.output("bloburl"), "_blank"); };
+  if ($("#send")) $("#send").onclick = sendBid;
+  window.scrollTo(0, y);
+}
+var T = null; function schedule(ms) { clearTimeout(T); T = setTimeout(function () { var a = document.activeElement, id = a && a.id, pos = a && a.selectionStart; paintJob(); if (id && $("#" + id)) { var e = $("#" + id); e.focus(); try { if (pos != null && e.setSelectionRange) e.setSelectionRange(pos, pos); } catch (x) { /* ignore */ } } }, ms); }
+function addOption(kind) {
+  var base = compute(PB, Object.assign({}, IN, { jobType: "retail", contract: 0 })), alt = null, label = "";
+  if (kind === "class4") { var k = SHINGLES.find(function (s) { return s[2] === "ir" && s[3] === "live"; }) || SHINGLES.find(function (s) { return s[2] === "ir"; }); if (!k) return; alt = Object.assign({}, IN, { jobType: "retail", contract: 0, shingle: k[0], cap: "ir" }); label = "Upgrade to " + k[1].replace(/\s*\(Class 4\)/i, "") + " Class 4 impact-resistant shingles (may qualify for an insurance discount)"; }
+  else if (kind === "ridgevent") { alt = Object.assign({}, IN, { jobType: "retail", contract: 0, ridgeVent: N(IN.ridges) }); label = "Add " + N(IN.ridges) + " lf of ridge vent"; }
+  else if (kind === "gutters") { alt = Object.assign({}, IN, { jobType: "retail", contract: 0, gutterLf: N(IN.eaves) }); label = "Add " + N(IN.eaves) + " lf of new 5\" seamless gutters and downspouts"; }
+  else if (kind === "guard") { alt = Object.assign({}, IN, { jobType: "retail", contract: 0, guardLf: N(IN.gutterLf) }); label = "Add " + N(IN.gutterLf) + " lf of leaf guard"; }
+  else { OPTS.push({ label: "", price: "" }); paintJob(); return; }
+  var c2 = compute(PB, alt), delta = c2.priceAtTarget - base.priceAtTarget;
+  OPTS.push({ label: label, price: isFinite(delta) && delta > 0 ? round25(delta) : "" }); paintJob();
+}
+function addPhotos(files) {
+  Array.from(files || []).slice(0, 12 - PHOTOS.length).forEach(function (f) {
+    var img = new Image(), url = URL.createObjectURL(f);
+    img.onload = function () { var W = 1400, s = Math.min(1, W / Math.max(img.width, img.height)); var cv = document.createElement("canvas"); cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s); cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); PHOTOS.push({ data: cv.toDataURL("image/jpeg", 0.82), w: cv.width, h: cv.height, name: f.name }); URL.revokeObjectURL(url); paintJob(); };
+    img.src = url;
+  });
+}
+
+// ---------- PDF ----------
+function buildPdf(c) {
+  var jsPDF = window.jspdf.jsPDF, doc = new jsPDF({ unit: "pt", format: "letter" });
+  var W = 612, Hh = 792, M = 48, y = 0, job = J.job, cust = (J.customer && J.customer.name) || job.name, rep = (job.reps || [])[0] || {}, me = (QUEUE && QUEUE.me) || {};
+  var bidNo = FILED ? FILED.bid_no : "CB-" + job.num + "-" + ((J.bids || []).length + 1);
+  var today = new Date(), dateS = today.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  var fin = (J.links && J.links.financing) || (QUEUE && QUEUE.links && QUEUE.links.financing) || "";
+  function header(first) {
+    doc.setFillColor(17, 20, 24); doc.rect(0, 0, W, first ? 92 : 56, "F");
+    doc.setFillColor(238, 0, 0); doc.rect(0, first ? 92 : 56, W, 4, "F");
+    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(first ? 22 : 16); doc.text("DFW ROOFING PRO", M, first ? 40 : 34);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    if (first) { doc.text(CO.addr1 + " · " + CO.addr2, M, 58); doc.text(CO.phone + " · " + CO.web, M, 71); doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.text("ROOFING PROPOSAL", W - M, 40, { align: "right" }); doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.text("Cash bid " + bidNo + " · " + dateS, W - M, 58, { align: "right" }); doc.text("Prepared by " + (me.name || "the DFW Roofing Pro office") + (rep.name ? " · rep " + rep.name : ""), W - M, 71, { align: "right" }); }
+    else { doc.text("Cash bid " + bidNo + " · " + cust, W - M, 34, { align: "right" }); }
+    doc.setTextColor(17, 20, 24); y = first ? 118 : 80;
+  }
+  function footer(pn) { doc.setFontSize(8); doc.setTextColor(110, 116, 125); doc.text(CO.name + " · " + CO.phone + " · " + CO.web, M, Hh - 28); doc.text("Page " + pn, W - M, Hh - 28, { align: "right" }); doc.setTextColor(17, 20, 24); }
+  var page = 1; function need(hgt) { if (y + hgt > Hh - 56) { footer(page); doc.addPage(); page++; header(false); } }
+  function h3(t) { need(30); doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(238, 0, 0); doc.text(t.toUpperCase(), M, y); doc.setTextColor(17, 20, 24); y += 6; doc.setDrawColor(218, 221, 226); doc.line(M, y, W - M, y); y += 14; }
+  function para(t, size, bold) { doc.setFont("helvetica", bold ? "bold" : "normal"); doc.setFontSize(size || 10); var L = doc.splitTextToSize(t, W - 2 * M); need(L.length * (size || 10) * 1.3 + 4); doc.text(L, M, y); y += L.length * (size || 10) * 1.3 + 4; }
+  header(true);
+  // prepared for
+  doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(110, 116, 125); doc.text("PREPARED FOR", M, y); doc.text("PROPERTY", W / 2, y); doc.setTextColor(17, 20, 24); y += 14;
+  doc.setFontSize(12); doc.text(cust, M, y); doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text([job.street, [job.city, job.state, job.zip].filter(Boolean).join(" ")].filter(Boolean).join("\n") || "—", W / 2, y);
+  y += 16; if (J.customer && (J.customer.phone || J.customer.email)) { doc.setFontSize(9); doc.setTextColor(110, 116, 125); doc.text([J.customer.phone ? D.phone(J.customer.phone) : "", J.customer.email].filter(Boolean).join(" · "), M, y); doc.setTextColor(17, 20, 24); }
+  y += 22;
+  // roof summary
+  var sumBits = []; if (c.sq > 0) sumBits.push(c.sq.toFixed(1) + " squares"); sumBits.push(SHN(IN.shingle) + (isC4(IN.shingle) ? " (Class 4)" : "")); if (IN.color) sumBits.push("color: " + IN.color); sumBits.push(({ low: "up to 7/12 pitch", steep1: "8/12 – 11/12 pitch", steep2: "12/12+ pitch" })[IN.pitch] || ""); sumBits.push(IN.stories + "-story"); sumBits.push((+IN.layers || 1) + " layer" + (+IN.layers > 1 ? "s" : "") + " tear-off");
+  para(sumBits.filter(Boolean).join(" · "), 10, false);
+  y += 4;
+  // scope grouped
+  var groups = []; SCOPE.forEach(function (s) { if (!s.label.trim()) return; var g = groups.find(function (x) { return x.name === s.group; }); if (!g) { g = { name: s.group, items: [] }; groups.push(g); } g.items.push(s.label.trim()); });
+  h3("Scope of work");
+  groups.forEach(function (g) {
+    need(24); doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.text(g.name, M, y); y += 14;
+    g.items.forEach(function (t) { doc.setFont("helvetica", "normal"); doc.setFontSize(10); var L = doc.splitTextToSize(t, W - 2 * M - 16); need(L.length * 13 + 2); doc.text("•", M + 2, y); doc.text(L, M + 14, y); y += L.length * 13 + 2; });
+    y += 4;
+  });
+  // investment box
+  need(78); doc.setFillColor(17, 20, 24); doc.roundedRect(M, y, W - 2 * M, 62, 6, 6, "F"); doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text("TOTAL INVESTMENT", M + 16, y + 24); doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.text("Includes all materials, labor, permit, haul-off, cleanup and sales tax.", M + 16, y + 42); doc.setFont("helvetica", "bold"); doc.setFontSize(26); doc.text(fmt0(c.price), W - M - 16, y + 40, { align: "right" }); doc.setTextColor(17, 20, 24); y += 78;
+  var opts = OPTS.filter(function (o) { return o.label.trim() && N(o.price) > 0; });
+  if (opts.length) { h3("Options — priced separately"); opts.forEach(function (o) { var L = doc.splitTextToSize(o.label.trim(), W - 2 * M - 100); need(L.length * 13 + 4); doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(L, M, y); doc.setFont("helvetica", "bold"); doc.text("+ " + fmt0(N(o.price)), W - M, y, { align: "right" }); y += L.length * 13 + 4; }); y += 4; }
+  // terms
+  h3("Terms");
+  var tl = [];
+  tl.push("This price is good for " + (N(TERMS.valid_days) || 30) + " days from " + dateS + ".");
+  if (N(TERMS.deposit_pct) > 0) tl.push(N(TERMS.deposit_pct) + "% deposit (" + fmt0(c.price * N(TERMS.deposit_pct) / 100) + ") is due at signing. " + (TERMS.payment || "")); else if (TERMS.payment) tl.push(TERMS.payment);
+  tl.push("We accept check, ACH and card. " + (TERMS.financing ? "Financing is available through Sunlight Financial for qualified homeowners" + (fin ? " — apply at " + fin : " — ask your DFW Roofing Pro representative") + "." : ""));
+  if (N(TERMS.warranty_years) > 0) tl.push("Workmanship is warranted by DFW Roofing Pro LLC for " + N(TERMS.warranty_years) + " years. Shingles carry the manufacturer’s limited warranty.");
+  if (sheetPrice()) tl.push("Decking replaced beyond what is listed above: " + fmt0(sheetPrice()) + " per sheet, with your approval.");
+  if (TERMS.exclusions) tl.push(TERMS.exclusions);
+  if (TERMS.notes) tl.push(TERMS.notes);
+  tl.forEach(function (t) { para(t, 9.5, false); });
+  // acceptance
+  need(110); y += 10; h3("Acceptance");
+  para("I accept this proposal and authorize DFW Roofing Pro LLC to perform the work described above for the total investment shown" + (opts.length ? ", plus any options initialed here" : "") + ".", 9.5, false);
+  y += 14; need(60);
+  doc.setDrawColor(17, 20, 24); doc.line(M, y + 18, M + 220, y + 18); doc.line(M + 250, y + 18, M + 330, y + 18); doc.line(W - M - 200, y + 18, W - M, y + 18);
+  doc.setFontSize(8); doc.setTextColor(110, 116, 125); doc.text("Homeowner signature", M, y + 30); doc.text("Date", M + 250, y + 30); doc.text("DFW Roofing Pro LLC — " + (me.name || "authorized"), W - M - 200, y + 30); doc.setTextColor(17, 20, 24);
+  y += 44;
+  footer(page);
+  if (PHOTOS.length) {
+    doc.addPage(); page++; header(false); h3("Photos");
+    var cw = (W - 2 * M - 12) / 2, ch = 190, col = 0;
+    PHOTOS.forEach(function (p) { if (col === 0) need(ch + 10); var x = M + col * (cw + 12); var s = Math.min(cw / p.w, ch / p.h); var w = p.w * s, hh = p.h * s; doc.addImage(p.data, "JPEG", x + (cw - w) / 2, y + (ch - hh) / 2, w, hh); col++; if (col === 2) { col = 0; y += ch + 10; } });
+    footer(page);
+  }
+  return doc;
+}
+async function fileBid(dry) {
+  if (BUSY) return; var c = calc(); BUSY = "file"; MSG = "Building the PDF…"; paintJob();
+  try {
+    var doc = buildPdf(c); var b64 = doc.output("datauristring").split(",")[1];
+    var totals = { hard: +c.hard.toFixed(2), materials: +c.materials.toFixed(2), labor: +c.labor.toFixed(2), trades: +c.trades.toFixed(2), fees: +c.fees.toFixed(2), extras: +c.extras.toFixed(2), commission: +c.commission.toFixed(2), net: +c.net.toFixed(2), netPct: isFinite(c.netPct) ? +c.netPct.toFixed(1) : null, suggested: c.suggested, target: c.target, sq: c.sq, per_sq: c.sq ? +(c.price / c.sq).toFixed(2) : null, shingle_name: SHN(IN.shingle), status: c.status && c.status.text };
+    var inputs = Object.assign({}, IN, { pitch_label: ({ low: "up to 7/12", steep1: "8/12–11/12", steep2: "12/12+" })[IN.pitch] });
+    var rq = (J.requests || [])[0];
+    var r = await cb("file", { job_id: J.job.id, op_id: D.opId(), pdf: b64, price: c.price, inputs: inputs, totals: totals, scope: SCOPE.filter(function (s) { return s.label.trim(); }), options: OPTS.filter(function (o) { return o.label.trim() && N(o.price) > 0; }).map(function (o) { return { label: o.label.trim(), price: N(o.price) }; }), terms: TERMS, request_id: rq ? rq.id : null, dry_run: !!dry });
+    FILED = r; MSG = ""; BUSY = "";
+    try { var jr = await cb("job", { job: J.job.id }); J = jr; } catch (e) { /* keep */ }
+    paintJob(); loadQueue();
+  } catch (e) { BUSY = ""; MSG = "Couldn’t file the bid (" + e.message + ")."; paintJob(); }
+}
+async function sendBid() {
+  if (!FILED || BUSY) return; var to = ($("#sendto").value || "").trim(), msg = ($("#sendmsg").value || "").trim();
+  if (!to) { MSG = "Type the rep’s email first."; paintJob(); return; }
+  BUSY = "send"; MSG = "Sending…"; paintJob();
+  try { var r = await cb("send", { bid_id: FILED.bid_id, to: to.split(/[,\s]+/).filter(Boolean), message: msg }); BUSY = ""; MSG = "Sent to " + r.sent_to.join(", ") + ". The Lynx job has the note."; FILED = Object.assign({}, FILED, { sent: true }); paintJob(); loadQueue(); }
+  catch (e) { BUSY = ""; MSG = "Couldn’t send (" + (e.message === "internal_only" ? "bids go to a @dfwroofingpro.com address" : e.message) + ")."; paintJob(); }
+}
+
+// ---------- rep request mode ----------
+function paintReq() {
+  document.body.classList.add("modeReq"); var app = $("#app"), R = REQ;
+  if (R.done) { app.innerHTML = '<h2>Cash bid requested</h2><div class="ok">Got it — <b>#' + esc(R.done.job.num) + " " + esc(R.done.job.customer) + '</b> is in the office queue' + (R.done.note_status === 200 || R.done.note_status === 201 ? " and the Lynx job has the note" : "") + '. You’ll get the bid by email when it’s priced.</div><p><button class="btn ghost" id="again" type="button">Request another</button></p>'; $("#again").onclick = function () { REQ = { job: "", found: null, what: "full_roof", shingle: "", color: "", extras: [], notes: "", needed_by: "", budget: "", photos: [], busy: false, done: null, err: "" }; paintReq(); }; return; }
+  var f = R.found;
+  var h = '<h2>Request a cash bid</h2><p class="sub">Tell the office what to price. The bid comes back to you by email and gets filed on the Lynx job.</p>' +
+    '<div class="panel" style="padding:12px"><form id="lf" style="display:flex;gap:6px"><input type="text" id="rj" inputmode="numeric" placeholder="Lynx job #" value="' + esc(R.job) + '" style="flex:1;font:inherit;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 10px"><button class="btn ghost" type="submit">Find</button></form>' +
+    (f ? '<div class="req" style="margin:10px 0 0"><b>#' + esc(f.num) + " " + esc(f.customer) + "</b> · " + esc(f.address || "") + (f.rep ? " · " + esc(f.rep) : "") + " · " + esc(f.milestone || "") + (f.bid ? '<div>A bid is already on file: ' + esc(f.bid.bid_no) + " · " + esc(fmt0(f.bid.price)) + (f.bid.sent_at ? " · sent " + esc(D.day(f.bid.sent_at)) : "") + "</div>" : "") + (f.request && f.request.status === "requested" ? "<div>Already requested " + esc(D.day(f.request.at)) + " by " + esc(f.request.by || "") + " — you can add details below.</div>" : "") + "</div>" : "") + (R.err ? '<div class="err" style="margin-top:10px">' + esc(R.err) + "</div>" : "") + "</div>";
+  if (f) {
+    h += '<div class="panel" style="padding:12px;margin-top:12px"><div class="grid">' +
+      '<div class="f"><label>What to bid</label><select id="rw">' + [["full_roof", "Full roof replacement"], ["repair", "Repair"], ["roof_plus", "Roof + gutters / extras"], ["gutters", "Gutters only"], ["other", "Other (describe)"]].map(function (o) { return '<option value="' + o[0] + '"' + (R.what === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></div>" +
+      '<div class="f"><label>Shingle (if the homeowner picked one)</label><input list="shl" id="rs" value="' + esc(R.shingle) + '" placeholder="IKO Cambridge AR"><datalist id="shl">' + SHINGLES.map(function (s) { return '<option value="' + esc(s[1]) + '">'; }).join("") + "</datalist></div>" +
+      '<div class="f"><label>Color</label><input id="rc" value="' + esc(R.color) + '" placeholder="Weatherwood"></div>' +
+      '<div class="f"><label>Needed by</label><input id="rn" value="' + esc(R.needed_by) + '" placeholder="Friday"></div>' +
+      '<div class="f"><label>Homeowner budget (if they said)</label><input id="rb" value="' + esc(R.budget) + '" placeholder="$"></div></div>' +
+      '<div class="f" style="margin-top:8px"><label>Also price (one per line: gutters, screens, fence stain, garage door, solar…)</label><textarea class="t" id="re">' + esc(R.extras.join("\n")) + "</textarea></div>" +
+      '<div class="f" style="margin-top:8px"><label>Notes for the office — layers, pitch, decking, access, anything the homeowner said</label><textarea class="t" id="rt">' + esc(R.notes) + "</textarea></div>" +
+      '<div class="f" style="margin-top:8px"><label>Photos (roof, damage, accessories)</label><input type="file" id="rp" accept="image/*" multiple><div class="photos" style="margin-top:8px">' + R.photos.map(function (p) { return '<img src="' + esc(p.url || p.data) + '" alt="">'; }).join("") + "</div></div>" +
+      '<div style="margin-top:12px"><button class="btn" id="rsend" type="button"' + (R.busy ? " disabled" : "") + ">" + (R.busy ? "Sending…" : "Send the request to the office") + "</button></div></div>";
+  }
+  app.innerHTML = h;
+  $("#lf").onsubmit = async function (e) { e.preventDefault(); R.job = $("#rj").value.trim(); R.err = ""; R.found = null; if (!R.job) return; try { var r = await cb("lookup", { job: R.job }); R.found = r.job; } catch (x) { R.err = x.message === "job_not_found" ? "No Lynx job with that number." : x.message; } paintReq(); };
+  if (f) {
+    $("#rw").onchange = function () { R.what = $("#rw").value; }; $("#rs").oninput = function () { R.shingle = $("#rs").value; }; $("#rc").oninput = function () { R.color = $("#rc").value; }; $("#rn").oninput = function () { R.needed_by = $("#rn").value; }; $("#rb").oninput = function () { R.budget = $("#rb").value; };
+    $("#re").oninput = function () { R.extras = $("#re").value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean); }; $("#rt").oninput = function () { R.notes = $("#rt").value; };
+    $("#rp").onchange = function () { Array.from($("#rp").files || []).slice(0, 20).forEach(function (file) { var img = new Image(), url = URL.createObjectURL(file); img.onload = async function () { var s = Math.min(1, 1600 / Math.max(img.width, img.height)); var cv = document.createElement("canvas"); cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s); cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); var data = cv.toDataURL("image/jpeg", 0.82); URL.revokeObjectURL(url); var ph = { data: data, name: file.name }; R.photos.push(ph); paintReq(); try { var up = await cb("photo_upload", { job_id: f.id, filename: file.name, data: data.split(",")[1] }); ph.path = up.path; ph.url = up.url; } catch (x) { ph.failed = true; } }; img.src = url; }); };
+    $("#rsend").onclick = async function () { if (R.busy) return; R.busy = true; R.err = ""; paintReq(); try { var r = await cb("request", { op_id: D.opId(), job: f.id, details: { what: R.what, shingle: R.shingle, color: R.color, extras: R.extras, notes: R.notes, needed_by: R.needed_by, homeowner_budget: R.budget }, photos: R.photos.map(function (p) { return p.path; }).filter(Boolean) }); R.done = r; } catch (x) { R.err = "Couldn’t send (" + x.message + ")."; } R.busy = false; paintReq(); };
+  }
+}
+
+// ---------- boot ----------
+if (MODE === "request") { REQ.job = Q.job || ""; paintReq(); if (REQ.job) { $("#lf").dispatchEvent(new Event("submit")); } }
+else { loadPB(); D.poll(loadQueue); if (Q.job) openJob(Q.job); }
+window.addEventListener("message", function (e) { var d = e.data || {}; if (d.type === "dfw-open-cashbid" && d.job) openJob(String(d.job)); });
+window.__dfwCashBid = { pdfBase64: function () { return buildPdf(calc()).output("datauristring").split(",")[1]; }, state: function () { return { inputs: IN, scope: SCOPE, options: OPTS, terms: TERMS, price: PRICE, filed: FILED }; } };
+})();
+</script>
+</body>
+</html>
