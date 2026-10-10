@@ -86,7 +86,7 @@ function defaults() {
     rcv: "", deductible: "", suppAmt: "", upgrades: "", contract: "", commPreset: "rep", commRate: 10, payMethod: "check", mikeOvr: true, teamMgr: "auto", notes: "", color: "" };
 }
 function termsDefault() {
-  var t = { valid_days: 30, deposit_pct: 50, warranty_years: 5, payment: "Balance is due upon completion of the work.", financing: true, exclusions: "Price covers the scope listed above. Rotten or damaged decking beyond what is listed is replaced with homeowner approval at the per-sheet price shown. Hidden conditions found during tear-off are priced in writing before work continues.", notes: "" };
+  var t = { valid_days: 30, deposit_pct: 0, pay_terms: "completion", warranty_years: 5, payment: "Payment in full is due upon completion of the work.", financing: true, exclusions: "Price covers the scope listed above. Rotten or damaged decking beyond what is listed is replaced with homeowner approval at the per-sheet price shown. Hidden conditions found during tear-off are priced in writing before work continues.", notes: "" };
   try { var s = JSON.parse(localStorage.getItem(LSK) || "null"); if (s && typeof s === "object") Object.assign(t, s); } catch (e) { /* ignore */ }
   return t;
 }
@@ -250,7 +250,8 @@ function paintJob() {
   // terms
   h += '<div class="sec"><div class="sech"><div><h3>Terms</h3><p class="hint">Saved on this device for the next bid.</p></div></div><div class="panel" style="padding:12px"><div class="grid">' +
     '<div class="f"><label>Price good for <span class="u">days</span></label><input type="number" data-t="valid_days" value="' + esc(TERMS.valid_days) + '"></div>' +
-    '<div class="f"><label>Deposit at signing <span class="u">%</span></label><input type="number" data-t="deposit_pct" value="' + esc(TERMS.deposit_pct) + '"></div>' +
+    '<div class="f"><label>Payment terms</label><select data-t="pay_terms"><option value="completion"' + (TERMS.pay_terms === "completion" ? " selected" : "") + '>Nothing up front — paid at completion</option><option value="deposit"' + (TERMS.pay_terms === "deposit" ? " selected" : "") + '>Deposit at signing, balance at completion</option><option value="installments"' + (TERMS.pay_terms === "installments" ? " selected" : "") + '>Installment agreement</option></select></div>' +
+    (TERMS.pay_terms === "deposit" ? '<div class="f"><label>Deposit at signing <span class="u">%</span></label><input type="number" data-t="deposit_pct" value="' + esc(TERMS.deposit_pct) + '"></div>' : "") +
     '<div class="f"><label>Workmanship warranty <span class="u">years</span></label><input type="number" data-t="warranty_years" value="' + esc(TERMS.warranty_years) + '"></div>' +
     '<div class="f" style="align-self:end"><label><input type="checkbox" data-t="financing"' + (TERMS.financing ? " checked" : "") + ">Show Sunlight financing</label></div></div>" +
     '<div class="f" style="margin-top:8px"><label>Payment</label><input type="text" data-t="payment" value="' + esc(TERMS.payment) + '"></div>' +
@@ -287,7 +288,7 @@ function paintJob() {
   app.querySelectorAll("[data-op]").forEach(function (el) { el.oninput = function () { OPTS[+el.dataset.op][el.dataset.f] = el.dataset.f === "price" ? el.value : el.value; }; });
   app.querySelectorAll("[data-opdel]").forEach(function (b) { b.onclick = function () { OPTS.splice(+b.dataset.opdel, 1); paintJob(); }; });
   app.querySelectorAll("[data-addopt]").forEach(function (b) { b.onclick = function () { addOption(b.dataset.addopt); }; });
-  app.querySelectorAll("[data-t]").forEach(function (el) { el.onchange = el.oninput = function () { TERMS[el.dataset.t] = el.type === "checkbox" ? el.checked : el.value; try { localStorage.setItem(LSK, JSON.stringify(TERMS)); } catch (e) { /* ignore */ } }; });
+  app.querySelectorAll("[data-t]").forEach(function (el) { el.onchange = el.oninput = function () { TERMS[el.dataset.t] = el.type === "checkbox" ? el.checked : el.value; try { localStorage.setItem(LSK, JSON.stringify(TERMS)); } catch (e) { /* ignore */ } if (el.dataset.t === "pay_terms") paintJob(); }; });
   $("#price").oninput = function () { PRICE = $("#price").value; schedule(500); };
   $("#ph").onchange = function () { addPhotos($("#ph").files); };
   if ($("#file")) $("#file").onclick = function () { fileBid(false); };
@@ -360,7 +361,9 @@ function buildPdf(c) {
   h3("Terms");
   var tl = [];
   tl.push("This price is good for " + (N(TERMS.valid_days) || 30) + " days from " + dateS + ".");
-  if (N(TERMS.deposit_pct) > 0) tl.push(N(TERMS.deposit_pct) + "% deposit (" + fmt0(c.price * N(TERMS.deposit_pct) / 100) + ") is due at signing. " + (TERMS.payment || "")); else if (TERMS.payment) tl.push(TERMS.payment);
+  if (TERMS.pay_terms === "deposit" && N(TERMS.deposit_pct) > 0) tl.push(N(TERMS.deposit_pct) + "% deposit (" + fmt0(c.price * N(TERMS.deposit_pct) / 100) + ") is due at signing; the balance is due upon completion of the work.");
+  else if (TERMS.pay_terms === "installments") tl.push("Payment under an installment agreement signed with this proposal; " + (TERMS.payment || "schedule as agreed in writing."));
+  else tl.push(TERMS.payment || "Payment in full is due upon completion of the work.");
   tl.push("We accept check, ACH and card. " + (TERMS.financing ? "Financing is available through Sunlight Financial for qualified homeowners" + (fin ? " — apply at " + fin : " — ask your DFW Roofing Pro representative") + "." : ""));
   if (N(TERMS.warranty_years) > 0) tl.push("Workmanship is warranted by DFW Roofing Pro LLC for " + N(TERMS.warranty_years) + " years. Shingles carry the manufacturer’s limited warranty.");
   if (sheetPrice()) tl.push("Decking replaced beyond what is listed above: " + fmt0(sheetPrice()) + " per sheet, with your approval.");
