@@ -1,13 +1,9 @@
 name: lynx-notes-robot
-# Hourly: logs into Lynx as the Command Center user and reads job messages / texts / emails into the Master System
-# (master_private.job_notes) because the AccuLynx API has no read endpoint for them. Only secret: LYNX_ROBOT_TOKEN.
 on:
   schedule:
-    - cron: "17 * * * *"
+    - cron: "7 * * * *"
   workflow_dispatch: {}
-concurrency:
-  group: lynx-notes
-  cancel-in-progress: false
+concurrency: { group: lynx-notes, cancel-in-progress: false }
 jobs:
   notes:
     runs-on: ubuntu-latest
@@ -20,5 +16,5 @@ jobs:
       - run: python scripts/lynx_robot.py notes
         env:
           LYNX_ROBOT_TOKEN: ${{ secrets.LYNX_ROBOT_TOKEN }}
-          NOTES_MAX_JOBS: "120"
           NOTES_BUDGET_MIN: "45"
+          NOTES_MAX_JOBS: "120"
