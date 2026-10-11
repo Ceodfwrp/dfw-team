@@ -140,9 +140,9 @@ async function openJob(ref) {
   VIEW = "job"; LOADING = true; J = null; H = null; JERR = ""; FILED = null; MSG = ""; PHOTOS = []; OPTS = []; PRICE = ""; NOTE = "";
   paintJob();
   try {
-    var jr = await cb("job", { job: ref }); J = jr;
+    var jr = await cb("job", { job: ref }); if (!jr || !jr.job) throw new Error("bad_response"); J = jr;
     try { H = await hc("hc_pull", { job_number: jr.job.num }); } catch (e) { H = null; }
-  } catch (e) { JERR = e.message === "job_not_found" ? "No Lynx job with that number." : e.message; }
+  } catch (e) { JERR = e.message === "job_not_found" ? "No Lynx job with that number." : e.message === "signin" ? "Your sign-in has expired. Sign out of the team app and back in, then open Cash Bids again." : e.message === "forbidden" ? "The cash bid desk is for the office and managers. Ask Blake if you need it." : "Couldn’t load that job (" + e.message + "). Try again in a moment."; }
   LOADING = false;
   if (J) { IN = buildInputs(); TERMS = termsDefault(); SCOPE = autoScope(); }
   paintJob();
@@ -442,7 +442,7 @@ function paintReq() {
 // ---------- boot ----------
 if (MODE === "request") { REQ.job = Q.job || ""; paintReq(); if (REQ.job) { $("#lf").dispatchEvent(new Event("submit")); } }
 else { loadPB(); D.poll(loadQueue); if (Q.job) openJob(Q.job); }
-window.addEventListener("message", function (e) { var d = e.data || {}; if (d.type === "dfw-open-cashbid" && d.job) openJob(String(d.job)); });
+window.addEventListener("message", function (e) { if (e.source !== window.parent) return; var d = e.data || {}; if (d.type === "dfw-open-cashbid" && d.job) openJob(String(d.job)); });
 window.__dfwCashBid = { pdfBase64: function () { return buildPdf(calc()).output("datauristring").split(",")[1]; }, state: function () { return { inputs: IN, scope: SCOPE, options: OPTS, terms: TERMS, price: PRICE, filed: FILED }; } };
 })();
 </script>

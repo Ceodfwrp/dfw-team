@@ -31,6 +31,8 @@
 <script>
 (function(){
 "use strict";
+/* This page posts job hand-offs to whoever frames it, so only our own shell may: same origin, our hosts, or a local file:// test (no referrer). */
+if (window.top !== window.self) { var po = ""; try { po = document.referrer ? new URL(document.referrer).origin : ""; } catch (e) {} if (!(po === location.origin || (location.protocol === "file:" && !po) || /^https:\/\/(ceodfwrp\.github\.io|([a-z0-9-]+\.)*dfwroofingpro\.com)$/.test(po))) { document.documentElement.innerHTML = ""; try { window.top.location.replace(location.href); } catch (e2) {} return; } }
 var D = window.DESK, $ = function (s) { return document.querySelector(s); }, esc = D.esc;
 var API = "https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/pipeline-api/api/";
 var Q = (function () { var o = {}; location.search.replace(/^\?/, "").split("&").forEach(function (p) { if (!p) return; var kv = p.split("="); o[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1] || "").replace(/\+/g, " ")); }); return o; })();

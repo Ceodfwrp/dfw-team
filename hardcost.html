@@ -349,7 +349,7 @@ const SECTIONS = [
   {title:'Job', fields:[
     {k:'customer',label:'Customer',type:'text',span:true},{k:'address',label:'Job address',type:'text',span:true},
     {k:'city',label:'City (permit)',type:'sel',opts:[['','—'],...Object.keys(CITIES).sort().map(c=>[c,`${c} · $${CITIES[c]}`]),['Other','Other']]},
-    {k:'rep',label:'Sales rep',type:'sel',opts:[['','—'],...Object.keys(REPS).map(r=>[r, r + (REPS[r].role==='rep'?` · ${REPS[r].rate}%`:REPS[r].role==='mgr'?' · manager':'')])]},
+    {k:'rep',label:'Sales rep',type:'sel',get opts(){ return repOpts(); }},
     {k:'jobType',label:'Job type',type:'seg',opts:[['insurance','Insurance'],['retail','Retail']]},
   ]},
   {title:'Roof', sub:'Roofr / measurement report', fields:[
@@ -376,6 +376,16 @@ const SECTIONS = [
     {k:'permit',label:'Permit (blank = city)',type:'money'},{k:'inspections',label:'Inspections',type:'num',unit:'ea'},{k:'reinspections',label:'Re-inspections',type:'num',unit:'ea'},{k:'supplements',label:'Supplement write-ups',type:'num',unit:'ea'},{k:'dumpster',label:'Dumpster (if any)',type:'money'},{k:'measure',label:'Roofr report',type:'chk'},{k:'appraisal',label:'Appraisal (Claim Experts)',type:'chk'},
   ]},
 ];
+/* The pay plan arrives with hc_load (owner: everyone; anyone else: their own line only), so these are built at render time. */
+function repOpts(){
+  const cur = state.job && state.job.rep && !REPS[state.job.rep] ? [[state.job.rep, state.job.rep + ' · custom %']] : [];
+  return [['','—'], ...cur, ...Object.keys(REPS).map(r=>[r, r + (REPS[r].role==='rep'?` · ${n(REPS[r].rate)}%`:REPS[r].role==='mgr'?' · manager':'')])];
+}
+function ovrLabel(k){
+  if (!k || k==='none') return 'none';
+  if (k==='both'){ const r=MGRS.richard, c=MGRS.kaden; if (r&&c) return `Richard ${n(r.rate)}% + Kaden ${n(c.rate)}%`; if (MGRS.both) return `${MGRS.both.name} ${n(MGRS.both.rate)}%`; return 'Richard + Kaden'; }
+  const m = MGRS[k]; return m ? `${String(m.name).split(' ')[0]} ${n(m.rate)}%` : k.charAt(0).toUpperCase()+k.slice(1);
+}
 function fieldHTML(f, j){
   const v = j[f.k]; const id = 'f_'+f.k;
   const lab = `<label for="${id}"><span>${esc(f.label)}</span>${f.unit?`<span class="u">${esc(f.unit)}</span>`:''}</label>`;
@@ -399,13 +409,16 @@ function renderForm(){
   if (ins) html += fieldHTML({k:'rcv',label:'RCV (approved)',type:'money'},j) + fieldHTML({k:'deductible',label:'Deductible',type:'money'},j) + fieldHTML({k:'suppAmt',label:'Approved supplements',type:'money'},j) + fieldHTML({k:'upgrades',label:'Upgrades / out of pocket',type:'money'},j);
   else html += fieldHTML({k:'contract',label:'Contract price',type:'money',span:true},j);
   const ri = REPS[j.rep];
-  html += fieldHTML({k:'commPreset',label:'Commission',type:'sel',opts:[['rep','Pay plan' + (ri ? (ri.role==='rep' ? ` · ${ri.rate}%` : ri.role==='mgr' ? ' · house job (override only)' : ' · none') : ' · pick a rep')],...Object.entries(COMM).map(([k,c])=>[k,c.label])]},j);
+  html += fieldHTML({k:'commPreset',label:'Commission',type:'sel',opts:[['rep','Pay plan' + (ri ? (ri.role==='rep' ? ` · ${n(ri.rate)}%` : ri.role==='mgr' ? ' · house job (override only)' : ' · none') : ' · pick a rep')],...Object.entries(COMM).map(([k,c])=>[k,c.label])]},j);
   if (j.commPreset==='custom' || (j.commPreset==='rep' && !ri && j.rep)) html += fieldHTML({k:'commRate',label:'Rep rate',type:'num',unit:'%',step:'0.5'},j);
   if (j.commPreset!=='none'){
     html += fieldHTML({k:'payMethod',label:'Paid by',type:'seg',opts:[['check','Check'],['ach',`ACH −${n(state.pb.fee_ach)}%`],['card',`Card −${n(state.pb.fee_card)}%`]]},j);
-    html += fieldHTML({k:'mikeOvr',label:`Mike Mullens ${MGRS.mike.rate}% (every payment)`,type:'chk'},j);
-    const autoTeam = ri ? ri.team : 'none';
-    html += fieldHTML({k:'teamMgr',label:'Manager overrides',type:'sel',opts:[['auto',`Per plan · ${autoTeam==='none'?'none':autoTeam==='both'?'Richard 2% + Kaden 2%':MGRS[autoTeam].name+' 2%'}`],['both','Richard 2% + Kaden 2%'],['richard','Richard 2% only'],['kaden','Kaden 2% only'],['none','None']]},j);
+    /* Override controls only when the server sent the manager lines (owner, or a manager seeing their own). */
+    if (MGRS.mike) html += fieldHTML({k:'mikeOvr',label:`${MGRS.mike.name} ${n(MGRS.mike.rate)}% (${MGRS.mike.scope||'every payment'})`,type:'chk'},j);
+    if (MGRS.richard || MGRS.kaden || MGRS.both){
+      const autoTeam = ri ? ri.team : 'none';
+      html += fieldHTML({k:'teamMgr',label:'Manager overrides',type:'sel',opts:[['auto',`Per plan · ${ovrLabel(autoTeam)}`],['both',ovrLabel('both')],['richard',ovrLabel('richard')+' only'],['kaden',ovrLabel('kaden')+' only'],['none','None']]},j);
+    }
   }
   html += `</div><div class="hint-row">Pay plan effective ${PAY_PLAN_EFFECTIVE}: commission is paid weekly on money received, net of card / ACH fees. No deal-claim pay. ${n(state.pb.sales_base_wk)>0?`Weekly bases (${money(n(state.pb.sales_base_wk))}/wk) are shown as an allocation, not a job cost.`:''}</div><div class="f" style="margin-top:12px"><label for="f_notes"><span>Notes</span></label><textarea class="in" id="f_notes" data-k="notes" rows="2">${esc(j.notes)}</textarea></div></div>`;
   $('#jobForm').innerHTML = html;
@@ -452,7 +465,7 @@ function renderSummary(){
       <div class="kv"><span class="k">Hard cost</span><span class="v">− ${money(c.hard)}</span></div>
       <div class="kv"><span class="k">Gross profit</span><span class="v">${c.contract>0?money(c.gp)+' · '+pct(c.gpPct):'—'}</span></div>
       ${c.repComm>0?`<div class="kv"><span class="k">Rep ${c.repRate}%${j.rep?' · '+esc(j.rep):''}${c.feePct>0?` on ${money(c.basis)} (after ${c.feePct}% ${j.payMethod==='card'?'card':'ACH'} fee)`:''}</span><span class="v">− ${money(c.repComm)}</span></div>`:''}
-      ${c.ovrComm>0?`<div class="kv"><span class="k">Overrides ${c.ovrRate}% · ${[c.mikeRate?'Mike '+c.mikeRate+'%':'', c.teamKey==='both'?'Richard 2% + Kaden 2%':(c.teamRate?MGRS[c.teamKey].name.split(' ')[0]+' '+c.teamRate+'%':'')].filter(Boolean).join(' + ')}</span><span class="v">− ${money(c.ovrComm)}</span></div>`:''}
+      ${c.ovrComm>0?`<div class="kv"><span class="k">Overrides ${c.ovrRate}% · ${[c.mikeRate?'Mike '+c.mikeRate+'%':'', c.teamRate?ovrLabel(c.teamKey):''].filter(Boolean).join(' + ')}</span><span class="v">− ${money(c.ovrComm)}</span></div>`:''}
       <div class="kv tot"><span class="k">Net after commission <span class="pill ${c.status.cls}">${c.status.text}</span></span><span class="v">${c.contract>0?money(c.net):'—'}</span></div>
       ${c.contract>0&&c.baseAlloc>0?`<div class="kv dim"><span class="k">Base pay allocation · sales ${money(n(state.pb.sales_base_wk))} + office/field ${money(n(state.pb.office_base_wk))} per wk + ${n(state.pb.payroll_tax)}% employer tax ÷ ${n(state.pb.jobs_per_wk)} jobs</span><span class="v">− ${money(c.baseAlloc)}</span></div><div class="kv dim"><span class="k">Net after base pay</span><span class="v">${money(c.netLoaded)} · ${pct(c.netLoadedPct)}</span></div>`:''}
       ${isFinite(c.priceAtTarget)&&c.hard>0?`<div class="kv dim"><span class="k">Price for ${c.target}% net after commission</span><span class="v">${money(c.priceAtTarget)}</span></div>`:''}
@@ -542,7 +555,9 @@ function renderSubs(){
   for (const g in groups){
     html += `<div class="group-h">${esc(g)}</div><div class="tscroll"><table class="t"><tbody>` + groups[g].map(s => `<tr><td><div>${esc(s.label)}</div><div class="src">${esc(s.src)}</div></td><td class="n" style="width:140px"><input class="edit ${state.pb[s.k]!==PB_DEF[s.k]?'changed':''}" data-pb="${s.k}" type="number" inputmode="decimal" step="0.01" value="${state.pb[s.k]}"> <span class="sku">${esc(s.unit)}</span></td></tr>`).join('') + `</tbody></table></div>`;
   }
-  html += `<div class="group-h">Pay plan · effective ${PAY_PLAN_EFFECTIVE}</div><div class="prose"><p>Commission is paid weekly on money received, net of card (${n(state.pb.fee_card)}%) / ACH (${n(state.pb.fee_ach)}%) fees. No deal-claim pay. Rep rates: ${Object.entries(REPS).filter(([r,v])=>v.role==='rep').map(([r,v])=>`${esc(r)} ${v.rate}%`).join(' · ')}. Managers: Mike Mullens ${MGRS.mike.rate}% on every payment; Richard Mullens and Kaden Morel ${MGRS.richard.rate}% each on every rep's payments except Moe's.${state.owner?' Weekly base pay and W-2 pay are on the History tab (owner only).':''}</p></div>`;
+  /* Pay-plan card: only what the server sent for this person (owner: everyone; a rep or manager: their own line). Nothing sent → no card. */
+  const repRates = Object.entries(REPS).filter(([r,v])=>v.role==='rep'), mgrLines = ['mike','richard','kaden'].filter(k=>MGRS[k]).map(k=>`${esc(MGRS[k].name)} ${n(MGRS[k].rate)}% on ${esc(MGRS[k].scope||'every payment')}`);
+  if (repRates.length || mgrLines.length) html += `<div class="group-h">Pay plan · effective ${PAY_PLAN_EFFECTIVE}</div><div class="prose"><p>Commission is paid weekly on money received, net of card (${n(state.pb.fee_card)}%) / ACH (${n(state.pb.fee_ach)}%) fees. No deal-claim pay.${repRates.length?` Rep rates: ${repRates.map(([r,v])=>`${esc(r)} ${n(v.rate)}%`).join(' · ')}.`:''}${mgrLines.length?` Managers: ${mgrLines.join('; ')}.`:''}${state.owner?' Weekly base pay and W-2 pay are on the History tab (owner only).':''}</p></div>`;
   $('#subsBody').innerHTML = html;
   syncSaveButtons();
 }
@@ -646,7 +661,8 @@ function handleDbErr(err, what){
 }
 function applyPricebook(items){ state.pb = {...PB_DEF, ...(items||{})}; }
 function loadLocal(){ const pb = lsGet(LS+':pb'); if (pb?.items) applyPricebook(pb.items); state.jobs = lsGet(LS+':jobs') || []; renderAbc(); renderSubs(); renderJobs(); recalc(); }
-const HC_TOKEN = (()=>{ const m = location.hash.match(/tok=([^&]+)/); if (m) return decodeURIComponent(m[1]); try{ return localStorage.getItem('dfw_team_token'); }catch(e){ return null; } })();
+/* Same sign-in as the team app (index.html embeds this page same-origin, so the token is read from localStorage; nothing comes in on the URL). */
+const HC_TOKEN = (()=>{ try{ return localStorage.getItem('dfw_team_token'); }catch(e){ return null; } })();
 const HC_API = 'https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/hc-relay/api/';
 async function hcApi(action, body){
   const r = await fetch(HC_API+action, {method:'POST', headers:{'content-type':'text/plain;charset=UTF-8'}, body: JSON.stringify(Object.assign({}, body||{}, {_t: HC_TOKEN||''}))});
@@ -655,9 +671,20 @@ async function hcApi(action, body){
   if (!r.ok){ const e = new Error(j.error||('http_'+r.status)); e.code = r.status===401||r.status===403 ? 'invalid_argument' : 'unavailable'; throw e; }
   return j;
 }
+/* ABC catalog, sub rate cards and History are owner-only. The gate is the role the server put on hc_load — never the URL. */
+const OWNER_TABS = ['abc','subs','bench'];
+function applyRoleGates(){
+  const owner = state.role==='owner';
+  OWNER_TABS.forEach(x=>{ const b=document.querySelector('.tabs [data-tab="'+x+'"]'); if (b) b.hidden=!owner; });
+  if (!owner && OWNER_TABS.includes(state.tab)){ state.wantTab = state.tab; switchTab('job'); }
+  else if (owner && state.wantTab){ const t=state.wantTab; state.wantTab=null; if (state.tab==='job') switchTab(t); }
+}
 async function hcRefresh(){
   const d = await hcApi('hc_load');
   state.owner = d.owner || null; state.role = d.role || null;
+  const plan = JSON.stringify([d.reps||{}, d.mgrs||{}]);
+  if (plan !== state.planSig){ state.planSig = plan; state.reps = d.reps||{}; state.mgrs = d.mgrs||{}; setPayPlan(state.reps, state.mgrs); renderForm(); renderSubs(); recalc(); }
+  applyRoleGates();
   if (d.pricebook?.items && !state.pbDirty){ applyPricebook(d.pricebook.items); state.pbMeta={updatedAt:d.pricebook.updated_at}; renderAbc(); renderSubs(); recalc(); }
   state.jobs = d.jobs || []; renderJobs();
 }
@@ -675,6 +702,7 @@ function start(hot){
   if (!Array.isArray(state.job.extras)) state.job.extras=[];
   let tab = (hot && hot.tab) || 'job'; try{ tab = localStorage.getItem(LS+':tab') || tab; }catch(e){}
   renderForm(); renderAbc(); renderSubs(); renderJobs(); renderBench(); recalc(); switchTab(['job','abc','subs','jobs','bench'].includes(tab)?tab:'job');
+  applyRoleGates(); /* owner-only tabs stay hidden until hc_load says who this is */
   document.querySelectorAll('.tabs [role=tab]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
   $('#jobForm').addEventListener('input', onFormInput); $('#jobForm').addEventListener('change', onFormInput); $('#jobForm').addEventListener('click', onFormClick);
   $('#summary').addEventListener('click', e => {
@@ -833,6 +861,7 @@ window.renderActuals = function(){
 /* ===================== JOB # LOOKUP (pulls the job from Lynx) ===================== */
 function lkRepKey(names){
   const keys = Object.keys(REPS), al = {michael:'mike'};
+  if (!keys.length) return String((names||[])[0]||'').trim(); /* no plan sent (not the owner): keep the Lynx name, rate stays "custom" */
   for (const nm of (names||[])){
     const w = String(nm).toLowerCase().trim().split(/\s+/); if (!w[0]) continue;
     const f = al[w[0]]||w[0], l = w[w.length-1];
@@ -931,7 +960,7 @@ $('#lkNum').addEventListener('input', ()=>{ const s=String($('#lkNum').value||''
 $('#lkNum').addEventListener('keydown', e=>{ if (e.key==='Enter'){ e.preventDefault(); lkGoNow(); } });
 $('#lkGo').addEventListener('click', lkGoNow);
 $('#jobForm').addEventListener('keydown', e=>{ const t=e.target; if (e.key==='Enter' && t && t.dataset && t.dataset.k==='customer' && /^\s*#?\d{3,6}\s*$/.test(t.value||'')){ e.preventDefault(); const v=t.value.replace(/\D/g,''); t.value=''; state.job.customer=''; $('#lkNum').value=v; pullJob(); } });
-setTimeout(()=>{ const qj=new URLSearchParams(location.search).get('job'); if (qj){ $('#lkNum').value=String(qj).replace(/\D/g,''); pullJob(); } else if (!state.job.jobNumber){ try{ $('#lkNum').focus(); }catch(e){} }     try{ const role=new URLSearchParams(location.search).get('role')||''; if (role!=='owner'){ ['abc','subs','bench'].forEach(x=>{ const b=document.querySelector('.tabs [data-tab="'+x+'"]'); if (b) b.hidden=true; }); } }catch(e){}
+setTimeout(()=>{ const qj=new URLSearchParams(location.search).get('job'); if (qj){ $('#lkNum').value=String(qj).replace(/\D/g,''); pullJob(); } else if (!state.job.jobNumber){ try{ $('#lkNum').focus(); }catch(e){} }
   }, 600);
 $('#dockJump').addEventListener('click', () => $('#summary').scrollIntoView({behavior:'smooth', block:'start'}));
   initCapabilities();

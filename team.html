@@ -42,6 +42,8 @@
 <script>
 (function(){
 "use strict";
+/* This page posts hand-offs to whoever frames it, so only our own shell may: same origin, our hosts, or a local file:// test (no referrer). */
+if (window.top !== window.self) { var po = ""; try { po = document.referrer ? new URL(document.referrer).origin : ""; } catch (e) {} if (!(po === location.origin || (location.protocol === "file:" && !po) || /^https:\/\/(ceodfwrp\.github\.io|([a-z0-9-]+\.)*dfwroofingpro\.com)$/.test(po))) { document.documentElement.innerHTML = ""; try { window.top.location.replace(location.href); } catch (e2) {} return; } }
 var D = window.DESK, $ = function (s) { return document.querySelector(s); }, esc = D.esc;
 var API = "https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/pipeline-api/api/";
 var B = null, ERR = "", DAYS = 90, VIEW = "cards", SORT = "sold_value", ASORT = "total";
@@ -118,6 +120,7 @@ function activity() {
 function paint() {
   var app = $("#app");
   if (!B) { app.innerHTML = D.errorBox(ERR); var rb = app.querySelector("[data-retry]"); if (rb) rb.onclick = load; return; }
+  if (!B.me) { B = null; ERR = "bad_response"; return paint(); }
   var y = window.scrollY, reps = (B.reps || []).slice(), C = B.company;
   reps.sort(function (a, b) { if (SORT === "rep") return String(a.rep).localeCompare(String(b.rep)); return (+b[SORT] || 0) - (+a[SORT] || 0); });
   var onTeam = reps.filter(function (x) { return x.on_team; }), others = reps.filter(function (x) { return !x.on_team; });

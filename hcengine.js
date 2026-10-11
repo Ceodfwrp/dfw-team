@@ -85,25 +85,21 @@ const SUBS = [
   {g:'Business', k:'payroll_tax', label:'Employer payroll taxes on W-2 pay', unit:'%', def:0, src:'owner only · kept in the shared price book', owner:true},
   {g:'Business', k:'jobs_per_wk', label:'Built jobs per week (for base-pay allocation)', unit:'jobs', def:0, src:'owner only · kept in the shared price book', owner:true},
 ];
-/* PAY PLAN — commission rates only (what the costing engine needs). Weekly base pay, Gusto and per-person pay
-   terms are NOT in this file: they live in the Master System (comp_private.plan_terms) and are owner-only. */
+/* PAY PLAN — nobody's commission % or override % ships in this file (it is a public asset). The server sends the
+   plan with hc_load (`reps` / `mgrs`): the owner gets everyone, anyone else gets only their own line. hardcost.html
+   calls setPayPlan() with what came back; until then both tables are empty and the engine treats every rep as
+   "custom %". Weekly base pay, Gusto and per-person pay terms live in the Master System and are owner-only. */
 const PAY_PLAN_EFFECTIVE = 'week of Sep 18, 2026';
 const OWNER_ONLY_PB_KEYS = ['sales_base_wk','office_base_wk','payroll_tax','jobs_per_wk'];
-const REPS = {
-  'Moe Awadi':      {role:'rep', rate:15, team:'none'},
-  'Garrett Cook':   {role:'rep', rate:13, team:'both'},
-  'Daniel Gonzalez':{role:'rep', rate:10, team:'both'},
-  'Gersom Hernandez':{role:'rep', rate:10, team:'both'},
-  'Isaiah Wetzel':  {role:'rep', rate:10, team:'both'},
-  'Ivan Paz':       {role:'rep', rate:10, team:'both'},
-  'Orion Keith':    {role:'rep', rate:10, team:'both'},
-  'Shane Holcomb':  {role:'rep', rate:10, team:'both'},
-  'Mike Mullens':   {role:'mgr', rate:0, team:'none'},
-  'Richard Mullens':{role:'mgr', rate:0, team:'none'},
-  'Kaden Morel':    {role:'mgr', rate:0, team:'none'},
-  'House / no rep': {role:'house', rate:0, team:'none'}
-};
-const MGRS = {mike:{name:'Mike Mullens', rate:3, scope:'every payment'}, richard:{name:'Richard Mullens', rate:2, scope:'every rep except Moe'}, kaden:{name:'Kaden Morel', rate:2, scope:'every rep except Moe'}, both:{name:'Richard Mullens + Kaden Morel', rate:4, scope:'every rep except Moe'}};
+const REPS = {};   /* name -> {role:'rep'|'mgr'|'house', rate:%, team:'both'|'richard'|'kaden'|'none'} */
+const MGRS = {};   /* mike|richard|kaden|both -> {name, rate:%, scope} */
+function setPayPlan(reps, mgrs){
+  for (const k of Object.keys(REPS)) delete REPS[k];
+  for (const k of Object.keys(MGRS)) delete MGRS[k];
+  if (reps && typeof reps==='object') for (const [k,v] of Object.entries(reps)) if (v && typeof v==='object') REPS[k] = {role:String(v.role||'rep'), rate:n(v.rate), team:String(v.team||'none')};
+  if (mgrs && typeof mgrs==='object') for (const [k,v] of Object.entries(mgrs)) if (v && typeof v==='object') MGRS[k] = {name:String(v.name||k), rate:n(v.rate), scope:String(v.scope||'')};
+}
+const mgrRate = k => (k && MGRS[k]) ? n(MGRS[k].rate) : 0;
 const COMM = {none:{label:'No commission',rate:0},custom:{label:'Custom rep %',rate:null}};
 /* AccuLynx history, Jun 2025 – Sep 2026 · p10/p25/p50/p75/p90. Company margin percentiles are owner-only and come from the server (hc_load → ownerBench). */
 const BENCH = {
@@ -241,8 +237,8 @@ function compute(pb, j){
   const repInfo = REPS[j.rep];
   const repRate = j.commPreset==='none' ? 0 : (j.commPreset==='custom' || !repInfo) ? n(j.commRate) : repInfo.rate;
   const teamKey = j.commPreset==='none' ? 'none' : (j.teamMgr==='auto' || !j.teamMgr) ? (repInfo ? repInfo.team : 'none') : j.teamMgr;
-  const mikeRate = (j.commPreset!=='none' && j.mikeOvr!==false) ? MGRS.mike.rate : 0;
-  const teamRate = (teamKey && MGRS[teamKey]) ? MGRS[teamKey].rate : 0;
+  const mikeRate = (j.commPreset!=='none' && j.mikeOvr!==false) ? mgrRate('mike') : 0;
+  const teamRate = mgrRate(teamKey);
   const ovrRate = mikeRate + teamRate;
   const commRate = repRate + ovrRate;
   const feePct = j.payMethod==='card' ? n(pb.fee_card) : j.payMethod==='ach' ? n(pb.fee_ach) : 0;

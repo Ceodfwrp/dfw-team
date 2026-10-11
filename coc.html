@@ -222,7 +222,7 @@ function buildPdf() {
 }
 
 /* ---------- actions ---------- */
-async function loadQueue() { try { Q = await api("queue"); } catch (e) { ERR = e.message; } paint(); }
+async function loadQueue() { try { Q = await api("queue"); } catch (e) { ERR = e.message === "http_404" ? "The COC queue isn’t answering right now. Reload the page in a minute." : e.message; } paint(); }
 async function openJob(j) {
   if (!j) return; BUSY = true; ERR = ""; RESULT = null; PREVIEW = false; paint();
   try {

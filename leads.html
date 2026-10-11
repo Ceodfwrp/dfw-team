@@ -31,7 +31,7 @@ input[type=datetime-local],select.f{font:inherit;color:inherit;background:var(--
 </head>
 <body>
 <div class="wrap" id="app"><div class="empty">Loading leads…</div></div>
-<div id="sheet" hidden><div class="sh" id="shc"></div></div>
+<div id="sheet" role="dialog" aria-modal="true" hidden><div class="sh" id="shc"></div></div>
 <script src="desk.js"></script>
 <script>
 (function(){
@@ -80,7 +80,7 @@ function row(l) {
 }
 function paint() {
   var app = $("#app");
-  if (!B) { app.innerHTML = D.errorBox(ERR); var rb = app.querySelector("[data-retry]"); if (rb) rb.onclick = load; return; }
+  if (!B) { app.innerHTML = ERR === "forbidden" ? '<div class="err">The Leads tab is for the owner only.</div>' : D.errorBox(ERR); var rb = app.querySelector("[data-retry]"); if (rb) rb.onclick = load; return; }
   var y = window.scrollY, K = B.counts || {}, leads = B.leads || [], W = B.warranties || [];
   var q = SEARCH.trim().toLowerCase();
   var list = leads.filter(function (l) { return inView(l, CUR) && (!q || ((l.name || "") + " " + (l.address || "") + " " + (l.city || "") + " " + (l.phone || "") + " " + (l.rep || "") + " " + (l.lead_source || "")).toLowerCase().indexOf(q) >= 0); });
@@ -115,6 +115,7 @@ function paint() {
 async function toggle(on) { try { await api("settings", { send_enabled: on }); FLASH = on ? "Auto-contact is ON. Inbound leads will be texted and emailed from now on." : "Auto-contact is OFF."; } catch (e) { FLASH = "Couldn't change it: " + e.message; } closeSheet(); load(); }
 function closeSheet() { $("#sheet").hidden = true; OPEN = null; }
 $("#sheet").onclick = function (e) { if (e.target.id === "sheet") closeSheet(); };
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("#sheet").hidden) closeSheet(); });
 function templates(thenOn) {
   var t = B.templates || {}; OPEN = null;
   var f = function (k, label, rows) { return '<label class="f">' + label + '</label><textarea data-k="' + k + '" rows="' + (rows || 3) + '">' + esc(t[k] || "") + "</textarea>"; };
