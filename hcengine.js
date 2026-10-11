@@ -233,7 +233,7 @@ function compute(pb, j){
   const hard = materials + labor + trades + fees + extras;
   const contract = j.jobType==='insurance' ? n(j.rcv)+n(j.suppAmt)+n(j.upgrades) : n(j.contract);
   const gp = contract - hard;
-  /* Pay plan (week of Sep 18, 2026): rep % + Mike 2% + team manager 2%, on money received net of processing fee. */
+  /* Pay plan: rep rate + manager overrides come from the server (setPayPlan), on money received net of processing fee. */
   const repInfo = REPS[j.rep];
   const repRate = j.commPreset==='none' ? 0 : (j.commPreset==='custom' || !repInfo) ? n(j.commRate) : repInfo.rate;
   const teamKey = j.commPreset==='none' ? 'none' : (j.teamMgr==='auto' || !j.teamMgr) ? (repInfo ? repInfo.team : 'none') : j.teamMgr;
