@@ -27,6 +27,13 @@
 .tbl td{padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}.tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums}
 .tbl tr.me td{background:var(--blue-soft)}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
+/* Activity in Lynx: the team gets a table on wide screens and cards on a phone; a rep gets their own card */
+.act{margin-top:26px}.act .sech{margin-bottom:10px}.act .cards{margin-top:0}
+.act .tbl td.p{white-space:normal;min-width:150px}.act .tbl td.p small{display:block;font-size:12px;color:var(--muted)}
+.act .rep.me{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+.act details.grp{margin-top:14px;border:0}.act details.grp>div{margin-top:8px}
+@media(min-width:760px){.act.team .cards{display:none}}
+@media(max-width:759px){.act .at{display:none}}
 </style>
 </head>
 <body>
@@ -37,7 +44,7 @@
 "use strict";
 var D = window.DESK, $ = function (s) { return document.querySelector(s); }, esc = D.esc;
 var API = "https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/pipeline-api/api/";
-var B = null, ERR = "", DAYS = 90, VIEW = "cards", SORT = "sold_value";
+var B = null, ERR = "", DAYS = 90, VIEW = "cards", SORT = "sold_value", ASORT = "total";
 var token = function () { try { return localStorage.getItem("dfw_team_token"); } catch (e) { return null; } };
 async function api(action, body) {
   var tok = token(); if (!tok) throw new Error("signin");
@@ -76,6 +83,38 @@ function table(reps) {
   return '<div class="panel" style="overflow:auto"><table class="tbl"><thead><tr>' + cols.map(function (c) { return '<th class="' + (c[2] === false ? "" : "n") + '" data-sort="' + c[0] + '" style="cursor:pointer">' + c[1] + (SORT === c[0] ? " ▾" : "") + "</th>"; }).join("") + "</tr></thead><tbody>" +
     reps.map(function (x) { return '<tr class="' + (x.rep === B.me.name ? "me" : "") + '">' + cols.map(function (c) { var v = x[c[0]]; var s = c[0] === "rep" ? esc(v) : c[0] === "close_rate" ? pct(v) : money.indexOf(c[0]) >= 0 ? (v == null ? "—" : esc(D.money(v))) : num(v); return '<td class="' + (c[2] === false ? "" : "n") + '">' + s + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>";
 }
+// Activity in Lynx: what each Lynx user logged on jobs in the window (B.activity, one row per person; a rep only gets their own row from the API)
+var ACOLS = [["user", "Person", false], ["total", "Actions", "Everything they logged in Lynx in this window"], ["notes", "Notes", "Job messages (notes) added"], ["texts", "Texts", "Text messages sent from Lynx"], ["emails", "Emails", "Emails sent from Lynx"], ["appointments", "Appts", "Appointments set, moved or removed"], ["milestones", "Moves", "Milestone changes (Lead → Prospect → Approved …)"], ["files", "Files", "Files and photos uploaded"], ["money_entries", "Money", "Payments and payables entered"], ["jobs", "Jobs", "Different jobs they touched"], ["last7", "Last 7", "Actions in the last 7 days"], ["last_at", "Last seen", "Their latest entry in Lynx"]];
+var AKPIS = [["notes", "notes"], ["texts", "texts"], ["emails", "emails"], ["appointments", "appts set"], ["milestones", "milestone moves"], ["files", "files"], ["money_entries", "money entries"], ["jobs", "jobs touched"], ["last7", "last 7 days"]];
+function who(x) { return (x.role === "manager" ? "Sales manager" : x.role === "rep" ? "Sales rep" : x.role === "office" ? "Office" : x.role === "owner" ? "Owner" : x.on_team ? esc(x.role || "") : "Lynx user · not on the portal") + (x.active === false && x.on_team ? " · inactive" : ""); }
+function actSort(rows) {
+  return rows.slice().sort(function (a, b) {
+    if (ASORT === "user") return String(a.user).localeCompare(String(b.user));
+    if (ASORT === "last_at") return String(b.last_at || "").localeCompare(String(a.last_at || ""));
+    return (+b[ASORT] || 0) - (+a[ASORT] || 0) || (+b.total || 0) - (+a.total || 0);
+  });
+}
+function actTable(rows) {
+  return '<div class="panel at" style="overflow:auto"><table class="tbl"><thead><tr>' + ACOLS.map(function (c) { return '<th class="' + (c[2] === false ? "" : "n") + '" data-asort="' + c[0] + '"' + (typeof c[2] === "string" ? ' title="' + esc(c[2]) + '"' : "") + ' style="cursor:pointer">' + c[1] + (ASORT === c[0] ? " ▾" : "") + "</th>"; }).join("") + "</tr></thead><tbody>" +
+    rows.map(function (x) { return '<tr class="' + (x.user === B.me.name ? "me" : "") + '">' + ACOLS.map(function (c) { var v = x[c[0]]; var s = c[0] === "user" ? esc(v) + "<small>" + who(x) + "</small>" : c[0] === "last_at" ? esc(D.ago(v)) : num(v); return '<td class="' + (c[0] === "user" ? "p" : "n") + '">' + s + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>";
+}
+function actCard(x) {
+  return '<div class="rep' + (x.user === B.me.name ? " me" : "") + '"><h3>' + esc(x.user) + "</h3>" +
+    '<div class="role">' + who(x) + " · " + num(x.total) + " action" + (x.total === 1 ? "" : "s") + " · last seen " + esc(D.ago(x.last_at)) + "</div>" +
+    '<div class="kpis">' + AKPIS.map(function (k) { return '<div class="kpi"><div class="v">' + num(x[k[0]]) + '</div><div class="l">' + k[1] + "</div></div>"; }).join("") + "</div></div>";
+}
+function actBlock(rows) { rows = actSort(rows); return (B.me.team ? actTable(rows) : "") + '<div class="cards">' + rows.map(actCard).join("") + "</div>"; }
+function activity() {
+  var all = B.activity || [], named = all.filter(function (x) { return x.user && x.user !== "Lynx user"; }), unnamed = all.filter(function (x) { return !x.user || x.user === "Lynx user"; });
+  var h = '<div class="act' + (B.me.team ? " team" : "") + '"><div class="sech"><div><h3>' + (B.me.team ? "Activity in Lynx" : "My activity in Lynx") + ' <span class="n">last ' + B.days + ' days</span></h3><p class="hint">' + (B.me.team ? 'What every Lynx user logged on jobs in this window, busiest first. <span class="at">Tap a column to sort.</span>' : "What you logged on jobs in Lynx in this window.") + "</p></div></div>";
+  if (B.activity_note) h += '<div class="warn">' + esc(B.activity_note) + "</div>";
+  if (!all.length) { if (!B.activity_note) h += '<div class="empty">' + (B.me.team ? "No activity in Lynx in this window yet." : B.me.linked ? "Nothing logged in Lynx under your name in this window yet." : "Your login isn't linked to your Lynx user yet, so there is nothing to show. Ask the office to link it.") + "</div>"; }
+  else {
+    h += actBlock(named.length ? named : unnamed);
+    if (named.length && unnamed.length && B.me.team) h += '<details class="grp"><summary><span>Activity with no named Lynx user · ' + unnamed.length + '<small>Entries the Lynx history credits to a user it can\'t name any more (removed logins, automations or the API).</small></span></summary><div>' + actBlock(unnamed) + "</div></details>";
+  }
+  return h + '<p class="note">Counted from each job\'s history in Lynx by the person who made the entry: notes = job messages, texts and emails sent from Lynx, appointments set or changed, milestone moves, files and photos uploaded, money entries = payments and payables. Jobs = different jobs they touched. No pay or bank figures here.</p></div>';
+}
 function paint() {
   var app = $("#app");
   if (!B) { app.innerHTML = D.errorBox(ERR); var rb = app.querySelector("[data-retry]"); if (rb) rb.onclick = load; return; }
@@ -93,10 +132,12 @@ function paint() {
   else if (VIEW === "table" && B.me.team) h += table(reps);
   else { h += '<div class="cards">' + onTeam.map(function (x, i) { return card(x, i, max); }).join("") + "</div>"; if (others.length && B.me.team) h += '<details class="grp" style="margin-top:14px;border:0"><summary>Other Lynx users with jobs · ' + others.length + '</summary><div class="cards" style="margin-top:8px">' + others.map(function (x, i) { return card(x, onTeam.length + i, max); }).join("") + "</div></details>"; }
   h += '<p class="note">Sold = the day the job reached Approved in Lynx. Collected = payments received on the rep\'s jobs in the window (job money, not pay). Late = jobs past the time their stage should take on the pipeline board. Refreshes every 5 minutes.</p>';
+  h += activity();
   app.innerHTML = h;
   app.querySelectorAll("[data-days]").forEach(function (b) { b.onclick = function () { DAYS = +b.dataset.days; load(); }; });
   app.querySelectorAll("[data-view]").forEach(function (b) { b.onclick = function () { VIEW = b.dataset.view; paint(); }; });
   app.querySelectorAll("[data-sort]").forEach(function (t) { t.onclick = function () { SORT = t.dataset.sort; paint(); }; });
+  app.querySelectorAll("[data-asort]").forEach(function (t) { t.onclick = function () { ASORT = t.dataset.asort; paint(); }; });
   app.querySelectorAll("[data-pipe]").forEach(function (b) { b.onclick = function () { if (window.parent !== window) window.parent.postMessage({ type: "dfw-open-pipeline", rep: b.dataset.pipe }, "*"); else location.href = "pipeline.html?rep=" + encodeURIComponent(b.dataset.pipe); }; });
   window.scrollTo(0, y);
 }
