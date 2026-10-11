@@ -174,7 +174,7 @@ async function connApi(action,body={}){const r=await fetch(CONNAPI+action,{metho
 async function renderConn(){
   $("#main").innerHTML=`<h1>Connections</h1><p class="sub">The logins the portal's robots use. Type each one once; it's saved on the server and never shown again.</p><div class="empty">Loading…</div>`;
   let d; try{ d=await connApi("status"); }catch(e){ $("#main").innerHTML=`<h1>Connections</h1><div class="empty">${esc(e.message)}</div>`; return; }
-  const help={lynx:"Lets the portal place material orders inside the Lynx job's ABC order tool and read Roofr reports. Use the Command Center user.", abc:"Aly's myABCsupply login, so orders can be placed on the ABC account directly.", invoicing:"The Gmail app password for the invoicing mailbox, so vendor invoices file themselves into Lynx. In Google: Security → 2-Step Verification → App passwords.", twilio:"Owner only. A Twilio API key of type Standard (Twilio Console → Account → API keys & tokens → Create API key). With it the Leads tab can buy the local DFW texting number and point it at the lead engine by itself. Put the key SID in the first box and the secret in the second."};
+  const help={lynx:"Owner only. Lets the portal place material orders inside the Lynx job's ABC order tool and read Roofr reports. Use the Command Center user.", abc:"Aly's myABCsupply login, so orders can be placed on the ABC account directly.", invoicing:"The Gmail app password for the invoicing mailbox, so vendor invoices file themselves into Lynx. In Google: Security → 2-Step Verification → App passwords.", twilio:"Owner only. A Twilio API key of type Standard (Twilio Console → Account → API keys & tokens → Create API key). With it the Leads tab can buy the local DFW texting number and point it at the lead engine by itself. Put the key SID in the first box and the secret in the second."};
   const labels={twilio:["API key SID","API key secret"]};
   $("#main").innerHTML=`<h1>Connections</h1><p class="sub">The logins the portal's robots use. Type each one once; it's saved on the server and never shown again.</p>`+
     d.items.map(it=>`<div class="card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><div class="t">${esc(it.label)}</div><span class="tag ${it.set?'t-green':'t-red'}">${it.set?'Connected':'Not set'}</span></div><div class="m" style="margin:4px 0 8px">${esc(help[it.key]||'')}</div>
@@ -202,7 +202,7 @@ async function renderCmd(){
   h+=`<h3 style="margin:14px 0 2px">Pipeline</h3>`;
   h+=cmdGrid([["Leads","jobs_lead"],["Prospects","jobs_prospect"],["Approved","jobs_approved"],["Completed","jobs_completed"],["Invoiced","jobs_invoiced"]]
     .map(([l,m])=>cmdTile(l,cmdNum(v("pipeline",m,"now")||0))).join("")
-    + cmdTile("Approved contract value",cmdMoney(v("pipeline","approved_contract_value","now")),"sold work in production"));
+    + (get("pipeline","approved_contract_value","now")?cmdTile("Approved contract value",cmdMoney(v("pipeline","approved_contract_value","now")),"sold work in production"):""));
   if(d.owner && d.kpi && d.kpi.money){
     h+=`<h3 style="margin:14px 0 2px">Money · year to date</h3>`;
     h+=cmdGrid(cmdTile("Revenue",cmdMoney(v("money","total_income","ytd2026")))

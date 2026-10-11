@@ -47,6 +47,9 @@ if (window.top !== window.self) { var po = ""; try { po = document.referrer ? ne
 var D = window.DESK, $ = function (s) { return document.querySelector(s); }, esc = D.esc;
 var API = "https://lhnjdzurujbwfhhybkcv.supabase.co/functions/v1/pipeline-api/api/";
 var B = null, ERR = "", DAYS = 90, VIEW = "cards", SORT = "sold_value", ASORT = "total";
+// The API says whether this viewer gets dollar figures (me.money): the owner and managers do, the office gets counts only.
+var hasMoney = function () { return !(B && B.me && B.me.money === false); };
+var MONEY_KEYS = ["sold_value", "avg_contract", "collected", "open_value", "owed_built", "commission"];
 var token = function () { try { return localStorage.getItem("dfw_team_token"); } catch (e) { return null; } };
 async function api(action, body) {
   var tok = token(); if (!tok) throw new Error("signin");
@@ -59,21 +62,21 @@ async function load() { try { B = await api("scorecard", { days: DAYS }); ERR = 
 var pct = function (v) { return v == null ? "—" : (+v).toFixed(v >= 10 ? 0 : 1) + "%"; };
 var num = function (v) { return (+v || 0).toLocaleString("en-US"); };
 function card(x, i, max) {
-  var owner = B.me.role === "owner", isMe = B.me.name && (x.rep === B.me.name || (x.email && B.me.email === x.email));
+  var owner = B.me.role === "owner", money = hasMoney(), isMe = B.me.name && (x.rep === B.me.name || (x.email && B.me.email === x.email));
   var funnel = [["Leads", x.leads], ["Inspections", x.inspections], ["Sold", x.sold], ["Built", x.built]];
   var fm = Math.max(1, x.leads, x.inspections, x.sold, x.built);
   return '<div class="rep' + (i === 0 && B.me.team ? " lead" : "") + '">' +
     '<h3>' + (B.me.team ? '<span class="rk">#' + (i + 1) + "</span>" : "") + esc(x.rep) + "</h3>" +
     '<div class="role">' + (x.role === "manager" ? "Sales manager" : x.role === "rep" ? "Sales rep" : x.on_team ? esc(x.role || "") : "Lynx user · not on the portal") + (x.active === false && x.on_team ? " · inactive" : "") + "</div>" +
-    '<div class="kpis"><div class="kpi good"><div class="v">' + esc(D.money(x.sold_value)) + '</div><div class="l">sold · ' + x.sold + " job" + (x.sold === 1 ? "" : "s") + "</div></div>" +
-    '<div class="kpi"><div class="v">' + esc(D.money(x.collected)) + '</div><div class="l">collected · ' + x.payments + " payment" + (x.payments === 1 ? "" : "s") + "</div></div>" +
+    '<div class="kpis"><div class="kpi good"><div class="v">' + (money ? esc(D.money(x.sold_value)) : num(x.sold)) + '</div><div class="l">' + (money ? "sold · " + x.sold + " job" + (x.sold === 1 ? "" : "s") : "sold") + "</div></div>" +
+    '<div class="kpi"><div class="v">' + (money ? esc(D.money(x.collected)) : num(x.payments)) + '</div><div class="l">' + (money ? "collected · " + x.payments + " payment" + (x.payments === 1 ? "" : "s") : "payments logged") + "</div></div>" +
     '<div class="kpi' + (x.late > 5 ? " hot" : "") + '"><div class="v">' + x.late + '</div><div class="l">late jobs · ' + x.on_rep + " waiting on them</div></div></div>" +
-    '<div class="bar"><i style="width:' + Math.round(100 * (+x.sold_value || 0) / max) + '%"></i></div>' +
+    '<div class="bar"><i style="width:' + Math.round(100 * (+(money ? x.sold_value : x.sold) || 0) / max) + '%"></i></div>' +
     '<div class="funnel">' + funnel.map(function (f) { return '<div class="f"><b>' + num(f[1]) + "</b><i style=\"width:" + Math.max(6, Math.round(100 * f[1] / fm)) + "%;margin-left:auto;margin-right:auto\"></i>" + f[0] + "</div>"; }).join("") + "</div>" +
     '<div class="kpis"><div class="kpi"><div class="v">' + pct(x.close_rate) + '</div><div class="l">close rate on leads from this window</div></div>' +
-    '<div class="kpi"><div class="v">' + (x.avg_contract ? esc(D.money(x.avg_contract)) : "—") + '</div><div class="l">avg contract</div></div>' +
-    '<div class="kpi"><div class="v">' + num(x.open_sold) + '</div><div class="l">sold, not closed · ' + esc(D.money(x.open_value)) + "</div></div></div>" +
-    '<div class="own">Open now: <b>' + x.open_leads + "</b> leads · <b>" + x.open_prospects + "</b> prospects · <b>" + esc(D.money(x.owed_built)) + "</b> owed on built jobs" + (x.door_knocks ? " · " + x.door_knocks + " door knocks" : "") + (x.sold_insurance || x.sold_retail ? " · sold " + x.sold_insurance + " insurance / " + x.sold_retail + " retail" : "") + (x.lost ? " · " + x.lost + " lost" : "") + "</div>" +
+    (money ? '<div class="kpi"><div class="v">' + (x.avg_contract ? esc(D.money(x.avg_contract)) : "—") + '</div><div class="l">avg contract</div></div>' : "") +
+    '<div class="kpi"><div class="v">' + num(x.open_sold) + '</div><div class="l">sold, not closed' + (money ? " · " + esc(D.money(x.open_value)) : "") + "</div></div></div>" +
+    '<div class="own">Open now: <b>' + x.open_leads + "</b> leads · <b>" + x.open_prospects + "</b> prospects" + (money ? " · <b>" + esc(D.money(x.owed_built)) + "</b> owed on built jobs" : "") + (x.door_knocks ? " · " + x.door_knocks + " door knocks" : "") + (x.sold_insurance || x.sold_retail ? " · sold " + x.sold_insurance + " insurance / " + x.sold_retail + " retail" : "") + (x.lost ? " · " + x.lost + " lost" : "") + "</div>" +
     (owner && x.commission != null ? '<div class="own" style="margin-top:6px;color:var(--amber)">Commission earned ' + esc(D.money(x.commission)) + " on " + x.commission_lines + " payments · " + esc(D.money(x.commission_paid || 0)) + " paid (owner only)</div>" : "") +
     (B.me.team ? '<div class="acts" style="margin:10px 0 0"><button class="btn ghost" type="button" data-pipe="' + esc(x.rep) + '" style="padding:6px 12px;font-size:13px">Open their pipeline</button></div>' : "") +
     "</div>";
@@ -81,7 +84,8 @@ function card(x, i, max) {
 function table(reps) {
   var owner = B.me.role === "owner";
   var cols = [["rep", "Rep", false], ["leads", "Leads"], ["inspections", "Insp."], ["sold", "Sold"], ["sold_value", "Sold $"], ["close_rate", "Close"], ["avg_contract", "Avg $"], ["built", "Built"], ["collected", "Collected"], ["open_value", "Open $"], ["owed_built", "Owed"], ["late", "Late"]].concat(owner ? [["commission", "Commission"]] : []);
-  var money = ["sold_value", "avg_contract", "collected", "open_value", "owed_built", "commission"];
+  if (!hasMoney()) cols = cols.filter(function (c) { return MONEY_KEYS.indexOf(c[0]) < 0; }).concat([["payments", "Payments"]]);
+  var money = MONEY_KEYS;
   return '<div class="panel" style="overflow:auto"><table class="tbl"><thead><tr>' + cols.map(function (c) { return '<th class="' + (c[2] === false ? "" : "n") + '" data-sort="' + c[0] + '" style="cursor:pointer">' + c[1] + (SORT === c[0] ? " ▾" : "") + "</th>"; }).join("") + "</tr></thead><tbody>" +
     reps.map(function (x) { return '<tr class="' + (x.rep === B.me.name ? "me" : "") + '">' + cols.map(function (c) { var v = x[c[0]]; var s = c[0] === "rep" ? esc(v) : c[0] === "close_rate" ? pct(v) : money.indexOf(c[0]) >= 0 ? (v == null ? "—" : esc(D.money(v))) : num(v); return '<td class="' + (c[2] === false ? "" : "n") + '">' + s + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>";
 }
@@ -121,20 +125,21 @@ function paint() {
   var app = $("#app");
   if (!B) { app.innerHTML = D.errorBox(ERR); var rb = app.querySelector("[data-retry]"); if (rb) rb.onclick = load; return; }
   if (!B.me) { B = null; ERR = "bad_response"; return paint(); }
-  var y = window.scrollY, reps = (B.reps || []).slice(), C = B.company;
+  var y = window.scrollY, reps = (B.reps || []).slice(), C = B.company, money = hasMoney();
+  if (!money && MONEY_KEYS.indexOf(SORT) >= 0) SORT = "sold"; // counts-only viewer: never sort on a field they don't get
   reps.sort(function (a, b) { if (SORT === "rep") return String(a.rep).localeCompare(String(b.rep)); return (+b[SORT] || 0) - (+a[SORT] || 0); });
   var onTeam = reps.filter(function (x) { return x.on_team; }), others = reps.filter(function (x) { return !x.on_team; });
-  var max = Math.max(1, Math.max.apply(null, reps.map(function (x) { return +x.sold_value || 0; })));
+  var max = Math.max(1, Math.max.apply(null, reps.map(function (x) { return +(money ? x.sold_value : x.sold) || 0; })));
   var h = '<h2>' + (B.me.team ? "Team scorecard" : "My scorecard") + ' <span style="font:700 15px var(--body);color:var(--muted)">last ' + B.days + " days</span></h2>" +
-    '<p class="sub">Read straight from Lynx: leads created, inspections on the calendar, jobs that reached Approved, roofs completed, money received. Close rate = leads created in this window that have since sold.' + (B.me.role === "owner" ? " Commission comes from the Master System and is shown to you only." : "") + "</p>" +
+    '<p class="sub">Read straight from Lynx: leads created, inspections on the calendar, jobs that reached Approved, roofs completed' + (money ? ", money received" : ", payments logged") + '. Close rate = leads created in this window that have since sold.' + (B.me.role === "owner" ? " Commission comes from the Master System and is shown to you only." : "") + "</p>" +
     (B.note ? '<div class="warn">' + esc(B.note) + "</div>" : "") +
     '<div class="toolbar"><div class="chips" style="margin:0">' + [30, 90, 365].map(function (d) { return '<button class="chip" data-days="' + d + '" aria-pressed="' + (DAYS === d) + '">' + (d === 365 ? "12 months" : d + " days") + "</button>"; }).join("") + "</div>" +
     (B.me.team ? '<div class="chips" style="margin:0"><button class="chip" data-view="cards" aria-pressed="' + (VIEW === "cards") + '">Cards</button><button class="chip" data-view="table" aria-pressed="' + (VIEW === "table") + '">Table</button></div>' : "") + "</div>";
-  if (C && B.me.team) h += '<div class="stats"><div class="stat"><div class="v">' + esc(D.money(C.sold_value)) + '</div><div class="l">sold · ' + num(C.sold) + " jobs</div></div><div class=\"stat\"><div class=\"v\">" + num(C.leads) + '</div><div class="l">leads · ' + num(C.inspections) + " inspections</div></div><div class=\"stat\"><div class=\"v\">" + num(C.built) + '</div><div class="l">roofs built</div></div><div class="stat"><div class="v">' + esc(D.money(C.collected)) + '</div><div class="l">collected · ' + esc(D.money(C.owed_built)) + " owed on built</div></div></div>";
+  if (C && B.me.team) h += '<div class="stats"><div class="stat"><div class="v">' + (money ? esc(D.money(C.sold_value)) : num(C.sold)) + '</div><div class="l">' + (money ? "sold · " + num(C.sold) + " jobs" : "jobs sold") + "</div></div><div class=\"stat\"><div class=\"v\">" + num(C.leads) + '</div><div class="l">leads · ' + num(C.inspections) + " inspections</div></div><div class=\"stat\"><div class=\"v\">" + num(C.built) + '</div><div class="l">roofs built</div></div>' + (money ? '<div class="stat"><div class="v">' + esc(D.money(C.collected)) + '</div><div class="l">collected · ' + esc(D.money(C.owed_built)) + " owed on built</div></div>" : "") + "</div>";
   if (!reps.length) h += '<div class="empty">No numbers yet.</div>';
   else if (VIEW === "table" && B.me.team) h += table(reps);
   else { h += '<div class="cards">' + onTeam.map(function (x, i) { return card(x, i, max); }).join("") + "</div>"; if (others.length && B.me.team) h += '<details class="grp" style="margin-top:14px;border:0"><summary>Other Lynx users with jobs · ' + others.length + '</summary><div class="cards" style="margin-top:8px">' + others.map(function (x, i) { return card(x, onTeam.length + i, max); }).join("") + "</div></details>"; }
-  h += '<p class="note">Sold = the day the job reached Approved in Lynx. Collected = payments received on the rep\'s jobs in the window (job money, not pay). Late = jobs past the time their stage should take on the pipeline board. Refreshes every 5 minutes.</p>';
+  h += '<p class="note">Sold = the day the job reached Approved in Lynx. ' + (money ? "Collected = payments received on the rep\'s jobs in the window (job money, not pay). " : "Payments = payments logged in Lynx on the rep\'s jobs in the window (how many, not how much). ") + 'Late = jobs past the time their stage should take on the pipeline board. Refreshes every 5 minutes.</p>';
   h += activity();
   app.innerHTML = h;
   app.querySelectorAll("[data-days]").forEach(function (b) { b.onclick = function () { DAYS = +b.dataset.days; load(); }; });

@@ -430,7 +430,7 @@ function paintReq() {
       '<div style="margin-top:12px"><button class="btn" id="rsend" type="button"' + (R.busy ? " disabled" : "") + ">" + (R.busy ? "Sending…" : "Send the request to the office") + "</button></div></div>";
   }
   app.innerHTML = h;
-  $("#lf").onsubmit = async function (e) { e.preventDefault(); R.job = $("#rj").value.trim(); R.err = ""; R.found = null; if (!R.job) return; try { var r = await cb("lookup", { job: R.job }); R.found = r.job; } catch (x) { R.err = x.message === "job_not_found" ? "No Lynx job with that number." : x.message; } paintReq(); };
+  $("#lf").onsubmit = async function (e) { e.preventDefault(); R.job = $("#rj").value.trim(); R.err = ""; R.found = null; if (!R.job) return; try { var r = await cb("lookup", { job: R.job }); R.found = r.job; } catch (x) { R.err = x.message === "job_not_found" ? "No Lynx job with that number." : x.message === "not_your_job" ? "That job isn’t yours in Lynx. You can ask for a cash bid only on a job where you are the rep; if it should be yours, or your login isn’t linked to your Lynx user yet, ask the office." : x.message; } paintReq(); };
   if (f) {
     $("#rw").onchange = function () { R.what = $("#rw").value; }; $("#rs").oninput = function () { R.shingle = $("#rs").value; }; $("#rc").oninput = function () { R.color = $("#rc").value; }; $("#rn").oninput = function () { R.needed_by = $("#rn").value; }; $("#rb").oninput = function () { R.budget = $("#rb").value; };
     $("#re").oninput = function () { R.extras = $("#re").value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean); }; $("#rt").oninput = function () { R.notes = $("#rt").value; };
